@@ -27,7 +27,7 @@ public class UserMapper {
   }
 
   // Entity → 응답 DTO
-  public UserResponseDto mapToResponseDto(User user) {
+  public UserResponseDto mapToDto(User user) {
     return UserResponseDto.builder()
         .id(user.getId())
         .email(user.getEmail())
@@ -36,14 +36,4 @@ public class UserMapper {
         .build();
   }
 
-  // 업데이트용
-  public void updateNickname(User user, String newNickname) {
-    String newDisplayName = newNickname + "#" + user.getTag();
-    user.setNickname(newNickname);
-    user.setDisplayName(newDisplayName);
-  }
-
-  public void updatePassword(User user, String newPassword) {
-    user.setPassword(passwordEncoder.encode(newPassword));
-  }
 }

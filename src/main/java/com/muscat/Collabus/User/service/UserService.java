@@ -10,7 +10,7 @@ public interface UserService {
   /**
    * 회원 가입
    */
-  void  registerUser(UserRequestDto dto);
+  void registerUser(UserRequestDto dto);
 
   /**
    * 닉네임 키워드로 사용자 검색

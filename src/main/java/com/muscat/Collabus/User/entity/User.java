@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 @Getter
@@ -49,5 +50,15 @@ public class User extends BaseEntity {
 
   @Enumerated(EnumType.STRING)
   private SystemRole role; // 시스템 역할 (일반 유저, 운영자)
+
+
+  public void changeNickname(String newNickname) {
+    this.nickname = newNickname;
+    this.displayName = newNickname + "#" + this.tag;
+  }
+
+  public void changePassword(String newPassword, PasswordEncoder encoder) {
+    this.password = encoder.encode(newPassword);
+  }
 
 }

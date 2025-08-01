@@ -37,16 +37,9 @@ public class UserServiceImpl implements UserService {
         userDto.getNickname(),
         userRepository::existsByDisplayName
     );
-    String displayName = userDto.getNickname() + "#" + tag;
 
-    User user = User.builder()
-        .email(userDto.getEmail())
-        .nickname(userDto.getNickname())
-        .password(passwordEncoder.encode(userDto.getPassword()))
-        .role(SystemRole.USER)
-        .tag(tag)
-        .displayName(displayName)
-        .build();
+    User user = userMapper.mapToEntity(userDto, tag);
+    user.setRole(SystemRole.USER);
 
     userRepository.save(user);
   }
@@ -54,14 +47,14 @@ public class UserServiceImpl implements UserService {
   @Override
   public List<UserResponseDto> searchByNickname(String keyword) {
     return userRepository.findByNicknameContainingIgnoreCase(keyword).stream()
-        .map(userMapper::mapToResponseDto)
+        .map(userMapper::mapToDto)
         .collect(Collectors.toList());
   }
 
   @Override
   public Optional<UserResponseDto> findByDisplayName(String displayName) {
     return userRepository.findByDisplayName(displayName)
-        .map(userMapper::mapToResponseDto);
+        .map(userMapper::mapToDto);
   }
 
   @Override
@@ -76,8 +69,7 @@ public class UserServiceImpl implements UserService {
         throw new ResourceAlreadyExistsException(UserResponse.NICKNAME_ALREADY_EXISTS);
       }
 
-      user.setNickname(newNickname);
-      user.setDisplayName(newDisplayName);
+      user.changeNickname(newNickname);
       userRepository.save(user);
     }
   }
@@ -91,7 +83,7 @@ public class UserServiceImpl implements UserService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
-    user.setPassword(passwordEncoder.encode(newPassword));
+    user.changePassword(newPassword, passwordEncoder);
     userRepository.save(user);
   }
 
@@ -113,32 +105,24 @@ public class UserServiceImpl implements UserService {
       throw new IllegalArgumentException(CommonResponse.UNAUTHORIZED.getMessage());
     }
 
-    return userMapper.mapToResponseDto(user);
+    return userMapper.mapToDto(user);
   }
 
   @Override
-  public void createAdmin(UserRequestDto dto) {
-    if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+  public void createAdmin(UserRequestDto userDto) {
+    if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
       throw new ResourceAlreadyExistsException(UserResponse.EMAIL_ALREADY_EXISTS);
     }
 
     String tag = DisplayNameUtil.generateUniqueTag(
-        dto.getNickname(),
-        displayName -> userRepository.existsByDisplayName(displayName)
+        userDto.getNickname(),
+        userRepository::existsByDisplayName
     );
-    String displayName = dto.getNickname() + "#" + tag;
 
-    User admin = User.builder()
-        .email(dto.getEmail())
-        .nickname(dto.getNickname())
-        .password(passwordEncoder.encode(dto.getPassword()))
-        .role(SystemRole.ADMIN)
-        .tag(tag)
-        .displayName(displayName)
-        .build();
+    User admin = userMapper.mapToEntity(userDto, tag);
+    admin.setRole(SystemRole.ADMIN);
 
     userRepository.save(admin);
   }
-
 
 }

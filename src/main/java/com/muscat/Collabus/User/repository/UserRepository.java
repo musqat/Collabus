@@ -16,7 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
   // displayName 확인
   boolean existsByDisplayName(String displayName);
 
-  // 유저 검색
+  // 유저 다중 검색
   List<User> findByNicknameContainingIgnoreCase(String keyword);
 
   // displayName 중복 체크
