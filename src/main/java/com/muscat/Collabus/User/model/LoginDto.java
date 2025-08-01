@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 
 @Getter
-@Schema(name = "Login", description = "로그인 시 필요한 이메일과 비밀번호 정보를 담는 DTO")
+@Schema(name = "Login", description = "로그인 정보 DTO")
 public class LoginDto {
 
   @Email

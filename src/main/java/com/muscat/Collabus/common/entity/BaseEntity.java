@@ -3,6 +3,7 @@ package com.muscat.Collabus.common.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,10 +30,19 @@ public class BaseEntity {
   private String createdBy;
 
   @LastModifiedDate
-  @Column(insertable = false)
   private LocalDateTime updatedAt;
 
   @LastModifiedBy
-  @Column(insertable = false)
   private String updatedBy;
+
+  @PrePersist
+  public void prePersist() {
+    if (this.updatedAt == null && this.createdAt != null) {
+      this.updatedAt = this.createdAt;
+    }
+    if (this.updatedBy == null && this.createdBy != null) {
+      this.updatedBy = this.createdBy;
+    }
+  }
+
 }

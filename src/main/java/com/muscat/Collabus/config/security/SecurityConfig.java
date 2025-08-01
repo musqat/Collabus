@@ -3,6 +3,7 @@ package com.muscat.Collabus.config.security;
 
 import com.muscat.Collabus.config.jwt.JwtAuthenticationFilter;
 import com.muscat.Collabus.config.jwt.JwtUtil;
+import com.muscat.Collabus.config.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +30,8 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http,
       JwtUtil jwtUtil,
-      CustomUserDetailsService userDetailsService) throws Exception {
+      CustomUserDetailsService userDetailsService,
+      RefreshTokenService refreshTokenService) throws Exception {
 
     http
         .authorizeHttpRequests(auth -> auth
@@ -44,7 +46,7 @@ public class SecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .headers(AbstractHttpConfigurer::disable
         )
-        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService),
+        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService, refreshTokenService),
             UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

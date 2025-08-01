@@ -1,13 +1,17 @@
 package com.muscat.Collabus.User.controller;
 
-import com.muscat.Collabus.User.entity.User;
-import com.muscat.Collabus.User.model.LoginDto;
-import com.muscat.Collabus.User.model.UserDto;
+import static com.muscat.Collabus.enums.response.CommonResponse.*;
+import static com.muscat.Collabus.enums.response.UserResponse.*;
+
+import com.muscat.Collabus.User.model.*;
 import com.muscat.Collabus.User.service.UserService;
 import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.jwt.JwtUtil;
-import com.muscat.Collabus.enums.UserResponse;
+import com.muscat.Collabus.config.token.RefreshTokenService;
+import com.muscat.Collabus.config.token.TokenResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,136 +20,167 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "User API", description = "회원 관련 기능 제공 (회원가입, 조회, 수정, 삭제, 로그인)")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "User API", description = "회원 관련 기능 제공 (회원가입, 조회, 수정, 삭제, 로그인)")
 @Validated
 public class UserController {
 
   private final UserService userService;
   private final JwtUtil jwtUtil;
+  private final RefreshTokenService refreshTokenService;
 
   @Operation(
       summary = "회원가입",
       description = "새로운 유저를 등록합니다.",
       responses = {
           @ApiResponse(responseCode = "201", description = "회원가입 성공"),
-          @ApiResponse(responseCode = "409", description = "이메일 중복"),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
+          @ApiResponse(responseCode = "409", description = "이메일 중복",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
   @PostMapping("/register")
-  public ResponseEntity<ResponseDto> register(@RequestBody @Valid UserDto dto) {
+  public ResponseEntity<ResponseDto> register(@RequestBody @Valid UserRequestDto dto) {
     userService.registerUser(dto);
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(new ResponseDto(UserResponse.USER_CREATED));
+    return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseDto(USER_CREATED));
   }
 
   @Operation(
       summary = "닉네임 검색",
-      description = "닉네임 부분으로 유저를 검색합니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "검색 성공"),
-          @ApiResponse(responseCode = "400", description = "잘못된 요청 형식"),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
-      }
+      description = "닉네임에 포함된 키워드로 유저를 검색합니다.",
+      responses = @ApiResponse(responseCode = "200", description = "검색 성공")
   )
   @GetMapping("/search")
-  public ResponseEntity<?> searchUsers(
-      @RequestParam String keyword) {
-    List<UserDto> result = userService.searchByNickname(keyword);
-    return ResponseEntity.ok(result);
+  public ResponseEntity<ResponseDto> searchUsers(@RequestParam String keyword) {
+    List<UserResponseDto> result = userService.searchByNickname(keyword);
+    return ResponseEntity.ok(new ResponseDto(SUCCESS, result));
   }
 
   @Operation(
       summary = "유저 단건 조회",
-      description = "displayName으로 유저 정보를 조회합니다.",
+      description = "displayName(nickname#tag)으로 유저 정보를 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공"),
-          @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없습니다."),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
+          @ApiResponse(responseCode = "404", description = "사용자 없음",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
   @GetMapping("/{displayName}")
-  public ResponseEntity<?> getUser(
-      @PathVariable String displayName) {
+  public ResponseEntity<ResponseDto> getUser(@PathVariable String displayName) {
     return userService.findByDisplayName(displayName)
-        .<ResponseEntity<?>>map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(new ResponseDto(UserResponse.USER_NOT_FOUND)));
+        .map(user -> ResponseEntity.ok(new ResponseDto(SUCCESS, user)))
+        .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ResponseDto(RESOURCE_NOT_FOUND)));
   }
 
   @Operation(
-      summary = "회원 정보 수정",
-      description = "회원 정보를 수정합니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "수정 성공"),
-          @ApiResponse(responseCode = "400", description = "수정 실패"),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
-      }
+      summary = "닉네임 변경",
+      description = "유저의 닉네임을 수정하고, displayName도 자동 갱신합니다.",
+      responses = @ApiResponse(responseCode = "200", description = "수정 성공")
   )
-  @PutMapping("/update")
-  public ResponseEntity<ResponseDto> update(@RequestBody @Valid UserDto dto) {
-    boolean isUpdated = userService.updateUser(dto);
-    return isUpdated
-        ? ResponseEntity.ok(new ResponseDto(UserResponse.SUCCESS))
-        : ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(new ResponseDto(UserResponse.UPDATE_FAILED));
+  @PatchMapping("/nickname/{id}")
+  public ResponseEntity<Void> updateNickname(
+      @PathVariable Long id,
+      @RequestBody UpdateNicknameDto dto) {
+    userService.updateNickname(id, dto.getNickname());
+    return ResponseEntity.ok().build();
+  }
+
+  @Operation(
+      summary = "비밀번호 변경",
+      description = "유저의 비밀번호를 변경합니다.",
+      responses = @ApiResponse(responseCode = "200", description = "변경 성공")
+  )
+  @PatchMapping("/password/{id}")
+  public ResponseEntity<Void> updatePassword(
+      @PathVariable Long id,
+      @RequestBody UpdatePasswordDto dto) {
+    userService.updatePassword(id, dto.getPassword());
+    return ResponseEntity.ok().build();
   }
 
   @Operation(
       summary = "회원 삭제",
-      description = "회원을 삭제합니다.",
+      description = "이메일로 회원을 삭제합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "삭제 성공"),
           @ApiResponse(responseCode = "400", description = "삭제 실패"),
-          @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없습니다."),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
+          @ApiResponse(responseCode = "404", description = "사용자 없음")
       }
   )
   @DeleteMapping("/delete")
-  public ResponseEntity<ResponseDto> delete(
-      @RequestParam String email) {
+  public ResponseEntity<ResponseDto> delete(@RequestParam String email) {
     boolean isDeleted = userService.deleteUser(email);
-    return isDeleted
-        ? ResponseEntity.ok(new ResponseDto(UserResponse.SUCCESS))
-        : ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(new ResponseDto(UserResponse.DELETE_FAILED));
+    return ResponseEntity.status(isDeleted ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
+        .body(new ResponseDto(isDeleted ? SUCCESS : DELETE_FAILED));
   }
 
   @Operation(
       summary = "로그인",
-      description = "이메일과 비밀번호로 로그인하고 JWT를 발급합니다.",
+      description = "이메일과 비밀번호로 로그인하고 Access/Refresh 토큰을 발급합니다.",
       responses = {
-          @ApiResponse(responseCode = "200", description = "로그인 성공"),
-          @ApiResponse(responseCode = "401", description = "로그인 실패"),
-          @ApiResponse(responseCode = "500", description = "서버의 문제가 발생하였습니다.")
+          @ApiResponse(responseCode = "200", description = "로그인 성공",
+              content = @Content(schema = @Schema(implementation = TokenResponseDto.class))),
+          @ApiResponse(responseCode = "401", description = "로그인 실패",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
-
   @PostMapping("/login")
   public ResponseEntity<ResponseDto> login(@RequestBody @Valid LoginDto request) {
     try {
-      User user = userService.login(request.getEmail(), request.getPassword());
-      String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+      var user = userService.login(request.getEmail(), request.getPassword());
 
-      return ResponseEntity.ok(new ResponseDto(UserResponse.LOGIN_OK, token));
+      String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+      String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+
+      // Redis에 refreshToken 저장 (7일 = 7 * 24 * 60 * 60 * 1000 ms)
+      refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken, 7 * 24 * 60 * 60 * 1000L);
+
+      return ResponseEntity.ok(new ResponseDto(SUCCESS,
+          new TokenResponseDto(accessToken, refreshToken)));
     } catch (IllegalArgumentException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(new ResponseDto(UserResponse.LOGIN_FAILED));
+          .body(new ResponseDto(UNAUTHORIZED));
     }
+  }
+
+  @Operation(
+      summary = "로그아웃",
+      description = "RefreshToken 삭제 및 AccessToken 블랙리스트 등록",
+      responses = @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+  )
+  @PostMapping("/logout")
+  public ResponseEntity<ResponseDto> logout(@RequestHeader("Authorization") String authHeader) {
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      return ResponseEntity.badRequest().body(new ResponseDto(BAD_REQUEST));
+    }
+
+    String token = authHeader.substring(7);
+    String email = jwtUtil.getEmailFromToken(token);
+
+    refreshTokenService.deleteRefreshToken(email);
+    long remaining = jwtUtil.getRemainingMillis(token);
+    refreshTokenService.blacklistAccessToken(token, remaining);
+
+    return ResponseEntity.ok(new ResponseDto(SUCCESS));
+  }
+
+  @Operation(
+      summary = "관리자 생성",
+      description = "관리자 계정을 생성합니다. (ADMIN 권한 필요)",
+      responses = @ApiResponse(responseCode = "201", description = "관리자 생성 성공")
+  )
+  @PreAuthorize("hasRole('ADMIN')")
+  @PostMapping("/create-admin")
+  public ResponseEntity<ResponseDto> createAdmin(@RequestBody @Valid UserRequestDto dto) {
+    userService.createAdmin(dto);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(new ResponseDto(USER_CREATED));
   }
 
 }

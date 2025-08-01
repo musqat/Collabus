@@ -1,6 +1,6 @@
 package com.muscat.Collabus.common.dto;
 
-import com.muscat.Collabus.enums.UserResponse;
+import com.muscat.Collabus.enums.response.BaseResponseEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,14 +22,13 @@ public class ResponseDto {
   @Schema(description = "응답 데이터")
   private Object data;
 
-  public ResponseDto(UserResponse response) {
+  public ResponseDto(BaseResponseEnum response) {
     this.statusCode = response.getCode();
     this.statusMsg = response.getMessage();
   }
 
-  public ResponseDto(UserResponse response, Object data) {
-    this.statusCode = response.getCode();
-    this.statusMsg = response.getMessage();
+  public ResponseDto(BaseResponseEnum response, Object data) {
+    this(response);
     this.data = data;
   }
 

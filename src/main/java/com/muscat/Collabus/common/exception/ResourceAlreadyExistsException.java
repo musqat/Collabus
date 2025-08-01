@@ -6,18 +6,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Getter
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class ResourceNotFoundException extends RuntimeException {
+@ResponseStatus(HttpStatus.CONFLICT)
+public class ResourceAlreadyExistsException extends RuntimeException {
 
   private final String code;
 
-  public ResourceNotFoundException(BaseResponseEnum response) {
+  public ResourceAlreadyExistsException(BaseResponseEnum response) {
     super(response.getMessage());
     this.code = response.getCode();
   }
 
-  public ResourceNotFoundException(String message) {
+  public ResourceAlreadyExistsException(String message) {
     super(message);
-    this.code = HttpStatus.NOT_FOUND.toString();
+    this.code = HttpStatus.CONFLICT.toString();
   }
 }

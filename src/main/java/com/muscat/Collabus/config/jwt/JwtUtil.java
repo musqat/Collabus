@@ -12,10 +12,12 @@ public class JwtUtil {
 
   private final SecretKey key;
   private final long expiration;
+  private final long refreshExpiration;
 
   public JwtUtil(JwtProperties jwtProperties) {
     this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     this.expiration = jwtProperties.getExpiration();
+    this.refreshExpiration = jwtProperties.getRefreshExpiration();
   }
 
   public String generateToken(String email, String role) {
@@ -30,6 +32,19 @@ public class JwtUtil {
         .signWith(key)
         .compact();
   }
+
+  public String generateRefreshToken(String email) {
+    Date now = new Date();
+    Date expiry = new Date(now.getTime() + refreshExpiration);
+
+    return Jwts.builder()
+        .subject(email)
+        .issuedAt(now)
+        .expiration(expiry)
+        .signWith(key)
+        .compact();
+  }
+
 
   public boolean validateToken(String jwt) {
     try {
@@ -53,12 +68,14 @@ public class JwtUtil {
         .getSubject();
   }
 
-  public String getRoleFromToken(String jwt) {
-    return String.valueOf(Jwts.parser()
+  public long getRemainingMillis(String jwt) {
+    Date expiration = Jwts.parser()
         .verifyWith(key)
         .build()
         .parseSignedClaims(jwt)
         .getPayload()
-        .get("role"));
+        .getExpiration();
+
+    return expiration.getTime() - System.currentTimeMillis();
   }
 }
