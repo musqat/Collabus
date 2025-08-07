@@ -2,16 +2,13 @@ package com.muscat.Collabus.common.exception;
 
 import com.muscat.Collabus.enums.response.BaseResponseEnum;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Getter
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class ResourceNotFoundException extends RuntimeException {
+public class BusinessException extends RuntimeException {
 
   private final BaseResponseEnum response;
 
-  public ResourceNotFoundException(BaseResponseEnum response) {
+  public BusinessException(BaseResponseEnum response) {
     super(response.getMessage());
     this.response = response;
   }
@@ -20,4 +17,3 @@ public class ResourceNotFoundException extends RuntimeException {
     return response;
   }
 }
-

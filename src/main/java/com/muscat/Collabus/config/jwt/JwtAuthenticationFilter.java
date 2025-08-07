@@ -33,8 +33,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain) throws ServletException, IOException {
 
     final String token = extractToken(request);
-    log.debug("🔥 JwtAuthenticationFilter 실행됨");
-    log.debug("🔑 추출된 토큰: {}", token);
 
     if (token != null) {
       if (refreshTokenService.isBlacklisted(token)) {
