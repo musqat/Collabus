@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
   @Override
   public void updatePassword(Long userId, String newPassword) {
     if (newPassword == null || newPassword.isBlank()) {
-      throw new IllegalArgumentException("변경할 비밀번호가 비어 있습니다.");
+      throw new IllegalArgumentException(UserResponse.PASSWORD_BLANK.getMessage());
     }
 
     User user = userRepository.findById(userId)

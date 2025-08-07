@@ -11,7 +11,8 @@ public enum UserResponse implements BaseResponseEnum {
 
   USER_CREATED("201", "회원가입이 완료되었습니다."),
   EMAIL_ALREADY_EXISTS("409", "이미 사용 중인 이메일입니다."),
-  NICKNAME_ALREADY_EXISTS("409", "이미 사용 중인 닉네임입니다.");
+  NICKNAME_ALREADY_EXISTS("409", "이미 사용 중인 닉네임입니다."),
+  PASSWORD_BLANK("400", "비밀번호를 입력해주세요.");
 
   private final String code;
   private final String message;
