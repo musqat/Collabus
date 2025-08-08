@@ -39,7 +39,8 @@ public class UserController {
       summary = "회원가입",
       description = "새로운 유저를 등록합니다.",
       responses = {
-          @ApiResponse(responseCode = "201", description = "회원가입 성공"),
+          @ApiResponse(responseCode = "201", description = "회원가입 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
           @ApiResponse(responseCode = "409", description = "이메일 중복",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
@@ -53,7 +54,10 @@ public class UserController {
   @Operation(
       summary = "닉네임 검색",
       description = "닉네임에 포함된 키워드로 유저를 검색합니다.",
-      responses = @ApiResponse(responseCode = "200", description = "검색 성공")
+      responses = {
+          @ApiResponse(responseCode = "200", description = "검색 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+      }
   )
   @GetMapping("/search")
   public ResponseEntity<ResponseDto> searchUsers(@RequestParam String keyword) {
@@ -65,7 +69,8 @@ public class UserController {
       summary = "유저 단건 조회",
       description = "displayName(nickname#tag)으로 유저 정보를 조회합니다.",
       responses = {
-          @ApiResponse(responseCode = "200", description = "조회 성공"),
+          @ApiResponse(responseCode = "200", description = "조회 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
           @ApiResponse(responseCode = "404", description = "사용자 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
@@ -81,7 +86,12 @@ public class UserController {
   @Operation(
       summary = "닉네임 변경",
       description = "유저의 닉네임을 수정하고, displayName도 자동 갱신합니다.",
-      responses = @ApiResponse(responseCode = "200", description = "수정 성공")
+      responses = {
+          @ApiResponse(responseCode = "200", description = "수정 성공",
+              content = @Content), // 실제로 본문이 없으므로 content 비움
+          @ApiResponse(responseCode = "400", description = "잘못된 요청",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+      }
   )
   @PatchMapping("/nickname/{id}")
   public ResponseEntity<Void> updateNickname(
@@ -94,7 +104,12 @@ public class UserController {
   @Operation(
       summary = "비밀번호 변경",
       description = "유저의 비밀번호를 변경합니다.",
-      responses = @ApiResponse(responseCode = "200", description = "변경 성공")
+      responses = {
+          @ApiResponse(responseCode = "200", description = "변경 성공",
+              content = @Content), // 본문 없음
+          @ApiResponse(responseCode = "400", description = "잘못된 요청",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+      }
   )
   @PatchMapping("/password/{id}")
   public ResponseEntity<Void> updatePassword(
@@ -108,9 +123,10 @@ public class UserController {
       summary = "회원 삭제",
       description = "이메일로 회원을 삭제합니다.",
       responses = {
-          @ApiResponse(responseCode = "200", description = "삭제 성공"),
-          @ApiResponse(responseCode = "400", description = "삭제 실패"),
-          @ApiResponse(responseCode = "404", description = "사용자 없음")
+          @ApiResponse(responseCode = "200", description = "삭제 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "400", description = "삭제 실패",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
   @DeleteMapping("/delete")
@@ -125,8 +141,8 @@ public class UserController {
       description = "이메일과 비밀번호로 로그인하고 Access/Refresh 토큰을 발급합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "로그인 성공",
-              content = @Content(schema = @Schema(implementation = TokenResponseDto.class))),
-          @ApiResponse(responseCode = "401", description = "로그인 실패",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "401", description = "로그인 실패 (인증 실패)",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -152,7 +168,12 @@ public class UserController {
   @Operation(
       summary = "로그아웃",
       description = "RefreshToken 삭제 및 AccessToken 블랙리스트 등록",
-      responses = @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+      responses = {
+          @ApiResponse(responseCode = "200", description = "로그아웃 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "400", description = "잘못된 요청 (Authorization 헤더 오류)",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+      }
   )
   @PostMapping("/logout")
   public ResponseEntity<ResponseDto> logout(@RequestHeader("Authorization") String authHeader) {
@@ -173,7 +194,12 @@ public class UserController {
   @Operation(
       summary = "관리자 생성",
       description = "관리자 계정을 생성합니다. (ADMIN 권한 필요)",
-      responses = @ApiResponse(responseCode = "201", description = "관리자 생성 성공")
+      responses = {
+          @ApiResponse(responseCode = "201", description = "관리자 생성 성공",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "403", description = "권한 없음 (ADMIN 아님)",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+      }
   )
   @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/create-admin")
@@ -182,5 +208,4 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(new ResponseDto(USER_CREATED));
   }
-
 }
