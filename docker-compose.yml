@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    container_name: collabus-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    networks:
+      - collabus-network
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - collabus-network
+
+networks:
+  collabus-network:
+    driver: bridge
