@@ -15,30 +15,26 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/workspaces")
-@Tag(name = "Workspace User API", description = "워크스페이스 유저 관리 API")
+@Tag(name = "Workspace User API", description = "워크스페이스 멤버 관리 API")
 public class WorkspaceUserController {
 
   private final WorkspaceUserService workspaceUserService;
 
   @GetMapping("/{workspaceId}/users")
   @Operation(
-      summary = "워크스페이스 멤버 목록 조회",
-      description = "특정 워크스페이스에 속한 모든 멤버를 조회합니다. 토큰 기반 인증 필수.",
+      summary = "워크스페이스 멤버 목록",
+      description = "해당 워크스페이스에 속한 모든 멤버를 반환합니다. (워크스페이스 참여자만 조회 가능)",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "403", description = "워크스페이스 접근 권한 없음",
+          @ApiResponse(responseCode = "403", description = "접근 권한 없음 (비참여자)",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "404", description = "워크스페이스 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -53,8 +49,8 @@ public class WorkspaceUserController {
 
   @GetMapping("/me")
   @Operation(
-      summary = "내가 참여 중인 워크스페이스 목록 조회",
-      description = "로그인한 유저가 현재 속한 모든 워크스페이스 정보를 반환합니다.",
+      summary = "내가 속한 워크스페이스 목록",
+      description = "현재 참여 중인 모든 워크스페이스 정보를 반환합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
@@ -69,14 +65,17 @@ public class WorkspaceUserController {
 
   @PutMapping("/{workspaceId}/users/{targetUserId}/role")
   @Operation(
-      summary = "워크스페이스 내 사용자 역할 변경",
-      description = "Workspace MASTER만 권한을 가지고 있으며, 본인은 변경 불가합니다.",
+      summary = "멤버 역할 변경",
+      description = """
+          Workspace MASTER만 변경할 수 있습니다.
+          - 본인 역할은 변경할 수 없습니다.
+          """,
       responses = {
           @ApiResponse(responseCode = "200", description = "변경 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
           @ApiResponse(responseCode = "403", description = "권한 없음 또는 자기 자신 변경 시도",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "404", description = "대상 유저 없음",
+          @ApiResponse(responseCode = "404", description = "워크스페이스 또는 대상 유저 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -92,14 +91,17 @@ public class WorkspaceUserController {
 
   @DeleteMapping("/{workspaceId}/users/{userId}")
   @Operation(
-      summary = "워크스페이스에서 사용자 제거",
-      description = "Workspace MASTER만 실행 가능. 자기 자신은 제거할 수 없습니다.",
+      summary = "멤버 제거",
+      description = """
+          Workspace MASTER만 제거할 수 있습니다.
+          - 본인은 제거할 수 없습니다.
+          """,
       responses = {
           @ApiResponse(responseCode = "200", description = "제거 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
           @ApiResponse(responseCode = "403", description = "권한 없음 또는 자기 자신 제거 시도",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "404", description = "대상 유저 없음",
+          @ApiResponse(responseCode = "404", description = "워크스페이스 또는 대상 유저 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -116,14 +118,16 @@ public class WorkspaceUserController {
   @Operation(
       summary = "워크스페이스 나가기",
       description = """
-          본인이 속한 워크스페이스에서 나갑니다.
-          - 나 혼자 남은 상태라면 워크스페이스는 삭제됩니다.
-          - MASTER일 경우 다음 유저에게 MASTER 권한이 위임됩니다.
+          워크스페이스에서 탈퇴합니다.
+          - 마지막 1인이면 워크스페이스가 삭제됩니다.
+          - MASTER가 나갈 경우 다음 멤버에게 MASTER 권한이 위임됩니다.
           """,
       responses = {
           @ApiResponse(responseCode = "200", description = "나가기 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "404", description = "유저 또는 워크스페이스 없음",
+          @ApiResponse(responseCode = "403", description = "접근 권한 없음 (비참여자)",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "404", description = "워크스페이스 또는 사용자 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )

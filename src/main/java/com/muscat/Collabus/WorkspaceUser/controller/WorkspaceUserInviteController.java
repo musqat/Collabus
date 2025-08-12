@@ -14,29 +14,31 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/workspaces")
-@Tag(name = "Workspace Invite API", description = "워크스페이스 초대 관련 API")
+@Tag(name = "Workspace Invite API", description = "워크스페이스 초대 관리 API")
 public class WorkspaceUserInviteController {
 
   private final WorkspaceUserInviteService inviteService;
 
   @PostMapping("/{workspaceId}/invites")
   @Operation(
-      summary = "워크스페이스 사용자 초대",
-      description = "워크스페이스에 유저를 초대합니다. 초대는 userId를 기준으로 이루어집니다.",
+      summary = "워크스페이스 초대",
+      description = """
+          Workspace MASTER가 특정 유저를 워크스페이스에 초대합니다.
+          - 초대는 userId 기준
+          - 자기 자신 초대 불가
+          - 이미 초대한 경우 불가
+          """,
       responses = {
           @ApiResponse(responseCode = "200", description = "초대 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "400", description = "자기 자신을 초대하거나 이미 초대됨",
+          @ApiResponse(responseCode = "400", description = "자기 자신 초대 또는 이미 초대됨",
+              content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+          @ApiResponse(responseCode = "403", description = "권한 없음 (MASTER 아님)",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
           @ApiResponse(responseCode = "404", description = "워크스페이스 또는 유저 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
@@ -53,8 +55,8 @@ public class WorkspaceUserInviteController {
 
   @GetMapping("/invites/me")
   @Operation(
-      summary = "내 초대 목록 조회",
-      description = "현재 로그인한 유저가 받은 모든 초대 목록을 조회합니다.",
+      summary = "받은 초대 목록",
+      description = "사용자가 받은 모든 워크스페이스 초대 목록을 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
@@ -71,13 +73,13 @@ public class WorkspaceUserInviteController {
   @PostMapping("/invites/{inviteId}/accept")
   @Operation(
       summary = "초대 수락",
-      description = "현재 로그인한 유저가 받은 초대를 수락합니다.",
+      description = "받은 초대를 수락합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "수락 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "403", description = "권한 없음",
+          @ApiResponse(responseCode = "403", description = "권한 없음 (본인 초대 아님)",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "404", description = "초대 내역 없음",
+          @ApiResponse(responseCode = "404", description = "초대 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -92,13 +94,13 @@ public class WorkspaceUserInviteController {
   @PostMapping("/invites/{inviteId}/reject")
   @Operation(
       summary = "초대 거절",
-      description = "현재 로그인한 유저가 받은 초대를 거절합니다.",
+      description = "받은 초대를 거절합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "거절 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "403", description = "권한 없음",
+          @ApiResponse(responseCode = "403", description = "권한 없음 (본인 초대 아님)",
               content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-          @ApiResponse(responseCode = "404", description = "초대 내역 없음",
+          @ApiResponse(responseCode = "404", description = "초대 없음",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
