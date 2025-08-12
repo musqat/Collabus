@@ -18,7 +18,7 @@ spring:
       path: /h2-console
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
 
 file:
