@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,4 +23,10 @@ public class TaskRequestDto {
 
   @Schema(description = "워크스페이스 ID", example = "1")
   private Long workspaceId;
+
+  @Schema(description = "Task Manager ID (선택, null이면 미정)", example = "1")
+  private Long managerId;
+
+  @Schema(description = "Task Member IDs (선택, 추가 멤버)", example = "[2, 3]")
+  private List<Long> memberIds;
 }

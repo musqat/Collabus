@@ -4,6 +4,7 @@ import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Task.entity.TaskUser;
 import com.muscat.Collabus.Task.entity.TaskUserPk;
 import com.muscat.Collabus.User.entity.User;
+import com.muscat.Collabus.enums.role.TaskRole;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,7 @@ public interface TaskUserRepository extends JpaRepository<TaskUser, TaskUserPk> 
 
   // 특정 Task 에 참여 중인 모든 유저 삭제
   void deleteAllByTask(Task task);
+
+  // 특정 Task에서 특정 역할의 유저 조회
+  List<TaskUser> findByTaskAndRole(Task task, TaskRole role);
 }

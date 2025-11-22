@@ -22,6 +22,9 @@ public class UserResponseDto {
   @Schema(description = "사용자 이메일", example = "user@example.com")
   private String email;
 
+  @Schema(description = "닉네임", example = "muscat")
+  private String nickname;
+
   @Schema(description = "닉네임#태그 조합", example = "musqat#1234")
   private String displayName;
 

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.Workspace.entity.Workspace;
@@ -15,13 +16,17 @@ import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserInviteService;
 import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
+import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.InviteResponse;
 import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
+import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.enums.status.InviteStatus;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,10 +40,14 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
   private final WorkspaceInviteRepository inviteRepository;
   private final WorkspaceUserRepository workspaceUserRepository;
   private final WorkspaceInviteMapper inviteMapper;
+  private final NotificationService notificationService;
 
 
   @Override
   public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
+    // MASTER 권한 확인
+    checkPermission(workspaceId, inviterId, WorkspaceRole.MASTER);
+
     if (inviterId.equals(dto.getUserId())) {
       throw new IllegalArgumentException(InviteResponse.INVITE_SELF.getMessage());
     }
@@ -61,7 +70,12 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
         .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
 
     WorkspaceInvite invite = inviteMapper.mapToEntity(workspace, inviter, invitee, dto);
-    inviteRepository.save(invite);
+    WorkspaceInvite savedInvite = inviteRepository.save(invite);
+
+    // 초대받은 사용자에게 알림 전송
+    String message = String.format("'%s' 워크스페이스에 초대되었습니다.", workspace.getWorkspaceName());
+    notificationService.createNotification(dto.getUserId(),
+        NotificationType.WORKSPACE_INVITED, message, savedInvite.getId());
   }
 
   @Override
@@ -99,5 +113,18 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
 
     invite.setStatus(InviteStatus.REJECTED);
     inviteRepository.save(invite);
+  }
+
+  private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
+    return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
+        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+  }
+
+  private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
+    WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
+    Set<WorkspaceRole> allowed = Set.of(allowedRoles);
+    if (!allowed.contains(user.getRole())) {
+      throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
+    }
   }
 }

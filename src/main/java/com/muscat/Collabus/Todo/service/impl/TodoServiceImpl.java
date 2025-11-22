@@ -1,18 +1,27 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.entity.Task;
+import com.muscat.Collabus.Task.entity.TaskUser;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Todo.entity.Todo;
+import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
+import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Todo.service.TodoService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
+import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.TodoResponse;
+import com.muscat.Collabus.enums.role.TaskRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
@@ -26,22 +35,39 @@ import org.springframework.stereotype.Service;
 public class TodoServiceImpl implements TodoService {
 
   private final TodoRepository todoRepository;
+  private final TodoWorkRepository todoWorkRepository;
+  private final TodoCommentRepository todoCommentRepository;
+  private final TodoFileRepository todoFileRepository;
   private final TodoMapper todoMapper;
   private final ParticipantUtil participantUtil;
   private final TaskAuthorityUtil taskAuthorityUtil;
   private final EntityFinderUtil finder;
+  private final NotificationService notificationService;
+  private final TaskUserRepository taskUserRepository;
 
   @Override
   @Transactional
   public TodoResponseDto createTodo(TodoRequestDto dto, Long creatorId) {
     Task task = finder.findTaskById(dto.getTaskId());
-    participantUtil.validateTaskParticipant(task.getId(), creatorId);
+    // Task Manager 또는 Workspace Master/Manager만 Todo 생성 가능
+    taskAuthorityUtil.validateCanManageTask(task, creatorId);
 
     validateDueDate(dto.getDueDate(), task);
 
-    User assignee = finder.findUserById(dto.getAssigneeId());
+    // 담당자 미지정 시 생성자를 담당자로 지정
+    Long assigneeId = dto.getAssigneeId() != null ? dto.getAssigneeId() : creatorId;
+    User assignee = finder.findUserById(assigneeId);
     Todo todo = todoMapper.mapToEntity(dto, task, assignee);
-    return todoMapper.mapToDto(todoRepository.save(todo));
+    Todo savedTodo = todoRepository.save(todo);
+
+    // 담당자가 생성자와 다른 경우 알림 전송
+    if (!assigneeId.equals(creatorId)) {
+      String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
+      notificationService.createNotification(assigneeId,
+          NotificationType.TASK_ASSIGNED, message, savedTodo.getId());
+    }
+
+    return todoMapper.mapToDto(savedTodo);
   }
 
   @Override
@@ -59,6 +85,18 @@ public class TodoServiceImpl implements TodoService {
   public void deleteTodo(Long todoId, Long userId) {
     Todo todo = finder.findTodoById(todoId);
     validateManagerAuthority(todo.getTask(), userId);
+
+    // TodoWork 관련 file 삭제
+    List<TodoWork> todoWorks = todoWorkRepository.findAllByTodoId(todoId);
+    for (TodoWork work : todoWorks) {
+      todoFileRepository.deleteAllByWorkId(work.getId());
+    }
+    todoWorkRepository.deleteAllByTodoId(todoId);
+
+    // todoComment 삭제
+    todoCommentRepository.deleteAllByTodoId(todoId);
+
+    // todo삭제
     todoRepository.delete(todo);
   }
 
@@ -87,6 +125,16 @@ public class TodoServiceImpl implements TodoService {
     todo.setDoneAt(LocalDateTime.now());
     todo.setStatus(TodoStatus.WAITING_REVIEW);
     todoRepository.save(todo);
+
+    // Task Manager에게 검수 요청 알림 전송
+    Task task = todo.getTask();
+    TaskUser manager = taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER)
+        .stream().findFirst().orElse(null);
+    if (manager != null && !manager.getUser().getId().equals(userId)) {
+      String message = String.format("'%s' 할일이 완료되어 검수를 기다리고 있습니다.", todo.getTitle());
+      notificationService.createNotification(manager.getUser().getId(),
+          NotificationType.TODO_REVIEW_REQUESTED, message, todoId);
+    }
   }
 
   @Override
@@ -100,7 +148,16 @@ public class TodoServiceImpl implements TodoService {
     }
 
     todo.setStatus(TodoStatus.CONFIRMED);
-    return todoMapper.mapToDto(todoRepository.save(todo));
+    Todo savedTodo = todoRepository.save(todo);
+
+    // 담당자에게 검수 완료 알림 전송
+    if (todo.getAssignee() != null && !todo.getAssignee().getId().equals(taskManagerId)) {
+      String message = String.format("'%s' 할일이 검수 완료되었습니다.", todo.getTitle());
+      notificationService.createNotification(todo.getAssignee().getId(),
+          NotificationType.TODO_COMPLETED, message, todoId);
+    }
+
+    return todoMapper.mapToDto(savedTodo);
   }
 
   @Override
@@ -124,6 +181,13 @@ public class TodoServiceImpl implements TodoService {
 
     todo.setAssignee(newAssignee);
     todoRepository.save(todo);
+
+    // 새로운 담당자에게 할당 알림 전송
+    if (!newAssigneeId.equals(managerId)) {
+      String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
+      notificationService.createNotification(newAssigneeId,
+          NotificationType.TASK_ASSIGNED, message, todoId);
+    }
   }
 
   private void validateDueDate(LocalDate dueDate, Task task) {
@@ -142,7 +206,8 @@ public class TodoServiceImpl implements TodoService {
   }
 
   private void validateManagerAuthority(Task task, Long userId) {
-    if (!taskAuthorityUtil.isTaskManager(task, userId)) {
+    // Workspace MASTER 또는 Task MANAGER만 가능
+    if (!taskAuthorityUtil.canManageTask(task, userId)) {
       throw new BusinessException(TodoResponse.ONLY_MANAGER_AUTHORIZED);
     }
   }

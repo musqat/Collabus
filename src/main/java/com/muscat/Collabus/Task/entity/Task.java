@@ -45,7 +45,7 @@ public class Task extends BaseEntity {
   private LocalDate dueDate;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "task_manager_id", nullable = false)
+  @JoinColumn(name = "task_manager_id")
   private User taskManager;
 
 }

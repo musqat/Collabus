@@ -10,15 +10,33 @@ services:
       - collabus-network
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  frontend:
+    build: ./frontend
+    container_name: collabus-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - collabus-network
 
   redis:
     image: redis:7
-    container_name: redis
+    container_name: collabus-redis
     ports:
       - "6379:6379"
     networks:
       - collabus-network
+    volumes:
+      - redis-data:/data
 
 networks:
   collabus-network:
     driver: bridge
+
+volumes:
+  redis-data:

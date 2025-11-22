@@ -1,10 +1,14 @@
 package com.muscat.Collabus.config.token;
 
+import com.muscat.Collabus.User.entity.User;
+import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.jwt.JwtUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +22,7 @@ public class TokenController {
 
   private final JwtUtil jwtUtil;
   private final RefreshTokenService refreshTokenService;
+  private final UserRepository userRepository;
 
   @Operation(summary = "Access Token 재발급", description = "Refresh Token으로 Access Token을 재발급합니다.")
   @PostMapping("/refresh")
@@ -25,7 +30,7 @@ public class TokenController {
     String refreshToken = request.getRefreshToken();
 
     if (!jwtUtil.validateToken(refreshToken)) {
-      return ResponseEntity.status(401).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
     }
 
     String email = jwtUtil.getEmailFromToken(refreshToken);
@@ -33,10 +38,14 @@ public class TokenController {
         .orElse(null);
 
     if (saved == null || !saved.equals(refreshToken)) {
-      return ResponseEntity.status(401).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
     }
 
-    String newAccessToken = jwtUtil.generateToken(email, "USER");
+    Optional<User> userOpt = userRepository.findByEmail(email);
+    if (userOpt.isEmpty()) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
+    }
+    String newAccessToken = jwtUtil.generateToken(email, userOpt.get().getRole().name());
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
         new TokenResponseDto(newAccessToken, refreshToken)));
   }

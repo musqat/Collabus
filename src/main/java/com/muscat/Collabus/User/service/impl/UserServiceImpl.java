@@ -99,10 +99,10 @@ public class UserServiceImpl implements UserService {
   @Override
   public UserResponseDto login(String email, String password) {
     User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+        .orElseThrow(() -> new ResourceNotFoundException(UserResponse.EMAIL_NOT_FOUND));
 
     if (!passwordEncoder.matches(password, user.getPassword())) {
-      throw new IllegalArgumentException(CommonResponse.UNAUTHORIZED.getMessage());
+      throw new IllegalArgumentException(UserResponse.INVALID_PASSWORD.getMessage());
     }
 
     return userMapper.mapToDto(user);

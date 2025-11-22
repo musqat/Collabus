@@ -36,12 +36,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     if (token != null) {
       if (refreshTokenService.isBlacklisted(token)) {
-        log.warn("블랙리스트 처리된 토큰 접근 차단");
-        filterChain.doFilter(request, response);
+        log.warn("로그아웃된 토큰입니다. 401 반환.");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         return;
       }
-    }
-    if (token != null && jwtUtil.validateToken(token)) {
+
+      if (!jwtUtil.validateToken(token)) {
+        log.warn("유효하지 않거나 만료된 JWT 토큰입니다. 401 반환.");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return;
+      }
+
       String email = jwtUtil.getEmailFromToken(token);
       UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
@@ -54,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
   }
 
-  //Authorization 헤더에서 Bearer 토큰 추출
+  //  Authorization header에서 Bearer token 추출
   private String extractToken(HttpServletRequest request) {
     String authHeader = request.getHeader("Authorization");
     if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -63,3 +68,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     return null;
   }
 }
+

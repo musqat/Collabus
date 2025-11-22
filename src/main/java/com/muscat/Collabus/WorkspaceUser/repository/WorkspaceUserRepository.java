@@ -3,6 +3,7 @@ package com.muscat.Collabus.WorkspaceUser.repository;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, WorkspaceUserPk> {
@@ -11,9 +12,11 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
 
   List<WorkspaceUser> findAllById_UserId(Long userId);
 
+  Optional<WorkspaceUser> findById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
+
   boolean existsById(WorkspaceUserPk id);
 
   boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
 
-  void deleteAllByWorkspaceId(Long workspaceId);
+  void deleteAllById_WorkspaceId(Long workspaceId);
 }

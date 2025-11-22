@@ -94,6 +94,7 @@ public class UserController {
       }
   )
   @PatchMapping("/nickname/{id}")
+  @PreAuthorize("#id == principal.userId or hasRole('ADMIN')")
   public ResponseEntity<Void> updateNickname(
       @PathVariable Long id,
       @RequestBody UpdateNicknameDto dto) {
@@ -112,6 +113,7 @@ public class UserController {
       }
   )
   @PatchMapping("/password/{id}")
+  @PreAuthorize("#id == principal.userId or hasRole('ADMIN')")
   public ResponseEntity<Void> updatePassword(
       @PathVariable Long id,
       @RequestBody UpdatePasswordDto dto) {
@@ -130,6 +132,7 @@ public class UserController {
       }
   )
   @DeleteMapping("/delete")
+  @PreAuthorize("#email == principal.username or hasRole('ADMIN')")
   public ResponseEntity<ResponseDto> delete(@RequestParam String email) {
     boolean isDeleted = userService.deleteUser(email);
     return ResponseEntity.status(isDeleted ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
@@ -157,11 +160,23 @@ public class UserController {
       // Redis에 refreshToken 저장 (7일 = 7 * 24 * 60 * 60 * 1000 ms)
       refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken, 7 * 24 * 60 * 60 * 1000L);
 
-      return ResponseEntity.ok(new ResponseDto(SUCCESS,
-          new TokenResponseDto(accessToken, refreshToken)));
+      LoginResponseDto loginResponse = LoginResponseDto.builder()
+          .id(user.getId())
+          .email(user.getEmail())
+          .nickname(user.getNickname())
+          .displayName(user.getDisplayName())
+          .role(user.getRole())
+          .accessToken(accessToken)
+          .refreshToken(refreshToken)
+          .build();
+
+      return ResponseEntity.ok(new ResponseDto(SUCCESS, loginResponse));
+    } catch (com.muscat.Collabus.common.exception.ResourceNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
+          .body(new ResponseDto(EMAIL_NOT_FOUND));
     } catch (IllegalArgumentException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(new ResponseDto(UNAUTHORIZED));
+          .body(new ResponseDto(INVALID_PASSWORD));
     }
   }
 

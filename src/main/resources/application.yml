@@ -9,26 +9,35 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.H2Dialect
     show-sql: true
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+  sql:
+    init:
+      mode: always
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
   data:
     redis:
-      host: redis
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  jackson:
+    time-zone: Asia/Seoul
 
 file:
   upload-dir: uploads
 
 jwt:
-  secret: Kz!3rLxT#9pQ$UnyDwFeGmXaVoTcYuRi
-  expiration: 900000 # 15분
-  refresh-expiration: 604800000 # 7일 (ms)
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:900000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+

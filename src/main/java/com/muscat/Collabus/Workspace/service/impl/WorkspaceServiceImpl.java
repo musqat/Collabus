@@ -1,5 +1,14 @@
 package com.muscat.Collabus.Workspace.service.impl;
 
+import com.muscat.Collabus.Task.entity.Task;
+import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
+import com.muscat.Collabus.Todo.entity.Todo;
+import com.muscat.Collabus.Todo.entity.TodoWork;
+import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
@@ -28,6 +37,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private final WorkspaceUserRepository workspaceUserRepository;
   private final EntityFinderUtil entityFinderUtil;
   private final TaskAuthorityUtil taskAuthorityUtil;
+  private final TaskRepository taskRepository;
+  private final TaskUserRepository taskUserRepository;
+  private final TodoRepository todoRepository;
+  private final TodoWorkRepository todoWorkRepository;
+  private final TodoCommentRepository todoCommentRepository;
+  private final TodoFileRepository todoFileRepository;
 
   @Override
   @Transactional
@@ -66,6 +81,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
+  public List<WorkspaceResponseDto> getJoinedWorkspaces(Long userId) {
+    return workspaceUserRepository.findAllById_UserId(userId).stream()
+        .map(WorkspaceUser::getWorkspace)
+        .map(workspaceMapper::mapToDto)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   @Transactional
   public WorkspaceResponseDto updateWorkspace(Long id, WorkspaceRequestDto dto, Long userId) {
     Workspace workspace = entityFinderUtil.findWorkspaceById(id);
@@ -82,7 +105,32 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     taskAuthorityUtil.validateWorkspaceMaster(
         entityFinderUtil.findWorkspaceById(workspaceId), userId);
 
-    workspaceUserRepository.deleteAllByWorkspaceId(workspaceId);
+    List<Task> tasks = taskRepository.findAllByWorkspace_Id(workspaceId);
+    for (Task task : tasks) {
+      // todo삭제
+      List<Todo> todos = todoRepository.findAllByTaskId(task.getId());
+      for (Todo todo : todos) {
+        //  TodoWork 랑 파일 삭제
+        List<TodoWork> todoWorks = todoWorkRepository.findAllByTodoId(todo.getId());
+        for (TodoWork work : todoWorks) {
+          todoFileRepository.deleteAllByWorkId(work.getId());
+        }
+        todoWorkRepository.deleteAllByTodoId(todo.getId());
+
+        //  TodoComments 삭제
+        todoCommentRepository.deleteAllByTodoId(todo.getId());
+      }
+      todoRepository.deleteAll(todos);
+
+      //  TaskUsers 삭제
+      taskUserRepository.deleteAllByTask(task);
+    }
+    taskRepository.deleteAll(tasks);
+
+    //  WorkspaceUsers 삭제
+    workspaceUserRepository.deleteAllById_WorkspaceId(workspaceId);
+
+    //  Workspace 삭제
     workspaceRepository.deleteById(workspaceId);
   }
 }

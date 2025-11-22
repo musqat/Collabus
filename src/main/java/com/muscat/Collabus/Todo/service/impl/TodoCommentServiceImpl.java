@@ -1,5 +1,9 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.Notification.service.NotificationService;
+import com.muscat.Collabus.Task.entity.Task;
+import com.muscat.Collabus.Task.entity.TaskUser;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.entity.TodoComment;
 import com.muscat.Collabus.Todo.mapper.TodoCommentMapper;
@@ -12,9 +16,13 @@ import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.ParticipantUtil;
+import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.TodoResponse;
+import com.muscat.Collabus.enums.role.TaskRole;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +36,8 @@ public class TodoCommentServiceImpl implements TodoCommentService {
   private final TodoCommentRepository commentRepository;
   private final TodoCommentMapper commentMapper;
   private final ParticipantUtil participantUtil;
+  private final NotificationService notificationService;
+  private final TaskUserRepository taskUserRepository;
 
   @Override
   @Transactional
@@ -46,7 +56,32 @@ public class TodoCommentServiceImpl implements TodoCommentService {
         .content(content)
         .build();
 
-    return commentMapper.mapToDto(commentRepository.save(comment));
+    TodoComment savedComment = commentRepository.save(comment);
+
+    // 알림을 받을 사용자 목록 (중복 제거)
+    Set<Long> notifyUserIds = new HashSet<>();
+
+    // todo 담당자에게 알림 (작성자 본인 제외)
+    if (todo.getAssignee() != null && !todo.getAssignee().getId().equals(userId)) {
+      notifyUserIds.add(todo.getAssignee().getId());
+    }
+
+    // Task Manager에게 알림 (작성자 본인 제외)
+    Task task = todo.getTask();
+    TaskUser manager = taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER)
+        .stream().findFirst().orElse(null);
+    if (manager != null && !manager.getUser().getId().equals(userId)) {
+      notifyUserIds.add(manager.getUser().getId());
+    }
+
+    // 알림 전송
+    String message = String.format("'%s' 할일에 새 댓글이 추가되었습니다.", todo.getTitle());
+    for (Long notifyUserId : notifyUserIds) {
+      notificationService.createNotification(notifyUserId,
+          NotificationType.COMMENT_ADDED, message, todoId);
+    }
+
+    return commentMapper.mapToDto(savedComment);
   }
 
   @Override

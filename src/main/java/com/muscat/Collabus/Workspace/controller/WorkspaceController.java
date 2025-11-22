@@ -62,7 +62,7 @@ public class WorkspaceController {
   }
 
   @Operation(
-      summary = "내 워크스페이스 목록 조회",
+      summary = "내가 만든 워크스페이스 목록 조회",
       description = "내가 만든 모든 워크스페이스 목록을 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
@@ -74,6 +74,21 @@ public class WorkspaceController {
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     return ResponseEntity.ok(workspaceService.getMyWorkspaces(userDetails.getUserId()));
+  }
+
+  @Operation(
+      summary = "참여 중인 워크스페이스 목록 조회",
+      description = "내가 참여 중인 모든 워크스페이스 목록을 조회합니다.",
+      responses = {
+          @ApiResponse(responseCode = "200", description = "조회 성공",
+              content = @Content(array = @ArraySchema(schema = @Schema(implementation = WorkspaceResponseDto.class))))
+      }
+  )
+  @GetMapping("/joined")
+  public ResponseEntity<List<WorkspaceResponseDto>> getJoinedWorkspaces(
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    return ResponseEntity.ok(workspaceService.getJoinedWorkspaces(userDetails.getUserId()));
   }
 
   @Operation(

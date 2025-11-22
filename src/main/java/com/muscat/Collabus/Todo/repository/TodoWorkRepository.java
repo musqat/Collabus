@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TodoWorkRepository extends JpaRepository<TodoWork, Long> {
 
   List<TodoWork> findAllByTodoId(Long todoId);
+
+  void deleteAllByTodoId(Long todoId);
 }

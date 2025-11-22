@@ -54,7 +54,7 @@ public class JwtUtil {
           .parseSignedClaims(jwt);
       return true;
     } catch (JwtException e) {
-      System.out.println("Invalid JWT: " + e.getMessage());
+      System.out.println("유효하지 않은 JWT: " + e.getMessage());
       return false;
     }
   }

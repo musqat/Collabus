@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TodoCommentRepository extends JpaRepository<TodoComment, Long> {
   List<TodoComment> findAllByTodoId(Long todoId);
+
+  void deleteAllByTodoId(Long todoId);
 }
