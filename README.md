@@ -12,52 +12,6 @@
 
 ---
 
-## Architecture
-
-```mermaid
-graph TB
-    Browser["Browser"]
-
-    subgraph Docker["Docker Compose"]
-        Nginx["Frontend\nNginx :80\nReact 18 + Vite"]
-        Spring["Backend\nSpring Boot :8080\nJWT · WebSocket"]
-        MySQL["MySQL 8.0\n:3306"]
-        Redis["Redis 7\n:6379"]
-    end
-
-    Browser -->|HTTP| Nginx
-    Browser -->|WebSocket /ws| Nginx
-    Nginx -->|/api/* proxy| Spring
-    Nginx -->|/ws/* proxy| Spring
-    Spring --> MySQL
-    Spring -->|RT 저장 · 잠금| Redis
-```
-
-### 도메인 계층
-
-```mermaid
-graph LR
-    User -->|참여| Workspace
-    Workspace -->|MASTER · MANAGER · NORMAL| WorkspaceUser
-    Workspace --> Task
-    Task --> Todo
-    Todo --> TodoComment
-    Todo --> TodoWork
-    Todo --> TodoFile
-```
-
-### Todo 상태 흐름
-
-```mermaid
-stateDiagram-v2
-    [*] --> IN_PROGRESS
-    IN_PROGRESS --> WAITING_REVIEW : 완료 처리 (담당자)
-    WAITING_REVIEW --> CONFIRMED   : 검수 확인 (MANAGER)
-    WAITING_REVIEW --> IN_PROGRESS : 반려
-```
-
----
-
 ## Tech Stack
 
 | Layer | Stack |
@@ -110,11 +64,8 @@ docker compose down
 
 ### 로컬 개발
 
-> **주의**: 로컬 개발 환경에서도 **Redis와 MySQL이 반드시 실행 중이어야 합니다.**  
-> 간단하게는 Docker Compose로 DB만 먼저 띄운 뒤 백엔드를 로컬에서 실행할 수 있습니다.
-
 ```bash
-# MySQL, Redis만 컨테이너로 실행
+# MySQL, Redis 컨테이너만 실행
 docker compose up -d mysql redis
 
 # 백엔드
@@ -144,37 +95,6 @@ DB_ROOT_PASSWORD=rootpassword1234
 
 REDIS_HOST=localhost
 REDIS_PORT=6379
-```
-
----
-
-## Project Structure
-
-```
-Collabus/
-├── src/main/java/com/muscat/Collabus/
-│   ├── User/           # 회원 인증 · 로그인 · Brute Force 방어
-│   ├── Workspace/      # 워크스페이스 CRUD
-│   ├── WorkspaceUser/  # 멤버 · 초대 · 역할 관리
-│   ├── Task/           # Task CRUD · 참여자 관리
-│   ├── Todo/           # Todo · Comment · Work · File
-│   ├── Notification/   # 실시간 알림 (WebSocket)
-│   └── config/
-│       ├── jwt/        # JWT 발급 · 검증
-│       ├── security/   # Spring Security · CORS
-│       ├── token/      # Refresh Token · Blacklist · Rate Limit
-│       └── websocket/  # STOMP · 인증 인터셉터
-├── frontend/src/
-│   ├── api/            # Axios 클라이언트 · 도메인별 API
-│   ├── pages/          # Dashboard · Workspace · Task · Todo · Profile
-│   ├── components/     # Layout · Sidebar · Toast · Notification
-│   ├── hooks/          # useAuth · useWorkspace · useTask · useTodo
-│   └── store/          # authStore · toastStore
-├── docker-compose.yml
-├── Dockerfile
-└── frontend/
-    ├── Dockerfile
-    └── nginx.conf
 ```
 
 ---
