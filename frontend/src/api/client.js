@@ -45,8 +45,10 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // 리프레시 실패 시 로그아웃
-        localStorage.clear();
+        // Refresh Token 만료 — 로그아웃
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

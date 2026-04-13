@@ -21,8 +21,6 @@ public class TodoMapper {
         .task(task)
         .assignee(assignee)
         .status(TodoStatus.IN_PROGRESS)
-        .isDone(false)
-        .doneAt(null)
         .build();
   }
 

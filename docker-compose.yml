@@ -5,7 +5,10 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - collabus-network
     environment:
@@ -13,6 +16,31 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-collabus}
+      DB_USERNAME: ${DB_USERNAME:-collabus}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+  mysql:
+    image: mysql:8.0
+    container_name: collabus-mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - collabus-network
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-collabus}
+      MYSQL_USER: ${DB_USERNAME:-collabus}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -40,3 +68,4 @@ networks:
 
 volumes:
   redis-data:
+  mysql-data:

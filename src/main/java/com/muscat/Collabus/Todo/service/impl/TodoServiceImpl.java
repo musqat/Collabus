@@ -2,10 +2,8 @@ package com.muscat.Collabus.Todo.service.impl;
 
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.entity.Task;
-import com.muscat.Collabus.Task.entity.TaskUser;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Todo.entity.Todo;
-import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
@@ -24,191 +22,181 @@ import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.role.TaskRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class TodoServiceImpl implements TodoService {
 
-  private final TodoRepository todoRepository;
-  private final TodoWorkRepository todoWorkRepository;
-  private final TodoCommentRepository todoCommentRepository;
-  private final TodoFileRepository todoFileRepository;
-  private final TodoMapper todoMapper;
-  private final ParticipantUtil participantUtil;
-  private final TaskAuthorityUtil taskAuthorityUtil;
-  private final EntityFinderUtil finder;
-  private final NotificationService notificationService;
-  private final TaskUserRepository taskUserRepository;
+    private final TodoRepository todoRepository;
+    private final TodoWorkRepository todoWorkRepository;
+    private final TodoCommentRepository todoCommentRepository;
+    private final TodoFileRepository todoFileRepository;
+    private final TodoMapper todoMapper;
+    private final ParticipantUtil participantUtil;
+    private final TaskAuthorityUtil taskAuthorityUtil;
+    private final EntityFinderUtil finder;
+    private final NotificationService notificationService;
+    private final TaskUserRepository taskUserRepository;
 
-  @Override
-  @Transactional
-  public TodoResponseDto createTodo(TodoRequestDto dto, Long creatorId) {
-    Task task = finder.findTaskById(dto.getTaskId());
-    // Task Manager 또는 Workspace Master/Manager만 Todo 생성 가능
-    taskAuthorityUtil.validateCanManageTask(task, creatorId);
+    @Override
+    @Transactional
+    public TodoResponseDto createTodo(TodoRequestDto dto, Long creatorId) {
+        Task task = finder.findTaskById(dto.getTaskId());
+        // Task Manager 또는 Workspace Master/Manager만 Todo 생성 가능
+        taskAuthorityUtil.validateCanManageTask(task, creatorId);
 
-    validateDueDate(dto.getDueDate(), task);
+        validateDueDate(dto.getDueDate(), task);
 
-    // 담당자 미지정 시 생성자를 담당자로 지정
-    Long assigneeId = dto.getAssigneeId() != null ? dto.getAssigneeId() : creatorId;
-    User assignee = finder.findUserById(assigneeId);
-    Todo todo = todoMapper.mapToEntity(dto, task, assignee);
-    Todo savedTodo = todoRepository.save(todo);
+        // 담당자 미지정 시 생성자를 담당자로 지정
+        Long assigneeId = dto.getAssigneeId() != null ? dto.getAssigneeId() : creatorId;
+        User assignee = finder.findUserById(assigneeId);
+        Todo todo = todoMapper.mapToEntity(dto, task, assignee);
+        Todo savedTodo = todoRepository.save(todo);
 
-    // 담당자가 생성자와 다른 경우 알림 전송
-    if (!assigneeId.equals(creatorId)) {
-      String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
-      notificationService.createNotification(assigneeId,
-          NotificationType.TASK_ASSIGNED, message, savedTodo.getId());
+        // 담당자가 생성자와 다른 경우 알림 전송
+        if (!assigneeId.equals(creatorId)) {
+            String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
+            notificationService.createNotification(assigneeId,
+                    NotificationType.TASK_ASSIGNED, message, savedTodo.getId());
+        }
+
+        return todoMapper.mapToDto(savedTodo);
     }
 
-    return todoMapper.mapToDto(savedTodo);
-  }
+    @Override
+    @Transactional
+    public TodoResponseDto updateTodo(Long todoId, TodoRequestDto dto, Long updaterId) {
+        Todo todo = finder.findTodoById(todoId);
+        validateManagerAuthority(todo.getTask(), updaterId);
 
-  @Override
-  @Transactional
-  public TodoResponseDto updateTodo(Long todoId, TodoRequestDto dto, Long updaterId) {
-    Todo todo = finder.findTodoById(todoId);
-    validateManagerAuthority(todo.getTask(), updaterId);
-
-    todoMapper.updateFromDto(dto, todo);
-    return todoMapper.mapToDto(todoRepository.save(todo));
-  }
-
-  @Override
-  @Transactional
-  public void deleteTodo(Long todoId, Long userId) {
-    Todo todo = finder.findTodoById(todoId);
-    validateManagerAuthority(todo.getTask(), userId);
-
-    // TodoWork 관련 file 삭제
-    List<TodoWork> todoWorks = todoWorkRepository.findAllByTodoId(todoId);
-    for (TodoWork work : todoWorks) {
-      todoFileRepository.deleteAllByWorkId(work.getId());
-    }
-    todoWorkRepository.deleteAllByTodoId(todoId);
-
-    // todoComment 삭제
-    todoCommentRepository.deleteAllByTodoId(todoId);
-
-    // todo삭제
-    todoRepository.delete(todo);
-  }
-
-  @Override
-  public TodoResponseDto getTodoById(Long todoId) {
-    return todoMapper.mapToDto(finder.findTodoById(todoId));
-  }
-
-  @Override
-  public List<TodoResponseDto> getTodosByTask(Long taskId, String status) {
-    List<Todo> todos = (status != null)
-        ? todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.valueOf(status))
-        : todoRepository.findAllByTaskId(taskId);
-
-    return todos.stream().map(todoMapper::mapToDto).toList();
-  }
-
-  @Override
-  @Transactional
-  public void completeOwnTodo(Long todoId, Long userId) {
-    Todo todo = finder.findTodoById(todoId);
-    participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
-    validateAssignee(todo, userId);
-
-    todo.setDone(true);
-    todo.setDoneAt(LocalDateTime.now());
-    todo.setStatus(TodoStatus.WAITING_REVIEW);
-    todoRepository.save(todo);
-
-    // Task Manager에게 검수 요청 알림 전송
-    Task task = todo.getTask();
-    TaskUser manager = taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER)
-        .stream().findFirst().orElse(null);
-    if (manager != null && !manager.getUser().getId().equals(userId)) {
-      String message = String.format("'%s' 할일이 완료되어 검수를 기다리고 있습니다.", todo.getTitle());
-      notificationService.createNotification(manager.getUser().getId(),
-          NotificationType.TODO_REVIEW_REQUESTED, message, todoId);
-    }
-  }
-
-  @Override
-  @Transactional
-  public TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId) {
-    Todo todo = finder.findTodoById(todoId);
-    taskAuthorityUtil.validateTaskManager(todo.getTask(), taskManagerId);
-
-    if (todo.getStatus() != TodoStatus.WAITING_REVIEW) {
-      throw new BusinessException(TodoResponse.NEED_WAITING_REVIEW_STATUS);
+        todoMapper.updateFromDto(dto, todo);
+        return todoMapper.mapToDto(todoRepository.save(todo));
     }
 
-    todo.setStatus(TodoStatus.CONFIRMED);
-    Todo savedTodo = todoRepository.save(todo);
+    @Override
+    @Transactional
+    public void deleteTodo(Long todoId, Long userId) {
+        Todo todo = finder.findTodoById(todoId);
+        validateManagerAuthority(todo.getTask(), userId);
 
-    // 담당자에게 검수 완료 알림 전송
-    if (todo.getAssignee() != null && !todo.getAssignee().getId().equals(taskManagerId)) {
-      String message = String.format("'%s' 할일이 검수 완료되었습니다.", todo.getTitle());
-      notificationService.createNotification(todo.getAssignee().getId(),
-          NotificationType.TODO_COMPLETED, message, todoId);
+        todoFileRepository.deleteAllByTodoId(todoId);
+        todoWorkRepository.deleteAllByTodoId(todoId);
+        todoCommentRepository.deleteAllByTodoId(todoId);
+        todoRepository.delete(todo);
     }
 
-    return todoMapper.mapToDto(savedTodo);
-  }
-
-  @Override
-  @Transactional
-  public void changeAssignee(Long todoId, Long newAssigneeId, Long managerId) {
-    Todo todo = finder.findTodoById(todoId);
-    Task task = todo.getTask();
-
-    // 권한 검증: Task Manager만 담당자 변경 가능
-    taskAuthorityUtil.validateTaskManager(task, managerId);
-
-    // 같은 사람으로 변경 불가
-    if (todo.getAssignee() != null && todo.getAssignee().getId().equals(newAssigneeId)) {
-      throw new BusinessException(TodoResponse.ALREADY_ASSIGNED_TO_USER);
+    @Override
+    public TodoResponseDto getTodoById(Long todoId) {
+        return todoMapper.mapToDto(finder.findTodoById(todoId));
     }
 
-    // Task 참여자 확인
-    participantUtil.validateTaskParticipant(task.getId(), newAssigneeId);
+    @Override
+    public List<TodoResponseDto> getTodosByTask(Long taskId, String status) {
+        List<Todo> todos = (status != null)
+                ? todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.valueOf(status))
+                : todoRepository.findAllByTaskId(taskId);
 
-    User newAssignee = finder.findUserById(newAssigneeId);
-
-    todo.setAssignee(newAssignee);
-    todoRepository.save(todo);
-
-    // 새로운 담당자에게 할당 알림 전송
-    if (!newAssigneeId.equals(managerId)) {
-      String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
-      notificationService.createNotification(newAssigneeId,
-          NotificationType.TASK_ASSIGNED, message, todoId);
+        return todos.stream().map(todoMapper::mapToDto).toList();
     }
-  }
 
-  private void validateDueDate(LocalDate dueDate, Task task) {
-    if (dueDate.isAfter(task.getDueDate())) {
-      throw new BusinessException(TodoResponse.NEED_BEFORE_TASK_DUE_DATE);
-    }
-    if (dueDate.isBefore(LocalDate.now())) {
-      throw new BusinessException(TodoResponse.NEED_AFTER_NOW_DATE);
-    }
-  }
+    @Override
+    @Transactional
+    public void completeOwnTodo(Long todoId, Long userId) {
+        Todo todo = finder.findTodoById(todoId);
+        participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
+        validateAssignee(todo, userId);
 
-  private void validateAssignee(Todo todo, Long userId) {
-    if (todo.getAssignee() == null || !todo.getAssignee().getId().equals(userId)) {
-      throw new BusinessException(TodoResponse.ONLY_ASSIGNEE_CAN_COMPLETE);
-    }
-  }
+        todo.setDoneAt(LocalDateTime.now());
+        todo.setStatus(TodoStatus.WAITING_REVIEW);
+        todoRepository.save(todo);
 
-  private void validateManagerAuthority(Task task, Long userId) {
-    // Workspace MASTER 또는 Task MANAGER만 가능
-    if (!taskAuthorityUtil.canManageTask(task, userId)) {
-      throw new BusinessException(TodoResponse.ONLY_MANAGER_AUTHORIZED);
+        // Task 모든 MANAGER에게 검수 요청 알림 전송
+        Task task = todo.getTask();
+        String reviewMessage = String.format("'%s' 할일이 완료되어 검수를 기다리고 있습니다.", todo.getTitle());
+        taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER).stream()
+                .filter(m -> !m.getUser().getId().equals(userId))
+                .forEach(m -> notificationService.createNotification(
+                        m.getUser().getId(), NotificationType.TODO_REVIEW_REQUESTED, reviewMessage, todoId));
     }
-  }
+
+    @Override
+    @Transactional
+    public TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId) {
+        Todo todo = finder.findTodoById(todoId);
+        taskAuthorityUtil.validateTaskManager(todo.getTask(), taskManagerId);
+
+        if (todo.getStatus() != TodoStatus.WAITING_REVIEW) {
+            throw new BusinessException(TodoResponse.NEED_WAITING_REVIEW_STATUS);
+        }
+
+        todo.setStatus(TodoStatus.CONFIRMED);
+        Todo savedTodo = todoRepository.save(todo);
+
+        // 담당자에게 검수 완료 알림 전송
+        if (todo.getAssignee() != null && !todo.getAssignee().getId().equals(taskManagerId)) {
+            String message = String.format("'%s' 할일이 검수 완료되었습니다.", todo.getTitle());
+            notificationService.createNotification(todo.getAssignee().getId(),
+                    NotificationType.TODO_COMPLETED, message, todoId);
+        }
+
+        return todoMapper.mapToDto(savedTodo);
+    }
+
+    @Override
+    @Transactional
+    public void changeAssignee(Long todoId, Long newAssigneeId, Long managerId) {
+        Todo todo = finder.findTodoById(todoId);
+        Task task = todo.getTask();
+
+        // 권한 검증: Task Manager만 담당자 변경 가능
+        taskAuthorityUtil.validateTaskManager(task, managerId);
+
+        // 같은 사람으로 변경 불가
+        if (todo.getAssignee() != null && todo.getAssignee().getId().equals(newAssigneeId)) {
+            throw new BusinessException(TodoResponse.ALREADY_ASSIGNED_TO_USER);
+        }
+
+        // Task 참여자 확인
+        participantUtil.validateTaskParticipant(task.getId(), newAssigneeId);
+
+        User newAssignee = finder.findUserById(newAssigneeId);
+
+        todo.setAssignee(newAssignee);
+        todoRepository.save(todo);
+
+        // 새로운 담당자에게 할당 알림 전송
+        if (!newAssigneeId.equals(managerId)) {
+            String message = String.format("'%s' 할일이 새로 할당되었습니다.", todo.getTitle());
+            notificationService.createNotification(newAssigneeId,
+                    NotificationType.TASK_ASSIGNED, message, todoId);
+        }
+    }
+
+    private void validateDueDate(LocalDate dueDate, Task task) {
+        if (dueDate.isAfter(task.getDueDate())) {
+            throw new BusinessException(TodoResponse.NEED_BEFORE_TASK_DUE_DATE);
+        }
+        if (dueDate.isBefore(LocalDate.now())) {
+            throw new BusinessException(TodoResponse.NEED_AFTER_NOW_DATE);
+        }
+    }
+
+    private void validateAssignee(Todo todo, Long userId) {
+        if (todo.getAssignee() == null || !todo.getAssignee().getId().equals(userId)) {
+            throw new BusinessException(TodoResponse.ONLY_ASSIGNEE_CAN_COMPLETE);
+        }
+    }
+
+    private void validateManagerAuthority(Task task, Long userId) {
+        // Workspace MASTER 또는 Task MANAGER만 가능
+        if (!taskAuthorityUtil.canManageTask(task, userId)) {
+            throw new BusinessException(TodoResponse.ONLY_MANAGER_AUTHORIZED);
+        }
+    }
 }

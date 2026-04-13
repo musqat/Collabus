@@ -116,7 +116,7 @@ public class UserController {
   @PreAuthorize("#id == principal.userId or hasRole('ADMIN')")
   public ResponseEntity<Void> updatePassword(
       @PathVariable Long id,
-      @RequestBody UpdatePasswordDto dto) {
+      @RequestBody @Valid UpdatePasswordDto dto) {
     userService.updatePassword(id, dto.getPassword());
     return ResponseEntity.ok().build();
   }
@@ -151,14 +151,24 @@ public class UserController {
   )
   @PostMapping("/login")
   public ResponseEntity<ResponseDto> login(@RequestBody @Valid LoginDto request) {
+    String email = request.getEmail();
+
+    // 계정 잠금 확인 (5회 실패 시 10분 잠금)
+    if (refreshTokenService.isAccountLocked(email)) {
+      return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+          .body(new ResponseDto(LOGIN_ATTEMPTS_EXCEEDED));
+    }
+
     try {
-      var user = userService.login(request.getEmail(), request.getPassword());
+      var user = userService.login(email, request.getPassword());
+
+      // 로그인 성공 — 실패 횟수 초기화
+      refreshTokenService.resetLoginFailure(email);
 
       String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
       String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-
-      // Redis에 refreshToken 저장 (7일 = 7 * 24 * 60 * 60 * 1000 ms)
-      refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken, 7 * 24 * 60 * 60 * 1000L);
+      refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken,
+          jwtUtil.getRefreshExpiration());
 
       LoginResponseDto loginResponse = LoginResponseDto.builder()
           .id(user.getId())
@@ -175,6 +185,13 @@ public class UserController {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(new ResponseDto(EMAIL_NOT_FOUND));
     } catch (IllegalArgumentException e) {
+      // 실패 횟수 증가
+      int failures = refreshTokenService.incrementLoginFailure(email);
+      int remaining = Math.max(0, 5 - failures);
+      if (remaining == 0) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .body(new ResponseDto(LOGIN_ATTEMPTS_EXCEEDED));
+      }
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body(new ResponseDto(INVALID_PASSWORD));
     }

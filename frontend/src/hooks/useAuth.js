@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { showToast } from '../store/toastStore';
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -10,26 +11,25 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }) => authAPI.login(email, password),
     onSuccess: (data) => {
-      // 백엔드가 data.data 구조로 반환
       const userData = data.data || data;
       setAuth(userData, userData.accessToken, userData.refreshToken);
       navigate('/dashboard');
     },
     onError: (error) => {
-      alert(error.response?.data?.statusMsg || '로그인 실패');
-    }
+      showToast.error(error.response?.data?.statusMsg || '로그인에 실패했습니다.');
+    },
   });
 
   const registerMutation = useMutation({
     mutationFn: ({ email, nickname, password }) =>
       authAPI.register(email, nickname, password),
     onSuccess: () => {
-      alert('회원가입 성공! 로그인해주세요.');
+      showToast.success('회원가입 성공! 로그인해주세요.');
       navigate('/login');
     },
     onError: (error) => {
-      alert(error.response?.data?.statusMsg || '회원가입 실패');
-    }
+      showToast.error(error.response?.data?.statusMsg || '회원가입에 실패했습니다.');
+    },
   });
 
   const logout = async () => {
@@ -47,6 +47,6 @@ export const useAuth = () => {
     login: loginMutation.mutate,
     register: registerMutation.mutate,
     logout,
-    isLoading: loginMutation.isPending || registerMutation.isPending
+    isLoading: loginMutation.isPending || registerMutation.isPending,
   };
 };

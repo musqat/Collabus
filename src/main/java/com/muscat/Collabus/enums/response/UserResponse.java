@@ -14,7 +14,8 @@ public enum UserResponse implements BaseResponseEnum {
   NICKNAME_ALREADY_EXISTS("409", "이미 사용 중인 닉네임입니다."),
   PASSWORD_BLANK("400", "비밀번호를 입력해주세요."),
   EMAIL_NOT_FOUND("404", "해당 이메일이 존재하지 않습니다."),
-  INVALID_PASSWORD("401", "비밀번호가 일치하지 않습니다.");
+  INVALID_PASSWORD("401", "비밀번호가 일치하지 않습니다."),
+  LOGIN_ATTEMPTS_EXCEEDED("429", "로그인 시도 횟수를 초과했습니다. 10분 후 다시 시도해주세요.");
 
   private final String code;
   private final String message;

@@ -5,8 +5,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import javax.crypto.SecretKey;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -54,7 +56,7 @@ public class JwtUtil {
           .parseSignedClaims(jwt);
       return true;
     } catch (JwtException e) {
-      System.out.println("유효하지 않은 JWT: " + e.getMessage());
+      log.warn("유효하지 않은 JWT: {}", e.getMessage());
       return false;
     }
   }
@@ -66,6 +68,10 @@ public class JwtUtil {
         .parseSignedClaims(jwt)
         .getPayload()
         .getSubject();
+  }
+
+  public long getRefreshExpiration() {
+    return refreshExpiration;
   }
 
   public long getRemainingMillis(String jwt) {

@@ -8,20 +8,16 @@ spring:
     hibernate:
       ddl-auto: update
     database-platform: org.hibernate.dialect.H2Dialect
-    show-sql: true
+    show-sql: false
     defer-datasource-initialization: true
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           time_zone: Asia/Seoul
   sql:
     init:
       mode: always
-  h2:
-    console:
-      enabled: false
-      path: /h2-console
   data:
     redis:
       host: ${REDIS_HOST:localhost}

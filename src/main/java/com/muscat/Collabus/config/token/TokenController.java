@@ -45,8 +45,16 @@ public class TokenController {
     if (userOpt.isEmpty()) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
     }
+
+    // Access Token 재발급
     String newAccessToken = jwtUtil.generateToken(email, userOpt.get().getRole().name());
+
+    // Refresh Token Rotation — 기존 RT 무효화 후 새 RT 발급
+    String newRefreshToken = jwtUtil.generateRefreshToken(email);
+    long refreshExpiration = jwtUtil.getRefreshExpiration();
+    refreshTokenService.saveRefreshToken(email, newRefreshToken, refreshExpiration);
+
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-        new TokenResponseDto(newAccessToken, refreshToken)));
+        new TokenResponseDto(newAccessToken, newRefreshToken)));
   }
 }

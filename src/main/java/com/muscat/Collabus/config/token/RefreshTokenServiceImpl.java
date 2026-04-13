@@ -14,6 +14,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
   private final StringRedisTemplate redisTemplate;
   private static final String KEY_PREFIX = "RT:";
   private static final String BLACKLIST_PREFIX = "BL:";
+  private static final String LOGIN_FAIL_PREFIX = "LF:";
+  private static final int MAX_LOGIN_ATTEMPTS = 5;
+  private static final long LOCK_DURATION_MILLIS = 10 * 60 * 1000L; // 10분
 
   @Override
   public void saveRefreshToken(String email, String token, long ttlMillis) {
@@ -45,5 +48,29 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
   public boolean isBlacklisted(String token) {
     String key = BLACKLIST_PREFIX + token;
     return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+  }
+
+  @Override
+  public int incrementLoginFailure(String email) {
+    String key = LOGIN_FAIL_PREFIX + email;
+    Long count = redisTemplate.opsForValue().increment(key);
+    if (count != null && count == 1) {
+      // 첫 실패 시 TTL 설정 (잠금 시간만큼)
+      redisTemplate.expire(key, LOCK_DURATION_MILLIS, TimeUnit.MILLISECONDS);
+    }
+    return count != null ? count.intValue() : 1;
+  }
+
+  @Override
+  public void resetLoginFailure(String email) {
+    redisTemplate.delete(LOGIN_FAIL_PREFIX + email);
+  }
+
+  @Override
+  public boolean isAccountLocked(String email) {
+    String key = LOGIN_FAIL_PREFIX + email;
+    String value = redisTemplate.opsForValue().get(key);
+    if (value == null) return false;
+    return Integer.parseInt(value) >= MAX_LOGIN_ATTEMPTS;
   }
 }

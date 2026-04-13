@@ -47,10 +47,11 @@ public class Todo extends BaseEntity {
   @Column(nullable = false)
   private TodoStatus status;
 
-  @Column(nullable = false)
-  private boolean isDone = false;
-
   private LocalDateTime doneAt;
+
+  public boolean isDone() {
+    return status != TodoStatus.IN_PROGRESS;
+  }
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "assignee_id")

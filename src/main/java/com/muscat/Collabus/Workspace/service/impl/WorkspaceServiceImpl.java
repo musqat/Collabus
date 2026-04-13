@@ -1,10 +1,7 @@
 package com.muscat.Collabus.Workspace.service.impl;
 
-import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
-import com.muscat.Collabus.Todo.entity.Todo;
-import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
@@ -105,32 +102,13 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     taskAuthorityUtil.validateWorkspaceMaster(
         entityFinderUtil.findWorkspaceById(workspaceId), userId);
 
-    List<Task> tasks = taskRepository.findAllByWorkspace_Id(workspaceId);
-    for (Task task : tasks) {
-      // todo삭제
-      List<Todo> todos = todoRepository.findAllByTaskId(task.getId());
-      for (Todo todo : todos) {
-        //  TodoWork 랑 파일 삭제
-        List<TodoWork> todoWorks = todoWorkRepository.findAllByTodoId(todo.getId());
-        for (TodoWork work : todoWorks) {
-          todoFileRepository.deleteAllByWorkId(work.getId());
-        }
-        todoWorkRepository.deleteAllByTodoId(todo.getId());
-
-        //  TodoComments 삭제
-        todoCommentRepository.deleteAllByTodoId(todo.getId());
-      }
-      todoRepository.deleteAll(todos);
-
-      //  TaskUsers 삭제
-      taskUserRepository.deleteAllByTask(task);
-    }
-    taskRepository.deleteAll(tasks);
-
-    //  WorkspaceUsers 삭제
+    todoFileRepository.deleteAllByWorkspaceId(workspaceId);
+    todoWorkRepository.deleteAllByWorkspaceId(workspaceId);
+    todoCommentRepository.deleteAllByWorkspaceId(workspaceId);
+    todoRepository.deleteAllByWorkspaceId(workspaceId);
+    taskUserRepository.deleteAllByWorkspaceId(workspaceId);
+    taskRepository.deleteAllByWorkspaceId(workspaceId);
     workspaceUserRepository.deleteAllById_WorkspaceId(workspaceId);
-
-    //  Workspace 삭제
     workspaceRepository.deleteById(workspaceId);
   }
 }

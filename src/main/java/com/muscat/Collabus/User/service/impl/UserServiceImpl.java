@@ -9,6 +9,7 @@ import com.muscat.Collabus.User.service.UserService;
 import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.DisplayNameUtil;
+import com.muscat.Collabus.config.token.RefreshTokenService;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.UserResponse;
 import com.muscat.Collabus.enums.role.SystemRole;
@@ -26,6 +27,7 @@ public class UserServiceImpl implements UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
+  private final RefreshTokenService refreshTokenService;
 
   @Override
   public void registerUser(UserRequestDto userDto) {
@@ -85,6 +87,9 @@ public class UserServiceImpl implements UserService {
 
     user.changePassword(newPassword, passwordEncoder);
     userRepository.save(user);
+
+    // 비밀번호 변경 시 기존 Refresh Token 무효화 → 다른 기기 세션 강제 종료
+    refreshTokenService.deleteRefreshToken(user.getEmail());
   }
 
   @Override

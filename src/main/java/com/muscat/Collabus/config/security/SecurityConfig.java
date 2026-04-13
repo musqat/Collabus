@@ -21,6 +21,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 
 @Configuration
@@ -28,6 +30,9 @@ import java.util.Arrays;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+  @Value("${cors.allowed-origins:http://localhost:3000,http://localhost}")
+  private List<String> allowedOrigins;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -46,7 +51,6 @@ public class SecurityConfig {
             .requestMatchers(
                 "/swagger-ui/**",
                 "/v3/api-docs/**",
-                "/h2-console/**",
                 "/ws/**"
             ).permitAll()
             .requestMatchers(
@@ -68,9 +72,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.addAllowedOrigin("http://localhost:3000"); // React 개발 서버
-    configuration.addAllowedOrigin("http://localhost"); // Docker Nginx (포트 80)
-    configuration.addAllowedOrigin("http://localhost:80"); // Docker Nginx (명시적 포트)
+    allowedOrigins.forEach(configuration::addAllowedOrigin);
     configuration.addAllowedMethod("*");
     configuration.addAllowedHeader("*");
     configuration.setAllowCredentials(true);

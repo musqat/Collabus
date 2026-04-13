@@ -1,6 +1,8 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+const WS_URL = import.meta.env.VITE_WS_BASE_URL;
+
 class WebSocketClient {
   constructor() {
     this.client = null;
@@ -9,50 +11,43 @@ class WebSocketClient {
   }
 
   connect(userId, onMessageCallback) {
-    if (this.connected) {
-      console.log('WebSocket already connected');
-      return;
-    }
+    if (this.connected) return;
+
+    const token = localStorage.getItem('accessToken');
 
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost/ws'),
+      webSocketFactory: () => new SockJS(WS_URL),
+      connectHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
 
       onConnect: () => {
-        console.log('WebSocket connected');
         this.connected = true;
-
-        // 개인 알림 구독
         const subscription = this.client.subscribe(
           `/user/${userId}/queue/notifications`,
           (message) => {
             const notification = JSON.parse(message.body);
-            console.log('Received notification:', notification);
-            if (onMessageCallback) {
-              onMessageCallback(notification);
-            }
+            if (onMessageCallback) onMessageCallback(notification);
           }
         );
-
         this.subscribers.set('notifications', subscription);
       },
 
       onStompError: (frame) => {
-        console.error('WebSocket error:', frame);
+        console.error('WebSocket STOMP error:', frame);
         this.connected = false;
       },
 
       onWebSocketClose: () => {
-        console.log('WebSocket closed');
         this.connected = false;
       },
 
       onDisconnect: () => {
-        console.log('WebSocket disconnected');
         this.connected = false;
-      }
+      },
     });
 
     this.client.activate();
@@ -64,7 +59,6 @@ class WebSocketClient {
       this.subscribers.clear();
       this.client.deactivate();
       this.connected = false;
-      console.log('WebSocket disconnected');
     }
   }
 

@@ -4,12 +4,17 @@ import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
-  //특정 워크스페이스에 속한 모든 Task 조회.
+
   List<Task> findAllByWorkspace(Workspace workspace);
 
-  //특정 사용자 ID로 Task 조회
   List<Task> findAllByWorkspace_Id(Long workspaceId);
 
+  @Modifying
+  @Query("DELETE FROM Task t WHERE t.workspace.id = :workspaceId")
+  void deleteAllByWorkspaceId(@Param("workspaceId") Long workspaceId);
 }

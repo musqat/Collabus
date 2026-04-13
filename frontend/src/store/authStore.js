@@ -1,36 +1,37 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
-export const useAuthStore = create(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
+const loadUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
-      setAuth: (user, accessToken, refreshToken) => {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        set({ user, accessToken, refreshToken });
-      },
+export const useAuthStore = create((set) => ({
+  user: loadUser(),
 
-      clearAuth: () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        set({ user: null, accessToken: null, refreshToken: null });
-      },
+  setAuth: (user, accessToken, refreshToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+  },
 
-      logout: () => {
-        get().clearAuth();
-      },
+  clearAuth: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    set({ user: null });
+  },
 
-      isAuthenticated: () => {
-        const token = localStorage.getItem('accessToken');
-        return !!token;
-      }
-    }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
+  logout: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    set({ user: null });
+  },
+
+  isAuthenticated: () => !!localStorage.getItem('accessToken'),
+}));
