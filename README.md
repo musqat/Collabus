@@ -1,6 +1,6 @@
 # Collabus
 
-> 팀 협업 작업 관리 플랫폼 — Workspace · Task · Todo 계층 구조 기반
+> 팀 협업 작업 관리 플랫폼. Workspace · Task · Todo 계층 구조 기반
 
 ---
 
@@ -81,7 +81,7 @@ npm install && npm run dev
 
 ## Environment Variables
 
-**`.env` (루트)** — `.env.example` 복사 후 바로 사용 가능
+**`.env` (루트)**: `.env.example` 복사 후 바로 사용 가능
 
 ```env
 JWT_SECRET=collabus-dev-secret-key-for-local-testing-only-32chars
@@ -96,6 +96,22 @@ DB_ROOT_PASSWORD=rootpassword1234
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
+
+---
+
+## 핵심 구현
+
+**WebSocket 인증**
+- STOMP CONNECT 프레임에서 JWT 검증. HTTP 인증과 별도로 처리해야 해서 `ChannelInterceptor` 직접 구현.
+
+**Refresh Token Rotation**
+- 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
+
+**Brute Force 방어**
+- 로그인 5회 실패 시 Redis에 잠금 플래그 설정, 10분 TTL. DB 조회 없이 처리.
+
+**비밀번호 변경 시 세션 강제 종료**
+- 변경 즉시 해당 유저의 모든 RT Redis에서 삭제 → 타 기기 자동 로그아웃.
 
 ---
 
