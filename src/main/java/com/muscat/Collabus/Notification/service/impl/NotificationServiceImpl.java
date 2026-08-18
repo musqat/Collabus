@@ -117,9 +117,9 @@ public class NotificationServiceImpl implements NotificationService {
   @Override
   public List<NotificationResponse> getRecentNotifications(Long userId, int limit) {
     User user = finder.findUserById(userId);
-    List<Notification> notifications = notificationRepository.findRecentNotifications(user,
-        PageRequest.of(0, limit));
-    return notifications.stream()
+    // 최근 N개만 필요하므로 첫 페이지를 limit 크기로 요청한다
+    return notificationRepository.findByUserOrderByCreatedAtDesc(user, PageRequest.of(0, limit))
+        .getContent().stream()
         .map(NotificationResponse::from)
         .collect(Collectors.toList());
   }

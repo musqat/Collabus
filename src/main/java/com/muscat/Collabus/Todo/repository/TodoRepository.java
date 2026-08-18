@@ -18,7 +18,6 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
   @EntityGraph(attributePaths = {"assignee"})
   Page<Todo> findAllByTaskId(Long taskId, Pageable pageable);
 
-  List<Todo> findAllByTaskIdAndStatus(Long taskId, TodoStatus status);
 
   @EntityGraph(attributePaths = {"assignee"})
   Page<Todo> findAllByTaskIdAndStatus(Long taskId, TodoStatus status, Pageable pageable);

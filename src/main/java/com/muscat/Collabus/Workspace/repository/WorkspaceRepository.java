@@ -7,8 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
 
-  boolean existsByFounderIdAndWorkspaceName(Long founderId, String workspaceName);
-
   @EntityGraph(attributePaths = {"founder"})
   List<Workspace> findAllByFounderId(Long userId);
 }
