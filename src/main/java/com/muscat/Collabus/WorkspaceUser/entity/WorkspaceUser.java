@@ -17,33 +17,36 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "workspace_user")
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class WorkspaceUser extends BaseEntity {
 
-  @EmbeddedId
-  private WorkspaceUserPk id;
+    @EmbeddedId
+    private WorkspaceUserPk id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("workspaceId")
-  @JoinColumn(name = "workspace_id")
-  private Workspace workspace;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("workspaceId")
+    @JoinColumn(name = "workspace_id")
+    private Workspace workspace;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("userId")
-  @JoinColumn(name = "user_id")
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("userId")
+    @JoinColumn(name = "user_id")
+    private User user;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private WorkspaceRole role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WorkspaceRole role;
+
+    public void changeRole(WorkspaceRole role) {
+        this.role = role;
+    }
 }

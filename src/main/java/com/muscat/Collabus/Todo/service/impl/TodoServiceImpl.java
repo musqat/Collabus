@@ -80,7 +80,7 @@ public class TodoServiceImpl implements TodoService {
         validateManagerAuthority(todo.getTask(), updaterId);
 
         todoMapper.updateFromDto(dto, todo);
-        return todoMapper.mapToDto(todoRepository.save(todo));
+        return todoMapper.mapToDto(todo);
     }
 
     @Override
@@ -126,9 +126,7 @@ public class TodoServiceImpl implements TodoService {
         participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
         validateAssignee(todo, userId);
 
-        todo.setDoneAt(LocalDateTime.now());
-        todo.setStatus(TodoStatus.WAITING_REVIEW);
-        todoRepository.save(todo);
+        todo.requestReview();
 
         // Task 모든 MANAGER에게 검수 요청 알림 전송
         Task task = todo.getTask();
@@ -145,12 +143,7 @@ public class TodoServiceImpl implements TodoService {
         Todo todo = finder.findTodoById(todoId);
         taskAuthorityUtil.validateTaskManager(todo.getTask(), taskManagerId);
 
-        if (todo.getStatus() != TodoStatus.WAITING_REVIEW) {
-            throw new BusinessException(TodoResponse.NEED_WAITING_REVIEW_STATUS);
-        }
-
-        todo.setStatus(TodoStatus.CONFIRMED);
-        Todo savedTodo = todoRepository.save(todo);
+        todo.confirm();
 
         // 담당자에게 검수 완료 알림 전송
         if (todo.getAssignee() != null && !todo.getAssignee().getId().equals(taskManagerId)) {
@@ -159,7 +152,7 @@ public class TodoServiceImpl implements TodoService {
                     NotificationType.TODO_COMPLETED, message, todoId);
         }
 
-        return todoMapper.mapToDto(savedTodo);
+        return todoMapper.mapToDto(todo);
     }
 
     @Override
@@ -181,8 +174,7 @@ public class TodoServiceImpl implements TodoService {
 
         User newAssignee = finder.findUserById(newAssigneeId);
 
-        todo.setAssignee(newAssignee);
-        todoRepository.save(todo);
+        todo.assignTo(newAssignee);
 
         // 새로운 담당자에게 할당 알림 전송
         if (!newAssigneeId.equals(managerId)) {

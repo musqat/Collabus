@@ -220,7 +220,6 @@ class TodoServiceImplTest {
     Long updaterId = 1L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
     when(taskAuthorityUtil.canManageTask(task, updaterId)).thenReturn(true);
-    when(todoRepository.save(todo)).thenReturn(todo);
     when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
     // When
@@ -230,7 +229,6 @@ class TodoServiceImplTest {
     assertThat(result).isNotNull();
     verify(finder, times(1)).findTodoById(todoId);
     verify(todoMapper, times(1)).updateFromDto(todoRequestDto, todo);
-    verify(todoRepository, times(1)).save(todo);
   }
 
   @Test
@@ -366,7 +364,6 @@ class TodoServiceImplTest {
     Long todoId = 1L;
     Long userId = 1L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(todoRepository.save(todo)).thenReturn(todo);
 
     // When
     todoService.completeOwnTodo(todoId, userId);
@@ -374,7 +371,8 @@ class TodoServiceImplTest {
     // Then
     verify(finder, times(1)).findTodoById(todoId);
     verify(participantUtil, times(1)).validateTaskParticipant(task.getId(), userId);
-    verify(todoRepository, times(1)).save(todo);
+    assertThat(todo.getStatus()).isEqualTo(TodoStatus.WAITING_REVIEW);
+    assertThat(todo.getDoneAt()).isNotNull();
   }
 
   @Test
@@ -398,10 +396,9 @@ class TodoServiceImplTest {
     // Given
     Long todoId = 1L;
     Long taskManagerId = 1L;
-    todo.setStatus(TodoStatus.WAITING_REVIEW);
+    todo.requestReview();
 
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(todoRepository.save(todo)).thenReturn(todo);
     when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
     // When
@@ -411,7 +408,7 @@ class TodoServiceImplTest {
     assertThat(result).isNotNull();
     verify(finder, times(1)).findTodoById(todoId);
     verify(taskAuthorityUtil, times(1)).validateTaskManager(task, taskManagerId);
-    verify(todoRepository, times(1)).save(todo);
+    assertThat(todo.getStatus()).isEqualTo(TodoStatus.CONFIRMED);
   }
 
   @Test
@@ -420,7 +417,6 @@ class TodoServiceImplTest {
     // Given
     Long todoId = 1L;
     Long taskManagerId = 1L;
-    todo.setStatus(TodoStatus.IN_PROGRESS); // WAITING_REVIEW가 아님
 
     when(finder.findTodoById(todoId)).thenReturn(todo);
 
@@ -442,7 +438,6 @@ class TodoServiceImplTest {
 
     when(finder.findTodoById(todoId)).thenReturn(todo);
     when(finder.findUserById(newAssigneeId)).thenReturn(newAssignee);
-    when(todoRepository.save(todo)).thenReturn(todo);
 
     // When
     todoService.changeAssignee(todoId, newAssigneeId, managerId);
@@ -452,7 +447,7 @@ class TodoServiceImplTest {
     verify(taskAuthorityUtil, times(1)).validateTaskManager(task, managerId);
     verify(participantUtil, times(1)).validateTaskParticipant(task.getId(), newAssigneeId);
     verify(finder, times(1)).findUserById(newAssigneeId);
-    verify(todoRepository, times(1)).save(todo);
+    assertThat(todo.getAssignee()).isEqualTo(newAssignee);
   }
 
   @Test

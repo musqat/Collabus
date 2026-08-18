@@ -13,31 +13,35 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Entity
-@Setter
 @Table(name = "workspaces")
 public class Workspace extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false)
-  private String workspaceName;
+    @Column(nullable = false)
+    private String workspaceName;
 
-  @Column(nullable = false)
-  private String description;
+    @Column(nullable = false)
+    private String description;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "founder_id")
-  private User founder;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "founder_id")
+    private User founder;
 
+
+    public void update(String workspaceName, String description) {
+        this.workspaceName = workspaceName;
+        this.description = description;
+    }
 }

@@ -13,10 +13,12 @@ import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -27,98 +29,98 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
-  private final WorkspaceUserRepository workspaceUserRepository;
-  private final WorkspaceUserMapper workspaceUserMapper;
-  private final ParticipantUtil participantUtil;
-  private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceUserRepository workspaceUserRepository;
+    private final WorkspaceUserMapper workspaceUserMapper;
+    private final ParticipantUtil participantUtil;
+    private final WorkspaceRepository workspaceRepository;
 
-  @Override
-  @Transactional(readOnly = true)
-  public List<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId, Long userId) {
-    participantUtil.validateWorkspaceParticipant(workspaceId, userId);
-    return workspaceUserRepository.findAllById_WorkspaceId(workspaceId).stream()
-        .map(workspaceUserMapper::mapToDto)
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public List<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId) {
-    return workspaceUserRepository.findAllById_UserId(userId).stream()
-        .map(workspaceUserMapper::mapToDto)
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  @Transactional
-  public void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId) {
-    participantUtil.validateWorkspaceParticipant(workspaceId, actorId);
-    checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
-
-    if (targetUserId.equals(actorId)) {
-      throw new BusinessException(CommonResponse.CANNOT_CHANGE_SELF_ROLE);
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId, Long userId) {
+        participantUtil.validateWorkspaceParticipant(workspaceId, userId);
+        return workspaceUserRepository.findAllById_WorkspaceId(workspaceId).stream()
+                .map(workspaceUserMapper::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    WorkspaceUser target = getWorkspaceUserOrThrow(workspaceId, targetUserId);
-
-    if (newRole == WorkspaceRole.MASTER) {
-      WorkspaceUser currentMaster = getWorkspaceUserOrThrow(workspaceId, actorId);
-      currentMaster.setRole(WorkspaceRole.MANAGER);
-      workspaceUserRepository.save(currentMaster);
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId) {
+        return workspaceUserRepository.findAllById_UserId(userId).stream()
+                .map(workspaceUserMapper::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    target.setRole(newRole);
-    workspaceUserRepository.save(target);
-  }
+    @Override
+    @Transactional
+    public void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId) {
+        participantUtil.validateWorkspaceParticipant(workspaceId, actorId);
+        checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
 
-  @Override
-  @Transactional
-  public void removeUser(Long workspaceId, Long userId, Long actorId) {
-    checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
+        if (targetUserId.equals(actorId)) {
+            throw new BusinessException(CommonResponse.CANNOT_CHANGE_SELF_ROLE);
+        }
 
-    if (userId.equals(actorId)) {
-      throw new BusinessException(CommonResponse.CANNOT_REMOVE_SELF);
+        WorkspaceUser target = getWorkspaceUserOrThrow(workspaceId, targetUserId);
+
+        if (newRole == WorkspaceRole.MASTER) {
+            WorkspaceUser currentMaster = getWorkspaceUserOrThrow(workspaceId, actorId);
+            currentMaster.changeRole(WorkspaceRole.MANAGER);
+            workspaceUserRepository.save(currentMaster);
+        }
+
+        target.changeRole(newRole);
+        workspaceUserRepository.save(target);
     }
 
-    WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-    workspaceUserRepository.delete(user);
-  }
+    @Override
+    @Transactional
+    public void removeUser(Long workspaceId, Long userId, Long actorId) {
+        checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
 
-  @Override
-  @Transactional
-  public void leaveWorkspace(Long workspaceId, Long userId) {
-    WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-    List<WorkspaceUser> members = workspaceUserRepository.findAllById_WorkspaceId(workspaceId);
+        if (userId.equals(actorId)) {
+            throw new BusinessException(CommonResponse.CANNOT_REMOVE_SELF);
+        }
 
-    if (members.size() == 1) {
-      workspaceUserRepository.delete(user);
-      workspaceRepository.deleteById(workspaceId);
-      return;
+        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
+        workspaceUserRepository.delete(user);
     }
 
-    if (user.getRole() == WorkspaceRole.MASTER) {
-      WorkspaceUser newMaster = members.stream()
-          .filter(u -> !u.getId().getUserId().equals(userId))
-          .min(Comparator.comparing(u -> u.getRole().ordinal()))
-          .orElseThrow(() -> new BusinessException(WorkspaceUserResponse.NOT_FOUND_NEXT_MASTER));
+    @Override
+    @Transactional
+    public void leaveWorkspace(Long workspaceId, Long userId) {
+        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
+        List<WorkspaceUser> members = workspaceUserRepository.findAllById_WorkspaceId(workspaceId);
 
-      newMaster.setRole(WorkspaceRole.MASTER);
-      workspaceUserRepository.save(newMaster);
+        if (members.size() == 1) {
+            workspaceUserRepository.delete(user);
+            workspaceRepository.deleteById(workspaceId);
+            return;
+        }
+
+        if (user.getRole() == WorkspaceRole.MASTER) {
+            WorkspaceUser newMaster = members.stream()
+                    .filter(u -> !u.getId().getUserId().equals(userId))
+                    .min(Comparator.comparing(u -> u.getRole().ordinal()))
+                    .orElseThrow(() -> new BusinessException(WorkspaceUserResponse.NOT_FOUND_NEXT_MASTER));
+
+            newMaster.changeRole(WorkspaceRole.MASTER);
+            workspaceUserRepository.save(newMaster);
+        }
+
+        workspaceUserRepository.delete(user);
     }
 
-    workspaceUserRepository.delete(user);
-  }
-
-  private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
-    return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
-        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
-  }
-
-  private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
-    WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-    Set<WorkspaceRole> allowed = Set.of(allowedRoles);
-    if (!allowed.contains(user.getRole())) {
-      throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
+    private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
+        return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
+                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
     }
-  }
+
+    private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
+        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
+        Set<WorkspaceRole> allowed = Set.of(allowedRoles);
+        if (!allowed.contains(user.getRole())) {
+            throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
+        }
+    }
 }

@@ -95,7 +95,7 @@ public class TodoCommentServiceImpl implements TodoCommentService {
       throw new BusinessException(CommonResponse.UNAUTHORIZED);
     }
 
-    comment.setContent(content);
+    comment.updateContent(content);
     return commentMapper.mapToDto(commentRepository.save(comment));
   }
 

@@ -13,34 +13,39 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "todo_files")
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class TodoFile extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false)
-  private String fileUrl; // 저장 위치 (로컬 경로)
+    @Column(nullable = false)
+    private String fileUrl; // 저장 위치 (로컬 경로)
 
-  @Column(nullable = false)
-  private String originalName; // 원래 파일명
+    @Column(nullable = false)
+    private String originalName; // 원래 파일명
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "work_id", nullable = false)
-  private TodoWork work;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "work_id", nullable = false)
+    private TodoWork work;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "uploader_id", nullable = false)
-  private User uploader;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploader_id", nullable = false)
+    private User uploader;
+
+    // 새 파일로 교체한다. fileUrl 은 서버 저장 경로다.
+    public void replaceFile(String fileUrl, String originalName) {
+        this.fileUrl = fileUrl;
+        this.originalName = originalName;
+    }
 }

@@ -345,7 +345,7 @@ class TaskServiceImplTest {
     Long targetUserId = 2L;
     Long requesterId = 1L;
     User targetUser = User.builder().id(2L).build();
-    TaskUser targetTaskUser = new TaskUser();
+    TaskUser targetTaskUser = TaskUser.builder().build();
 
     when(finder.findTaskById(taskId)).thenReturn(task);
     when(finder.findUserById(targetUserId)).thenReturn(targetUser);
@@ -386,11 +386,11 @@ class TaskServiceImplTest {
     Long newManagerId = 2L;
     Long requesterId = 1L;
     User newManager = User.builder().id(2L).build();
-    TaskUser currentManager = new TaskUser();
-    currentManager.setRole(TaskRole.MANAGER);
-    TaskUser newManagerTaskUser = new TaskUser();
-    newManagerTaskUser.setRole(TaskRole.NORMAL);
-    newManagerTaskUser.setUser(newManager);
+    TaskUser currentManager = TaskUser.builder().role(TaskRole.MANAGER).build();
+    TaskUser newManagerTaskUser = TaskUser.builder()
+        .role(TaskRole.NORMAL)
+        .user(newManager)
+        .build();
 
     when(finder.findTaskById(taskId)).thenReturn(task);
     when(finder.findUserById(newManagerId)).thenReturn(newManager);
@@ -437,7 +437,7 @@ class TaskServiceImplTest {
   void getTaskMembers_Success() {
     // Given
     Long taskId = 1L;
-    TaskUser taskUser1 = new TaskUser();
+    TaskUser taskUser1 = TaskUser.builder().build();
     List<TaskUser> taskUsers = Arrays.asList(taskUser1);
     TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
 

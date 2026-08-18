@@ -43,7 +43,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
 
     // WAITING_REVIEW 상태면 다시 IN_PROGRESS로 변경
     if (todo.getStatus() == TodoStatus.WAITING_REVIEW) {
-      todo.setStatus(TodoStatus.IN_PROGRESS);
+      todo.reopenIfWaitingReview();
     }
 
     User user = finder.findUserById(userId);
@@ -67,8 +67,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
       throw new BusinessException(TodoResponse.UNAUTHORIZED_TODO_WORK);
     }
 
-    work.setTitle(dto.getTitle());
-    work.setContent(dto.getContent());
+    work.update(dto.getTitle(), dto.getContent());
 
     return todoWorkMapper.mapToDto(work);
   }
