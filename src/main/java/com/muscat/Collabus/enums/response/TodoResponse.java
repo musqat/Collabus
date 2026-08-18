@@ -20,7 +20,12 @@ public enum TodoResponse implements BaseResponseEnum {
   ONLY_ASSIGNEE_CAN_COMPLETE("400", "Todo를 담당자만 완료처리를 할 수 있습니다,."),
   NEED_AFTER_NOW_DATE("400", "마감일은 현재 시간 이후로 설정 해야 합니다."),
   ALREADY_ASSIGNED_TO_USER("409", "이미 해당 사용자에게 할당되어 있습니다."),
-  CANNOT_WORK_IN_CONFIRMED("400","Todo가 CONFIRMED상태면 작업을 만들 수 없습니다." );
+  CANNOT_WORK_IN_CONFIRMED("400","Todo가 CONFIRMED상태면 작업을 만들 수 없습니다." ),
+  INVALID_STATUS("400", "알 수 없는 Todo 상태값입니다."),
+  FILE_EMPTY("400", "빈 파일은 업로드할 수 없습니다."),
+  FILE_EXTENSION_NOT_ALLOWED("400", "허용되지 않는 파일 형식입니다."),
+  FILE_SAVE_FAILED("500", "파일 저장에 실패했습니다."),
+  FILE_READ_FAILED("500", "파일을 읽을 수 없습니다.");
 
   private final String code;
   private final String message;

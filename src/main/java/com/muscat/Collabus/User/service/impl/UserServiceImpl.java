@@ -6,6 +6,7 @@ import com.muscat.Collabus.User.model.UserRequestDto;
 import com.muscat.Collabus.User.model.UserResponseDto;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.User.service.UserService;
+import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.DisplayNameUtil;
@@ -77,13 +78,18 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public void updatePassword(Long userId, String newPassword) {
+  public void updatePassword(Long userId, String currentPassword, String newPassword) {
     if (newPassword == null || newPassword.isBlank()) {
       throw new IllegalArgumentException(UserResponse.PASSWORD_BLANK.getMessage());
     }
 
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+
+    // 토큰만 탈취해도 비밀번호를 바꿀 수 있으면 계정이 그대로 넘어가므로 현재 비밀번호를 확인한다
+    if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+      throw new BusinessException(UserResponse.CURRENT_PASSWORD_MISMATCH);
+    }
 
     user.changePassword(newPassword, passwordEncoder);
     userRepository.save(user);

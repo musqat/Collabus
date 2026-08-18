@@ -20,7 +20,7 @@ public interface UserService {
   void updateNickname(Long userId, String newNickname);
 
   // 회원 정보 수정 (비밀번호)
-  void updatePassword(Long userId, String newPassword);
+  void updatePassword(Long userId, String currentPassword, String newPassword);
 
   // 회원 삭제 (email로 식별)
   boolean deleteUser(String email);
