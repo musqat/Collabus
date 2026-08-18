@@ -10,16 +10,19 @@ import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.Notification.event.NotificationCreatedEvent;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class NotificationServiceImpl implements NotificationService {
 
   private final NotificationRepository notificationRepository;
@@ -48,22 +51,21 @@ public class NotificationServiceImpl implements NotificationService {
   }
 
   @Override
-  public List<NotificationResponse> getUserNotifications(Long userId) {
+  public PageResponseDto<NotificationResponse> getUserNotifications(Long userId,
+      Pageable pageable) {
     User user = finder.findUserById(userId);
-    List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
-    return notifications.stream()
-        .map(NotificationResponse::from)
-        .collect(Collectors.toList());
+    return PageResponseDto.of(
+        notificationRepository.findByUserOrderByCreatedAtDesc(user, pageable),
+        NotificationResponse::from);
   }
 
   @Override
-  public List<NotificationResponse> getUnreadNotifications(Long userId) {
+  public PageResponseDto<NotificationResponse> getUnreadNotifications(Long userId,
+      Pageable pageable) {
     User user = finder.findUserById(userId);
-    List<Notification> notifications = notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(
-        user);
-    return notifications.stream()
-        .map(NotificationResponse::from)
-        .collect(Collectors.toList());
+    return PageResponseDto.of(
+        notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(user, pageable),
+        NotificationResponse::from);
   }
 
   @Override

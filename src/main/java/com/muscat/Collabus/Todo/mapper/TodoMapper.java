@@ -17,7 +17,7 @@ public class TodoMapper {
     return Todo.builder()
         .title(dto.getTitle())
         .description(dto.getDescription())
-        .dueDate(dto.getDueDate().atStartOfDay())
+        .dueDate(dto.getDueDate())
         .task(task)
         .assignee(assignee)
         .status(TodoStatus.IN_PROGRESS)
@@ -45,6 +45,6 @@ public class TodoMapper {
   public void updateFromDto(TodoRequestDto dto, Todo todo) {
     todo.setTitle(dto.getTitle());
     todo.setDescription(dto.getDescription());
-    todo.setDueDate(dto.getDueDate().atStartOfDay());
+    todo.setDueDate(dto.getDueDate());
   }
 }

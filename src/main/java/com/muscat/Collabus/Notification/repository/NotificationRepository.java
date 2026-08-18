@@ -3,6 +3,8 @@ package com.muscat.Collabus.Notification.repository;
 import com.muscat.Collabus.Notification.entity.Notification;
 import com.muscat.Collabus.User.entity.User;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,10 +14,12 @@ import org.springframework.stereotype.Repository;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
   // 사용자의 모든 알림 조회 (최신순)
-  List<Notification> findByUserOrderByCreatedAtDesc(User user);
+  Page<Notification> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 
   // 사용자의 읽지 않은 알림 조회
   List<Notification> findByUserAndIsReadFalseOrderByCreatedAtDesc(User user);
+
+  Page<Notification> findByUserAndIsReadFalseOrderByCreatedAtDesc(User user, Pageable pageable);
 
   // 사용자의 읽지 않은 알림 개수
   Long countByUserAndIsReadFalse(User user);

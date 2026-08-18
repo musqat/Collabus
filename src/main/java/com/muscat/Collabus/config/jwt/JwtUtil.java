@@ -1,5 +1,6 @@
 package com.muscat.Collabus.config.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -13,6 +14,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtil {
 
+  public static final String CLAIM_USER_ID = "userId";
+  public static final String CLAIM_ROLE = "role";
+  public static final String CLAIM_DISPLAY_NAME = "displayName";
+
   private final SecretKey key;
   private final long expiration;
   private final long refreshExpiration;
@@ -23,14 +28,19 @@ public class JwtUtil {
     this.refreshExpiration = jwtProperties.getRefreshExpiration();
   }
 
-  public String generateToken(String email, String role) {
+  /**
+   * 인증에 필요한 정보를 모두 담는다. 요청마다 사용자를 다시 조회하지 않기 위함
+   */
+  public String generateToken(Long userId, String email, String role, String displayName) {
     Date now = new Date();
     Date expiry = new Date(now.getTime() + expiration);
 
     return Jwts.builder()
         .id(UUID.randomUUID().toString())
         .subject(email)
-        .claim("role", role)
+        .claim(CLAIM_USER_ID, userId)
+        .claim(CLAIM_ROLE, role)
+        .claim(CLAIM_DISPLAY_NAME, displayName)
         .issuedAt(now)
         .expiration(expiry)
         .signWith(key)
@@ -52,13 +62,9 @@ public class JwtUtil {
         .compact();
   }
 
-
   public boolean validateToken(String jwt) {
     try {
-      Jwts.parser()
-          .verifyWith(key)
-          .build()
-          .parseSignedClaims(jwt);
+      parseClaims(jwt);
       return true;
     } catch (JwtException e) {
       log.warn("유효하지 않은 JWT: {}", e.getMessage());
@@ -66,13 +72,16 @@ public class JwtUtil {
     }
   }
 
-  public String getEmailFromToken(String jwt) {
+  public Claims parseClaims(String jwt) {
     return Jwts.parser()
         .verifyWith(key)
         .build()
         .parseSignedClaims(jwt)
-        .getPayload()
-        .getSubject();
+        .getPayload();
+  }
+
+  public String getEmailFromToken(String jwt) {
+    return parseClaims(jwt).getSubject();
   }
 
   public long getRefreshExpiration() {
@@ -80,13 +89,6 @@ public class JwtUtil {
   }
 
   public long getRemainingMillis(String jwt) {
-    Date expiration = Jwts.parser()
-        .verifyWith(key)
-        .build()
-        .parseSignedClaims(jwt)
-        .getPayload()
-        .getExpiration();
-
-    return expiration.getTime() - System.currentTimeMillis();
+    return parseClaims(jwt).getExpiration().getTime() - System.currentTimeMillis();
   }
 }

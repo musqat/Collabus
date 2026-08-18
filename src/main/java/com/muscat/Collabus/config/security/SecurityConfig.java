@@ -42,7 +42,6 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http,
       JwtUtil jwtUtil,
-      CustomUserDetailsService userDetailsService,
       RefreshTokenService refreshTokenService) throws Exception {
 
     http
@@ -63,7 +62,7 @@ public class SecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService, refreshTokenService),
+        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, refreshTokenService),
             UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

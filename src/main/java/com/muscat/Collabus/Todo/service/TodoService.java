@@ -2,7 +2,9 @@ package com.muscat.Collabus.Todo.service;
 
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface TodoService {
 
@@ -18,7 +20,7 @@ public interface TodoService {
   // 조회
   TodoResponseDto getTodoById(Long todoId);
 
-  List<TodoResponseDto> getTodosByTask(Long taskId, String status); // status 필터링 추가
+  PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, String status, Pageable pageable);
 
   // 상태 변경
   void completeOwnTodo(Long todoId, Long userId);         // 나의 할일 완료 처리

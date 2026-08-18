@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,10 +71,11 @@ public class TodoController {
   )
   public ResponseEntity<ResponseDto> getTodosByTask(
       @RequestParam Long taskId,
-      @RequestParam(required = false) String status
+      @RequestParam(required = false) String status,
+      @PageableDefault(size = 20, sort = "dueDate") Pageable pageable
   ) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-        todoService.getTodosByTask(taskId, status)));
+        todoService.getTodosByTask(taskId, status, pageable)));
   }
 
   @GetMapping("/{todoId}")

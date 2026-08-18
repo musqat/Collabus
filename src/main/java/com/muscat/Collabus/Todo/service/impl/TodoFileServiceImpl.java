@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TodoFileServiceImpl implements TodoFileService {
 
     private final TodoWorkRepository todoWorkRepository;

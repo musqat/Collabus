@@ -2,7 +2,9 @@ package com.muscat.Collabus.Notification.service;
 
 import com.muscat.Collabus.Notification.dto.NotificationResponse;
 import com.muscat.Collabus.enums.NotificationType;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface NotificationService {
 
@@ -11,10 +13,10 @@ public interface NotificationService {
       Long relatedEntityId);
 
   // 사용자의 모든 알림 조회
-  List<NotificationResponse> getUserNotifications(Long userId);
+  PageResponseDto<NotificationResponse> getUserNotifications(Long userId, Pageable pageable);
 
   // 사용자의 읽지 않은 알림 조회
-  List<NotificationResponse> getUnreadNotifications(Long userId);
+  PageResponseDto<NotificationResponse> getUnreadNotifications(Long userId, Pageable pageable);
 
   // 읽지 않은 알림 개수 조회
   Long getUnreadCount(Long userId);

@@ -13,6 +13,7 @@ import com.muscat.Collabus.Todo.repository.TodoRepository;
 import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Todo.service.TodoService;
 import com.muscat.Collabus.User.entity.User;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
@@ -21,8 +22,10 @@ import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.role.TaskRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TodoServiceImpl implements TodoService {
 
     private final TodoRepository todoRepository;
@@ -97,12 +101,13 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
-    public List<TodoResponseDto> getTodosByTask(Long taskId, String status) {
-        List<Todo> todos = (status != null)
-                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status))
-                : todoRepository.findAllByTaskId(taskId);
+    public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, String status,
+            Pageable pageable) {
+        Page<Todo> todos = (status != null)
+                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), pageable)
+                : todoRepository.findAllByTaskId(taskId, pageable);
 
-        return todos.stream().map(todoMapper::mapToDto).toList();
+        return PageResponseDto.of(todos, todoMapper::mapToDto);
     }
 
     private TodoStatus parseStatus(String status) {

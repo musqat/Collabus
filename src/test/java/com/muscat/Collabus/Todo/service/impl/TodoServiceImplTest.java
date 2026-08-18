@@ -21,6 +21,7 @@ import com.muscat.Collabus.Todo.repository.TodoRepository;
 import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
@@ -38,6 +39,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -119,7 +123,7 @@ class TodoServiceImplTest {
         .assignee(user)
         .title("Test Todo")
         .description("Test Description")
-        .dueDate(LocalDateTime.now().plusDays(7))
+        .dueDate(LocalDate.now().plusDays(7))
         .status(TodoStatus.IN_PROGRESS)
         .build();
 
@@ -312,17 +316,19 @@ class TodoServiceImplTest {
   void getTodosByTask_Success_WithoutStatus() {
     // Given
     Long taskId = 1L;
-    List<Todo> todos = Arrays.asList(todo);
-    when(todoRepository.findAllByTaskId(taskId)).thenReturn(todos);
+    Pageable pageable = PageRequest.of(0, 20);
+    when(todoRepository.findAllByTaskId(taskId, pageable))
+        .thenReturn(new PageImpl<>(List.of(todo), pageable, 1));
     when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
     // When
-    List<TodoResponseDto> result = todoService.getTodosByTask(taskId, null);
+    PageResponseDto<TodoResponseDto> result = todoService.getTodosByTask(taskId, null, pageable);
 
     // Then
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getTitle()).isEqualTo("Test Todo");
-    verify(todoRepository, times(1)).findAllByTaskId(taskId);
+    assertThat(result.getContent()).hasSize(1);
+    assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test Todo");
+    assertThat(result.getTotalElements()).isEqualTo(1);
+    verify(todoRepository, times(1)).findAllByTaskId(taskId, pageable);
   }
 
   @Test
@@ -331,18 +337,26 @@ class TodoServiceImplTest {
     // Given
     Long taskId = 1L;
     String status = "IN_PROGRESS";
-    List<Todo> todos = Arrays.asList(todo);
-    when(todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS))
-        .thenReturn(todos);
+    Pageable pageable = PageRequest.of(0, 20);
+    when(todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS, pageable))
+        .thenReturn(new PageImpl<>(List.of(todo), pageable, 1));
     when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
     // When
-    List<TodoResponseDto> result = todoService.getTodosByTask(taskId, status);
+    PageResponseDto<TodoResponseDto> result = todoService.getTodosByTask(taskId, status, pageable);
 
     // Then
-    assertThat(result).hasSize(1);
+    assertThat(result.getContent()).hasSize(1);
     verify(todoRepository, times(1))
-        .findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS);
+        .findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS, pageable);
+  }
+
+  @Test
+  @DisplayName("Task별 Todo 목록 조회 실패 - 알 수 없는 상태값")
+  void getTodosByTask_Fail_InvalidStatus() {
+    // When & Then
+    assertThatThrownBy(() -> todoService.getTodosByTask(1L, "BOGUS", PageRequest.of(0, 20)))
+        .isInstanceOf(BusinessException.class);
   }
 
   @Test

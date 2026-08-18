@@ -1,7 +1,7 @@
 package com.muscat.Collabus.config.websocket;
 
 import com.muscat.Collabus.config.jwt.JwtUtil;
-import com.muscat.Collabus.config.security.CustomUserDetailsService;
+import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
     private final RefreshTokenService refreshTokenService;
 
     @Override
@@ -50,13 +49,12 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
         }
 
-        String email = jwtUtil.getEmailFromToken(token);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        CustomUserDetails userDetails = CustomUserDetails.from(jwtUtil.parseClaims(token));
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
         accessor.setUser(authentication);
-        log.info("[WebSocket] '{}' 인증 완료, 실시간 연결을 시작합니다.", email);
+        log.info("[WebSocket] '{}' 인증 완료, 실시간 연결을 시작합니다.", userDetails.getUsername());
         return message;
     }
 }

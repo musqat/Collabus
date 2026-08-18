@@ -4,12 +4,15 @@ import { todoAPI } from '../api/todo';
 export const useTodos = (taskId, status = null) => {
   const queryClient = useQueryClient();
 
-  const { data: todos, isLoading } = useQuery({
+  // 서버가 페이지 응답을 주므로 목록은 content 에서 꺼낸다
+  const { data: todoPage, isLoading } = useQuery({
     queryKey: ['todos', taskId, status],
     queryFn: () => todoAPI.getByTask(taskId, status),
     enabled: !!taskId,
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
+
+  const todos = todoPage?.content ?? [];
 
   const createMutation = useMutation({
     mutationFn: ({ taskId, assigneeId, title, description, dueDate }) =>

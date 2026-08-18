@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +42,7 @@ public class Todo extends BaseEntity {
   private String description;
 
   @Column(nullable = false)
-  private LocalDateTime dueDate;
+  private LocalDate dueDate;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
