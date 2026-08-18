@@ -1,6 +1,8 @@
 package com.muscat.Collabus.config.jwt;
 
 import com.muscat.Collabus.config.security.CustomUserDetails;
+import com.muscat.Collabus.config.security.SecurityErrorResponder;
+import com.muscat.Collabus.enums.response.ErrorType;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -9,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -18,10 +21,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
   private final RefreshTokenService refreshTokenService;
+  private final SecurityErrorResponder errorResponder;
 
-  public JwtAuthenticationFilter(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
+  public JwtAuthenticationFilter(JwtUtil jwtUtil, RefreshTokenService refreshTokenService,
+      SecurityErrorResponder errorResponder) {
     this.jwtUtil = jwtUtil;
     this.refreshTokenService = refreshTokenService;
+    this.errorResponder = errorResponder;
   }
 
   @Override
@@ -34,13 +40,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     if (token != null) {
       if (refreshTokenService.isBlacklisted(token)) {
         log.warn("로그아웃된 토큰입니다. 401 반환.");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        errorResponder.write(request, response, HttpStatus.UNAUTHORIZED,
+            "로그아웃된 토큰입니다.", ErrorType.UNAUTHORIZED);
         return;
       }
 
       if (!jwtUtil.validateToken(token)) {
         log.warn("유효하지 않거나 만료된 JWT 토큰입니다. 401 반환.");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        errorResponder.write(request, response, HttpStatus.UNAUTHORIZED,
+            "유효하지 않거나 만료된 토큰입니다.", ErrorType.UNAUTHORIZED);
         return;
       }
 

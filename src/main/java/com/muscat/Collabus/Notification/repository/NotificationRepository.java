@@ -22,4 +22,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   // 사용자의 읽지 않은 알림 개수
   Long countByUserAndIsReadFalse(User user);
 
+  // 보관 한도를 넘겼는지 확인할 때 쓴다. OFFSET N 으로 (N+1)번째 알림만 집어 온다.
+  List<Notification> findByUser_IdOrderByIdDesc(Long userId, Pageable pageable);
+
+  // 기준선보다 오래된 알림을 한 번에 지운다
+  long deleteByUser_IdAndIdLessThanEqual(Long userId, Long id);
+
 }
