@@ -42,7 +42,10 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http,
       JwtUtil jwtUtil,
-      RefreshTokenService refreshTokenService) throws Exception {
+      RefreshTokenService refreshTokenService,
+      SecurityErrorResponder errorResponder,
+      RestAuthenticationEntryPoint authenticationEntryPoint,
+      RestAccessDeniedHandler accessDeniedHandler) throws Exception {
 
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -60,10 +63,14 @@ public class SecurityConfig {
             ).permitAll()
             .anyRequest().authenticated()
         )
+        // 기본값은 익명 요청에도 403 을 줌 -> 401/403 을 명시적으로 구분한다
+        .exceptionHandling(ex -> ex
+            .authenticationEntryPoint(authenticationEntryPoint)
+            .accessDeniedHandler(accessDeniedHandler))
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, refreshTokenService),
+        .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, refreshTokenService, errorResponder),
             UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
