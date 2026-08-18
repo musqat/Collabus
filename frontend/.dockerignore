@@ -2,7 +2,8 @@ node_modules
 dist
 .git
 .gitignore
-# .env는 Docker 빌드 시 필요하므로 제외하지 않음
+# Docker 빌드는 Dockerfile의 ARG/ENV만 사용한다 (로컬 .env 반입 금지)
+.env
 .env.local
 .env.production.local
 .env.development.local

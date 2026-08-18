@@ -11,10 +11,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.muscat.Collabus.User.entity.User;
+import com.muscat.Collabus.config.token.RefreshTokenService;
 import com.muscat.Collabus.User.mapper.UserMapper;
 import com.muscat.Collabus.User.model.UserRequestDto;
 import com.muscat.Collabus.User.model.UserResponseDto;
 import com.muscat.Collabus.User.repository.UserRepository;
+import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.enums.role.SystemRole;
@@ -42,6 +44,9 @@ class UserServiceImplTest {
 
   @Mock
   private UserMapper userMapper;
+
+  @Mock
+  private RefreshTokenService refreshTokenService;
 
   @InjectMocks
   private UserServiceImpl userService;
@@ -222,16 +227,35 @@ class UserServiceImplTest {
   void updatePassword_Success() {
     // Given
     Long userId = 1L;
+    String currentPassword = "currentPassword123";
     String newPassword = "newPassword123";
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(currentPassword, user.getPassword())).thenReturn(true);
     when(userRepository.save(any(User.class))).thenReturn(user);
 
     // When
-    userService.updatePassword(userId, newPassword);
+    userService.updatePassword(userId, currentPassword, newPassword);
 
     // Then
     verify(userRepository, times(1)).findById(userId);
     verify(userRepository, times(1)).save(any(User.class));
+    verify(refreshTokenService, times(1)).deleteRefreshToken(user.getEmail());
+  }
+
+  @Test
+  @DisplayName("비밀번호 변경 실패 - 현재 비밀번호 불일치")
+  void updatePassword_Fail_WrongCurrentPassword() {
+    // Given
+    Long userId = 1L;
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("wrongPassword", user.getPassword())).thenReturn(false);
+
+    // When & Then
+    assertThatThrownBy(() -> userService.updatePassword(userId, "wrongPassword", "newPassword123"))
+        .isInstanceOf(BusinessException.class);
+
+    verify(userRepository, never()).save(any(User.class));
+    verify(refreshTokenService, never()).deleteRefreshToken(any());
   }
 
   @Test
@@ -242,7 +266,7 @@ class UserServiceImplTest {
     String blankPassword = "";
 
     // When & Then
-    assertThatThrownBy(() -> userService.updatePassword(userId, blankPassword))
+    assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", blankPassword))
         .isInstanceOf(IllegalArgumentException.class);
 
     verify(userRepository, never()).findById(userId);
@@ -256,7 +280,7 @@ class UserServiceImplTest {
     Long userId = 1L;
 
     // When & Then
-    assertThatThrownBy(() -> userService.updatePassword(userId, null))
+    assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", null))
         .isInstanceOf(IllegalArgumentException.class);
 
     verify(userRepository, never()).findById(userId);
@@ -271,7 +295,7 @@ class UserServiceImplTest {
     when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
     // When & Then
-    assertThatThrownBy(() -> userService.updatePassword(userId, newPassword))
+    assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", newPassword))
         .isInstanceOf(ResourceNotFoundException.class);
   }
 

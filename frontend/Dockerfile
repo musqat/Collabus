@@ -12,6 +12,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Vite inlines these at build time, so they must be present before `npm run build`.
+ARG VITE_API_BASE_URL=/api
+ARG VITE_WS_BASE_URL=/ws
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_WS_BASE_URL=$VITE_WS_BASE_URL
+
 # Build the application
 RUN npm run build
 

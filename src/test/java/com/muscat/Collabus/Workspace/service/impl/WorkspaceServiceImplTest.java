@@ -14,10 +14,17 @@ import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
 import com.muscat.Collabus.Workspace.model.WorkspaceRequestDto;
 import com.muscat.Collabus.Workspace.model.WorkspaceResponseDto;
+import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
+import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
+import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
@@ -50,6 +57,24 @@ class WorkspaceServiceImplTest {
 
   @Mock
   private TaskAuthorityUtil taskAuthorityUtil;
+
+  @Mock
+  private TaskRepository taskRepository;
+
+  @Mock
+  private TaskUserRepository taskUserRepository;
+
+  @Mock
+  private TodoRepository todoRepository;
+
+  @Mock
+  private TodoWorkRepository todoWorkRepository;
+
+  @Mock
+  private TodoCommentRepository todoCommentRepository;
+
+  @Mock
+  private TodoFileRepository todoFileRepository;
 
   @InjectMocks
   private WorkspaceServiceImpl workspaceService;
@@ -98,9 +123,10 @@ class WorkspaceServiceImplTest {
     // Given
     Long founderId = 1L;
     when(entityFinderUtil.findUserById(founderId)).thenReturn(founder);
+    // 서비스가 빌더로 새 Workspace 인스턴스를 만들므로 setUp 의 인스턴스로는 매칭되지 않는다
     when(workspaceRepository.save(any(Workspace.class))).thenReturn(workspace);
     when(workspaceUserRepository.save(any(WorkspaceUser.class))).thenReturn(workspaceUser);
-    when(workspaceMapper.mapToDto(workspace)).thenReturn(responseDto);
+    when(workspaceMapper.mapToDto(any(Workspace.class))).thenReturn(responseDto);
 
     // When
     WorkspaceResponseDto result = workspaceService.createWorkspace(requestDto, founderId);
@@ -119,7 +145,7 @@ class WorkspaceServiceImplTest {
     // Given
     Long founderId = 999L;
     when(entityFinderUtil.findUserById(founderId))
-        .thenThrow(new ResourceNotFoundException(null));
+        .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> workspaceService.createWorkspace(requestDto, founderId))
@@ -152,7 +178,7 @@ class WorkspaceServiceImplTest {
     // Given
     Long workspaceId = 999L;
     when(entityFinderUtil.findWorkspaceById(workspaceId))
-        .thenThrow(new ResourceNotFoundException(null));
+        .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> workspaceService.getWorkspaceById(workspaceId))
@@ -230,7 +256,7 @@ class WorkspaceServiceImplTest {
         .build();
 
     when(entityFinderUtil.findWorkspaceById(workspaceId)).thenReturn(workspace);
-    doThrow(new BusinessException(null))
+    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
         .when(taskAuthorityUtil).validateWorkspaceMaster(workspace, userId);
 
     // When & Then
@@ -252,7 +278,7 @@ class WorkspaceServiceImplTest {
         .build();
 
     when(entityFinderUtil.findWorkspaceById(workspaceId))
-        .thenThrow(new ResourceNotFoundException(null));
+        .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> workspaceService.updateWorkspace(workspaceId, updateDto, userId))
@@ -284,7 +310,7 @@ class WorkspaceServiceImplTest {
     Long workspaceId = 1L;
     Long userId = 2L; // 다른 사용자
     when(entityFinderUtil.findWorkspaceById(workspaceId)).thenReturn(workspace);
-    doThrow(new BusinessException(null))
+    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
         .when(taskAuthorityUtil).validateWorkspaceMaster(workspace, userId);
 
     // When & Then
@@ -302,7 +328,7 @@ class WorkspaceServiceImplTest {
     Long workspaceId = 999L;
     Long userId = 1L;
     when(entityFinderUtil.findWorkspaceById(workspaceId))
-        .thenThrow(new ResourceNotFoundException(null));
+        .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> workspaceService.deleteWorkspace(workspaceId, userId))
