@@ -1,11 +1,5 @@
 package com.muscat.Collabus.Workspace.service.impl;
 
-import com.muscat.Collabus.Task.repository.TaskRepository;
-import com.muscat.Collabus.Task.repository.TaskUserRepository;
-import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
-import com.muscat.Collabus.Todo.repository.TodoFileRepository;
-import com.muscat.Collabus.Todo.repository.TodoRepository;
-import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
@@ -35,12 +29,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   private final WorkspaceUserRepository workspaceUserRepository;
   private final EntityFinderUtil entityFinderUtil;
   private final TaskAuthorityUtil taskAuthorityUtil;
-  private final TaskRepository taskRepository;
-  private final TaskUserRepository taskUserRepository;
-  private final TodoRepository todoRepository;
-  private final TodoWorkRepository todoWorkRepository;
-  private final TodoCommentRepository todoCommentRepository;
-  private final TodoFileRepository todoFileRepository;
 
   @Override
   @Transactional
@@ -100,16 +88,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   @Transactional
   public void deleteWorkspace(Long workspaceId, Long userId) {
-    taskAuthorityUtil.validateWorkspaceMaster(
-        entityFinderUtil.findWorkspaceById(workspaceId), userId);
+    Workspace workspace = entityFinderUtil.findWorkspaceById(workspaceId);
+    taskAuthorityUtil.validateWorkspaceMaster(workspace, userId);
 
-    todoFileRepository.deleteAllByWorkspaceId(workspaceId);
-    todoWorkRepository.deleteAllByWorkspaceId(workspaceId);
-    todoCommentRepository.deleteAllByWorkspaceId(workspaceId);
-    todoRepository.deleteAllByWorkspaceId(workspaceId);
-    taskUserRepository.deleteAllByWorkspaceId(workspaceId);
-    taskRepository.deleteAllByWorkspaceId(workspaceId);
-    workspaceUserRepository.deleteAllById_WorkspaceId(workspaceId);
-    workspaceRepository.deleteById(workspaceId);
+    // 하위 데이터(Task, Todo, 작업 내용, 댓글, 첨부, 멤버, 초대)는 FK 의 ON DELETE CASCADE 가 정리한다
+    workspaceRepository.delete(workspace);
   }
 }

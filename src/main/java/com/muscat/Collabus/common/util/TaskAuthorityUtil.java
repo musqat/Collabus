@@ -56,7 +56,9 @@ public class TaskAuthorityUtil {
 
   // Workspace 기준 Workspace Master 여부
   public boolean isWorkspaceMaster(Workspace workspace, Long userId) {
-    return getWorkspaceRole(workspace.getId(), userId) == WorkspaceRole.MASTER;
+    // 엔티티를 로드하지 않고 존재 여부만 확인한다
+    return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
+        workspace.getId(), userId, WorkspaceRole.MASTER);
   }
 
   // Task Manager 여부

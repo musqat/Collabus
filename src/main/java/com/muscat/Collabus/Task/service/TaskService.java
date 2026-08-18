@@ -20,7 +20,7 @@ public interface TaskService {
 
     TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId);
 
-    void deleteTask(Long taskId);
+    void deleteTask(Long taskId, Long userId);
 
     // Task 유저 관리
     void assignUserToTask(Long taskId, Long targetUserId, Long requesterId); // 워크스페이스 멤버만 가능

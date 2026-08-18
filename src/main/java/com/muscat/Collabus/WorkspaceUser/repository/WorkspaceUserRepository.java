@@ -1,6 +1,7 @@
 package com.muscat.Collabus.WorkspaceUser.repository;
 
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
+import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
 
 import java.util.List;
@@ -28,5 +29,7 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
 
     boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
 
-    void deleteAllById_WorkspaceId(Long workspaceId);
+  // 역할 확인만 필요할 때. 엔티티를 영속성 컨텍스트에 올리지 않는다.
+  boolean existsById_WorkspaceIdAndId_UserIdAndRole(Long workspaceId, Long userId, WorkspaceRole role);
+
 }

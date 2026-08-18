@@ -17,10 +17,6 @@ import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Task.service.TaskService;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.entity.TodoWork;
-import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
-import com.muscat.Collabus.Todo.repository.TodoFileRepository;
-import com.muscat.Collabus.Todo.repository.TodoRepository;
-import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.exception.BusinessException;
@@ -45,10 +41,6 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final TaskUserRepository taskUserRepository;
-    private final TodoRepository todoRepository;
-    private final TodoWorkRepository todoWorkRepository;
-    private final TodoCommentRepository todoCommentRepository;
-    private final TodoFileRepository todoFileRepository;
     private final TaskMapper taskMapper;
     private final TaskUserMapper taskUserMapper;
     private final TaskAuthorityUtil taskAuthorityUtil;
@@ -127,28 +119,12 @@ public class TaskServiceImpl implements TaskService {
 
     @Transactional
     @Override
-    public void deleteTask(Long taskId) {
+    public void deleteTask(Long taskId, Long userId) {
         Task task = finder.findTaskById(taskId);
+        // Workspace Master 또는 Task Manager 만 삭제할 수 있다
+        taskAuthorityUtil.validateCanManageTask(task, userId);
 
-        // Delete all Todos and their related data
-        List<Todo> todos = todoRepository.findAllByTaskId(taskId);
-        for (Todo todo : todos) {
-            // Delete TodoWork and their files
-            List<TodoWork> todoWorks = todoWorkRepository.findAllByTodoId(todo.getId());
-            for (TodoWork work : todoWorks) {
-                todoFileRepository.deleteAllByWorkId(work.getId());
-            }
-            todoWorkRepository.deleteAllByTodoId(todo.getId());
-
-            // Delete TodoComments
-            todoCommentRepository.deleteAllByTodoId(todo.getId());
-        }
-        todoRepository.deleteAll(todos);
-
-        // Delete TaskUsers
-        taskUserRepository.deleteAllByTask(task);
-
-        // Finally delete the Task
+        // 하위 Todo·작업 내용·댓글·첨부·참여자는 FK 의 ON DELETE CASCADE 가 정리한다
         taskRepository.delete(task);
     }
 
