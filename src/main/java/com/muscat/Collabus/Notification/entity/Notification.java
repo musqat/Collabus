@@ -16,44 +16,43 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 @Getter
-@Setter
 @ToString
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Builder
 @Table(name = "notifications")
 public class Notification extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private NotificationType type;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationType type;
 
-  @Column(nullable = false)
-  private String message;
+    @Column(nullable = false)
+    private String message;
 
-  @Column
-  private Long relatedEntityId; // taskId, todoId, workspaceId 등
+    @Column
+    private Long relatedEntityId; // taskId, todoId, workspaceId 등
 
-  @Column(nullable = false)
-  @Builder.Default
-  private Boolean isRead = false;
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isRead = false;
 
-  public void markAsRead() {
-    this.isRead = true;
-  }
+    public void markAsRead() {
+        this.isRead = true;
+    }
 }

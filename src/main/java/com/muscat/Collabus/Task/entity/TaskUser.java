@@ -9,28 +9,33 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @AllArgsConstructor
-@NoArgsConstructor
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TaskUser {
 
-  @EmbeddedId
-  private TaskUserPk id;
+    @EmbeddedId
+    private TaskUserPk id;
 
-  @ManyToOne
-  @MapsId("taskId")
-  private Task task;
+    @ManyToOne
+    @MapsId("taskId")
+    private Task task;
 
-  @ManyToOne
-  @MapsId("userId")
-  private User user;
+    @ManyToOne
+    @MapsId("userId")
+    private User user;
 
-  @Enumerated(EnumType.STRING)
-  private TaskRole role;
+    @Enumerated(EnumType.STRING)
+    private TaskRole role;
+
+    public void changeRole(TaskRole role) {
+        this.role = role;
+    }
 }

@@ -76,8 +76,7 @@ public class TodoFileServiceImpl implements TodoFileService {
         String newFileUrl = fileUtil.saveFile(newFile);
         fileUtil.deleteFile(file.getFileUrl());
 
-        file.setFileUrl(newFileUrl);
-        file.setOriginalName(newFile.getOriginalFilename());
+        file.replaceFile(newFileUrl, newFile.getOriginalFilename());
 
         return todoFileMapper.mapToDto(file);
     }

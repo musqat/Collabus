@@ -12,53 +12,56 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 @Getter
-@Setter
 @ToString
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Builder
 @Table(name = "users")
 public class User extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id; // PK
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // PK
 
-  @Column(nullable = false, unique = true)
-  private String email; // 이메일
+    @Column(nullable = false, unique = true)
+    private String email; // 이메일
 
-  @Column(nullable = false)
-  private String nickname; // 닉네임
+    @Column(nullable = false)
+    private String nickname; // 닉네임
 
-  @Column(nullable = false)
-  private String password; // 패스워드
+    @Column(nullable = false)
+    private String password; // 패스워드
 
-  @Column(nullable = false)
-  private String tag; // 4자리 숫자(자동생성)
+    @Column(nullable = false)
+    private String tag; // 4자리 숫자(자동생성)
 
-  @Column(nullable = false, unique = true)
-  private String displayName; // nickname#tag 조합
+    @Column(nullable = false, unique = true)
+    private String displayName; // nickname#tag 조합
 
-  @Enumerated(EnumType.STRING)
-  private SystemRole role; // 시스템 역할 (일반 유저, 운영자)
+    @Enumerated(EnumType.STRING)
+    private SystemRole role; // 시스템 역할 (일반 유저, 운영자)
 
 
-  public void changeNickname(String newNickname) {
-    this.nickname = newNickname;
-    this.displayName = newNickname + "#" + this.tag;
-  }
+    public void changeNickname(String newNickname) {
+        this.nickname = newNickname;
+        this.displayName = newNickname + "#" + this.tag;
+    }
 
-  public void changePassword(String newPassword, PasswordEncoder encoder) {
-    this.password = encoder.encode(newPassword);
-  }
+    public void changePassword(String newPassword, PasswordEncoder encoder) {
+        this.password = encoder.encode(newPassword);
+    }
 
+
+    public void assignRole(SystemRole role) {
+        this.role = role;
+    }
 }

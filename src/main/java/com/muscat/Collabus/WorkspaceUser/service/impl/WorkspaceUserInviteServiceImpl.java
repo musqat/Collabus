@@ -22,9 +22,11 @@ import com.muscat.Collabus.enums.response.InviteResponse;
 import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.enums.status.InviteStatus;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -35,98 +37,98 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteService {
 
-  private final WorkspaceRepository workspaceRepository;
-  private final UserRepository userRepository;
-  private final WorkspaceInviteRepository inviteRepository;
-  private final WorkspaceUserRepository workspaceUserRepository;
-  private final WorkspaceInviteMapper inviteMapper;
-  private final NotificationService notificationService;
+    private final WorkspaceRepository workspaceRepository;
+    private final UserRepository userRepository;
+    private final WorkspaceInviteRepository inviteRepository;
+    private final WorkspaceUserRepository workspaceUserRepository;
+    private final WorkspaceInviteMapper inviteMapper;
+    private final NotificationService notificationService;
 
 
-  @Override
-  public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
-    // MASTER 권한 확인
-    checkPermission(workspaceId, inviterId, WorkspaceRole.MASTER);
+    @Override
+    public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
+        // MASTER 권한 확인
+        checkPermission(workspaceId, inviterId, WorkspaceRole.MASTER);
 
-    if (inviterId.equals(dto.getUserId())) {
-      throw new IllegalArgumentException(InviteResponse.INVITE_SELF.getMessage());
+        if (inviterId.equals(dto.getUserId())) {
+            throw new IllegalArgumentException(InviteResponse.INVITE_SELF.getMessage());
+        }
+
+        if (workspaceUserRepository.existsById(new WorkspaceUserPk(workspaceId, dto.getUserId()))) {
+            throw new ResourceAlreadyExistsException(WorkspaceUserResponse.USER_ALREADY_MEMBER);
+        }
+
+        if (inviteRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, dto.getUserId(),
+                InviteStatus.PENDING)) {
+            throw new ResourceAlreadyExistsException(InviteResponse.INVITE_ALREADY_PENDING);
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(CommonResponse.WORKSPACE_NOT_FOUND));
+        User inviter = userRepository.findById(inviterId)
+                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+        User invitee = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+
+        WorkspaceInvite invite = inviteMapper.mapToEntity(workspace, inviter, invitee, dto);
+        WorkspaceInvite savedInvite = inviteRepository.save(invite);
+
+        // 초대받은 사용자에게 알림 전송
+        String message = String.format("'%s' 워크스페이스에 초대되었습니다.", workspace.getWorkspaceName());
+        notificationService.createNotification(dto.getUserId(),
+                NotificationType.WORKSPACE_INVITED, message, savedInvite.getId());
     }
 
-    if (workspaceUserRepository.existsById(new WorkspaceUserPk(workspaceId, dto.getUserId()))) {
-      throw new ResourceAlreadyExistsException(WorkspaceUserResponse.USER_ALREADY_MEMBER);
+    @Override
+    public List<InviteResponseDto> getMyInvites(Long inviteeId) {
+        return inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING).stream()
+                .map(inviteMapper::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    if (inviteRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, dto.getUserId(),
-        InviteStatus.PENDING)) {
-      throw new ResourceAlreadyExistsException(InviteResponse.INVITE_ALREADY_PENDING);
+    @Override
+    @Transactional
+    public void acceptInvite(Long inviteId, Long inviteeId) {
+        WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
+                .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
+
+        if (invite.getStatus() != InviteStatus.PENDING) {
+            throw new IllegalStateException(InviteResponse.INVITE_ALREADY_PROCESSED.getMessage());
+        }
+
+        invite.accept();
+
+        WorkspaceUser workspaceUser = WorkspaceUser.builder()
+                .id(new WorkspaceUserPk(invite.getWorkspace().getId(), inviteeId))
+                .user(invite.getInvitee())
+                .workspace(invite.getWorkspace())
+                .role(invite.getRole())
+                .build();
+
+        workspaceUserRepository.save(workspaceUser);
     }
 
-    Workspace workspace = workspaceRepository.findById(workspaceId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException(CommonResponse.WORKSPACE_NOT_FOUND));
-    User inviter = userRepository.findById(inviterId)
-        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
-    User invitee = userRepository.findById(dto.getUserId())
-        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+    @Override
+    @Transactional
+    public void rejectInvite(Long inviteId, Long inviteeId) {
+        WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
+                .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
 
-    WorkspaceInvite invite = inviteMapper.mapToEntity(workspace, inviter, invitee, dto);
-    WorkspaceInvite savedInvite = inviteRepository.save(invite);
-
-    // 초대받은 사용자에게 알림 전송
-    String message = String.format("'%s' 워크스페이스에 초대되었습니다.", workspace.getWorkspaceName());
-    notificationService.createNotification(dto.getUserId(),
-        NotificationType.WORKSPACE_INVITED, message, savedInvite.getId());
-  }
-
-  @Override
-  public List<InviteResponseDto> getMyInvites(Long inviteeId) {
-    return inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING).stream()
-        .map(inviteMapper::mapToDto)
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  @Transactional
-  public void acceptInvite(Long inviteId, Long inviteeId) {
-    WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
-        .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
-
-    if (invite.getStatus() != InviteStatus.PENDING) {
-      throw new IllegalStateException(InviteResponse.INVITE_ALREADY_PROCESSED.getMessage());
+        invite.reject();
+        inviteRepository.save(invite);
     }
 
-    invite.setStatus(InviteStatus.ACCEPTED);
-
-    WorkspaceUser workspaceUser = WorkspaceUser.builder()
-        .id(new WorkspaceUserPk(invite.getWorkspace().getId(), inviteeId))
-        .user(invite.getInvitee())
-        .workspace(invite.getWorkspace())
-        .role(invite.getRole())
-        .build();
-
-    workspaceUserRepository.save(workspaceUser);
-  }
-
-  @Override
-  @Transactional
-  public void rejectInvite(Long inviteId, Long inviteeId) {
-    WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
-        .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
-
-    invite.setStatus(InviteStatus.REJECTED);
-    inviteRepository.save(invite);
-  }
-
-  private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
-    return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
-        .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
-  }
-
-  private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
-    WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-    Set<WorkspaceRole> allowed = Set.of(allowedRoles);
-    if (!allowed.contains(user.getRole())) {
-      throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
+    private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
+        return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
+                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
     }
-  }
+
+    private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
+        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
+        Set<WorkspaceRole> allowed = Set.of(allowedRoles);
+        if (!allowed.contains(user.getRole())) {
+            throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
+        }
+    }
 }

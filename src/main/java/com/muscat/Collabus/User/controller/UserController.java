@@ -97,7 +97,7 @@ public class UserController {
   @PreAuthorize("#id == principal.userId or hasRole('ADMIN')")
   public ResponseEntity<Void> updateNickname(
       @PathVariable Long id,
-      @RequestBody UpdateNicknameDto dto) {
+      @RequestBody @Valid UpdateNicknameDto dto) {
     userService.updateNickname(id, dto.getNickname());
     return ResponseEntity.ok().build();
   }
