@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Task.controller;
 
+import jakarta.validation.Valid;
 import com.muscat.Collabus.Task.model.TaskRequestDto;
 import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
@@ -52,7 +53,7 @@ public class TaskController {
       }
   )
   public ResponseEntity<ResponseDto> createTask(
-      @RequestBody TaskRequestDto dto,
+      @RequestBody @Valid TaskRequestDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
         taskService.createTask(dto, userDetails.getUserId())));
@@ -103,7 +104,7 @@ public class TaskController {
   )
   public ResponseEntity<ResponseDto> updateTask(
       @PathVariable Long taskId,
-      @RequestBody TaskUpdateRequestDto dto,
+      @RequestBody @Valid TaskUpdateRequestDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
         taskService.updateTask(taskId, dto, userDetails.getUserId())));

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.config.token;
 
+import jakarta.validation.Valid;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.dto.ResponseDto;
@@ -26,7 +27,7 @@ public class TokenController {
 
   @Operation(summary = "Access Token 재발급", description = "Refresh Token으로 Access Token을 재발급합니다.")
   @PostMapping("/refresh")
-  public ResponseEntity<ResponseDto> refreshToken(@RequestBody RefreshRequestDto request) {
+  public ResponseEntity<ResponseDto> refreshToken(@RequestBody @Valid RefreshRequestDto request) {
     String refreshToken = request.getRefreshToken();
 
     if (!jwtUtil.validateToken(refreshToken)) {

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.controller;
 
+import jakarta.validation.Valid;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.Todo.service.TodoService;
@@ -49,7 +50,7 @@ public class TodoController {
       }
   )
   public ResponseEntity<ResponseDto> createTodo(
-      @RequestBody TodoRequestDto dto,
+      @RequestBody @Valid TodoRequestDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
@@ -109,7 +110,7 @@ public class TodoController {
   )
   public ResponseEntity<ResponseDto> updateTodo(
       @PathVariable Long todoId,
-      @RequestBody TodoRequestDto dto,
+      @RequestBody @Valid TodoRequestDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.controller;
 
+import jakarta.validation.Valid;
 import com.muscat.Collabus.Todo.model.TodoCommentDto;
 import com.muscat.Collabus.Todo.service.TodoCommentService;
 import com.muscat.Collabus.common.dto.ResponseDto;
@@ -47,7 +48,7 @@ public class TodoCommentController {
   )
   public ResponseEntity<ResponseDto> createComment(
       @RequestParam Long todoId,
-      @RequestBody TodoCommentDto dto,
+      @RequestBody @Valid TodoCommentDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     TodoCommentDto saved = todoCommentService.addComment(
@@ -89,7 +90,7 @@ public class TodoCommentController {
   )
   public ResponseEntity<ResponseDto> updateComment(
       @PathVariable Long commentId,
-      @RequestBody TodoCommentDto dto,
+      @RequestBody @Valid TodoCommentDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     TodoCommentDto updated = todoCommentService.updateComment(

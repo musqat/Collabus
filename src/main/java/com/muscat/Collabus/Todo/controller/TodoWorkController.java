@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.controller;
 
+import jakarta.validation.Valid;
 import com.muscat.Collabus.Todo.model.TodoWorkDto;
 import com.muscat.Collabus.Todo.service.TodoWorkService;
 import com.muscat.Collabus.common.dto.ResponseDto;
@@ -40,7 +41,7 @@ public class TodoWorkController {
   )
   public ResponseEntity<ResponseDto> createWork(
       @RequestParam Long todoId,
-      @RequestBody TodoWorkDto dto,
+      @RequestBody @Valid TodoWorkDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     TodoWorkDto saved = todoWorkService.createWork(todoId, dto, userDetails.getUserId());
@@ -78,7 +79,7 @@ public class TodoWorkController {
   )
   public ResponseEntity<ResponseDto> updateWork(
       @PathVariable Long workId,
-      @RequestBody TodoWorkDto dto,
+      @RequestBody @Valid TodoWorkDto dto,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     TodoWorkDto updated = todoWorkService.updateWork(workId, dto, userDetails.getUserId());
