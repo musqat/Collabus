@@ -13,10 +13,10 @@ export const todoAPI = {
     return data.data;
   },
 
-  // Task의 Todo 목록
-  getByTask: async (taskId, status = null) => {
+  // Task의 Todo 목록 (페이지 응답)
+  getByTask: async (taskId, status = null, page = 0, size = 20) => {
     const { data } = await apiClient.get('/todo', {
-      params: { taskId, status }
+      params: { taskId, status, page, size }
     });
     return data.data;
   },
