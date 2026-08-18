@@ -26,6 +26,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   List<Notification> findByUser_IdOrderByIdDesc(Long userId, Pageable pageable);
 
   // 기준선보다 오래된 알림을 한 번에 지운다
-  long deleteByUser_IdAndIdLessThanEqual(Long userId, Long id);
+  void deleteByUser_IdAndIdLessThanEqual(Long userId, Long id);
 
 }
