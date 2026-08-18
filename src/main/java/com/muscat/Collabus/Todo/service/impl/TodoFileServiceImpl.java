@@ -115,6 +115,7 @@ public class TodoFileServiceImpl implements TodoFileService {
         participantUtil.validateTaskParticipant(work.getTodo().getTask().getId(), userId);
     }
 
+    // 파일 수정·삭제는 업로더 본인만 가능하다
     private void validateUploader(TodoFile file, Long userId) {
         if (!file.getUploader().getId().equals(userId)) {
             throw new AccessDeniedException(TodoResponse.UNAUTHORIZED_TODO_WORK.getMessage());

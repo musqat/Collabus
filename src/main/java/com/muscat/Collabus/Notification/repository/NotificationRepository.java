@@ -17,6 +17,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   // 사용자의 읽지 않은 알림 조회
   List<Notification> findByUserAndIsReadFalseOrderByCreatedAtDesc(User user);
 
+  // 읽지 않은 알림 목록 조회 (페이징)
   Page<Notification> findByUserAndIsReadFalseOrderByCreatedAtDesc(User user, Pageable pageable);
 
   // 사용자의 읽지 않은 알림 개수

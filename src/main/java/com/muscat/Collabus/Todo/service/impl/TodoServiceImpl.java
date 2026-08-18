@@ -119,6 +119,7 @@ public class TodoServiceImpl implements TodoService {
         }
     }
 
+    // 담당자 본인만 완료 요청 가능. Task 의 MANAGER 전원에게 검수 요청 알림이 간다
     @Override
     @Transactional
     public void completeOwnTodo(Long todoId, Long userId) {
@@ -137,6 +138,7 @@ public class TodoServiceImpl implements TodoService {
                         m.getUser().getId(), NotificationType.TODO_REVIEW_REQUESTED, reviewMessage, todoId));
     }
 
+    // TM 만 검수 승인 가능. WAITING_REVIEW 상태 검사는 Todo.confirm() 안에 있다
     @Override
     @Transactional
     public TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId) {
@@ -155,6 +157,7 @@ public class TodoServiceImpl implements TodoService {
         return todoMapper.mapToDto(todo);
     }
 
+    // TM 만 변경 가능. 새 담당자는 Task 참여자여야 한다
     @Override
     @Transactional
     public void changeAssignee(Long todoId, Long newAssigneeId, Long managerId) {
