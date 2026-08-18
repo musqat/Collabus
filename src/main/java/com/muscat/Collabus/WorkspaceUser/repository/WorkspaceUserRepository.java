@@ -4,12 +4,15 @@ import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, WorkspaceUserPk> {
 
+  @EntityGraph(attributePaths = {"user"})
   List<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId);
 
+  @EntityGraph(attributePaths = {"workspace", "workspace.founder"})
   List<WorkspaceUser> findAllById_UserId(Long userId);
 
   Optional<WorkspaceUser> findById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);

@@ -7,6 +7,7 @@ import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.enums.role.TaskRole;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface TaskUserRepository extends JpaRepository<TaskUser, TaskUserPk> {
 
+  @EntityGraph(attributePaths = {"user"})
   List<TaskUser> findAllByTask(Task task);
 
   Optional<TaskUser> findByTaskAndUser(Task task, User user);
