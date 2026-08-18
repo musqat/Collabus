@@ -2,10 +2,15 @@ package com.muscat.Collabus.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * 마이그레이션을 실제 MySQL 에 적용해 검증한다.
 
- * 다른 테스트는 H2 + ddl-auto 로 돌기 떄문에 V1~V3 이 실행되지 않는다.
+ * 다른 테스트는 H2 + ddl-auto 로 돌기 때문에 마이그레이션이 실행되지 않는다.
  * 마이그레이션이 깨져도 알 수 없으므로 여기서만 DB 를 띄운다.
  * Hibernate 는 validate 로 두어, 엔티티와 마이그레이션 결과가 어긋나면 기동이 실패한다.
  */
@@ -67,14 +72,31 @@ class FlywayMigrationIntegrationTest {
     return values;
   }
 
+  /**
+   * 마이그레이션 파일에서 버전을 뽑는다
+   */
+  private List<String> expectedVersions() throws Exception {
+    URL location = getClass().getClassLoader().getResource("db/migration");
+    assertThat(location).as("db/migration 을 찾을 수 없다").isNotNull();
+
+    try (Stream<Path> files = Files.list(Path.of(location.toURI()))) {
+      return files
+          .map(path -> path.getFileName().toString())
+          .filter(name -> name.startsWith("V") && name.endsWith(".sql"))
+          .map(name -> name.substring(1, name.indexOf("__")))
+          .sorted(Comparator.comparingInt(Integer::parseInt))
+          .toList();
+    }
+  }
+
   @Test
   @DisplayName("마이그레이션이 순서대로 모두 적용된다")
   void allMigrationsApplied() throws Exception {
-    List<String> versions = query(
+    List<String> applied = query(
         "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank",
         "version");
 
-    assertThat(versions).containsExactly("1", "2", "3");
+    assertThat(applied).containsExactlyElementsOf(expectedVersions());
   }
 
   @Test
