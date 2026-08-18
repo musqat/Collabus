@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
   private final WorkspaceUserRepository workspaceUserRepository;
@@ -50,6 +50,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
   }
 
   @Override
+  @Transactional
   public void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId) {
     participantUtil.validateWorkspaceParticipant(workspaceId, actorId);
     checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
@@ -71,6 +72,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
   }
 
   @Override
+  @Transactional
   public void removeUser(Long workspaceId, Long userId, Long actorId) {
     checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
 
@@ -83,6 +85,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
   }
 
   @Override
+  @Transactional
   public void leaveWorkspace(Long workspaceId, Long userId) {
     WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
     List<WorkspaceUser> members = workspaceUserRepository.findAllById_WorkspaceId(workspaceId);

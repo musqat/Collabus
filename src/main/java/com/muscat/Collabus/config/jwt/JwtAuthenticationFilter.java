@@ -1,7 +1,8 @@
 package com.muscat.Collabus.config.jwt;
 
-import com.muscat.Collabus.config.security.CustomUserDetailsService;
+import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.config.token.RefreshTokenService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,20 +11,16 @@ import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
-  private final CustomUserDetailsService userDetailsService;
   private final RefreshTokenService refreshTokenService;
 
-  public JwtAuthenticationFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService,
-      RefreshTokenService refreshTokenService) {
+  public JwtAuthenticationFilter(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
     this.jwtUtil = jwtUtil;
-    this.userDetailsService = userDetailsService;
     this.refreshTokenService = refreshTokenService;
   }
 
@@ -47,8 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return;
       }
 
-      String email = jwtUtil.getEmailFromToken(token);
-      UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+      // 서명이 검증된 토큰의 클레임만으로 인증 주체를 구성
+      Claims claims = jwtUtil.parseClaims(token);
+      CustomUserDetails userDetails = CustomUserDetails.from(claims);
 
       UsernamePasswordAuthenticationToken authentication =
           new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -68,4 +66,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     return null;
   }
 }
-

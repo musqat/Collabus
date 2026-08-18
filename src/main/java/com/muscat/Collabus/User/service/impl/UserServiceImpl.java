@@ -20,9 +20,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
@@ -31,6 +33,7 @@ public class UserServiceImpl implements UserService {
   private final RefreshTokenService refreshTokenService;
 
   @Override
+  @Transactional
   public void registerUser(UserRequestDto userDto) {
     if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
       throw new ResourceAlreadyExistsException(UserResponse.EMAIL_ALREADY_EXISTS);
@@ -61,6 +64,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @Transactional
   public void updateNickname(Long userId, String newNickname) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
@@ -78,6 +82,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @Transactional
   public void updatePassword(Long userId, String currentPassword, String newPassword) {
     if (newPassword == null || newPassword.isBlank()) {
       throw new IllegalArgumentException(UserResponse.PASSWORD_BLANK.getMessage());
@@ -99,6 +104,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @Transactional
   public boolean deleteUser(String email) {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
@@ -120,6 +126,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @Transactional
   public void createAdmin(UserRequestDto userDto) {
     if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
       throw new ResourceAlreadyExistsException(UserResponse.EMAIL_ALREADY_EXISTS);

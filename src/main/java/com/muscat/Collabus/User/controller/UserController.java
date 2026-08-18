@@ -166,7 +166,7 @@ public class UserController {
       // 로그인 성공 — 실패 횟수 초기화
       refreshTokenService.resetLoginFailure(email);
 
-      String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+      String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name(), user.getDisplayName());
       String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
       refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken,
           jwtUtil.getRefreshExpiration());

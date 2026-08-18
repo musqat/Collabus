@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteService {
 
   private final WorkspaceRepository workspaceRepository;
@@ -86,6 +86,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
   }
 
   @Override
+  @Transactional
   public void acceptInvite(Long inviteId, Long inviteeId) {
     WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
         .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
@@ -107,6 +108,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
   }
 
   @Override
+  @Transactional
   public void rejectInvite(Long inviteId, Long inviteeId) {
     WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
         .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));

@@ -46,8 +46,10 @@ public class TokenController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(CommonResponse.UNAUTHORIZED));
     }
 
+    User user = userOpt.get();
+
     // Access Token 재발급
-    String newAccessToken = jwtUtil.generateToken(email, userOpt.get().getRole().name());
+    String newAccessToken = jwtUtil.generateToken(user.getId(), email, user.getRole().name(), user.getDisplayName());
 
     // Refresh Token Rotation — 기존 RT 무효화 후 새 RT 발급
     String newRefreshToken = jwtUtil.generateRefreshToken(email);
