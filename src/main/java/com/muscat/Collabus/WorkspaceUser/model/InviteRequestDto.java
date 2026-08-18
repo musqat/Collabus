@@ -1,9 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.model;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

@@ -8,7 +8,6 @@ import com.muscat.Collabus.User.service.UserService;
 import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.jwt.JwtUtil;
 import com.muscat.Collabus.config.token.RefreshTokenService;
-import com.muscat.Collabus.config.token.TokenResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
