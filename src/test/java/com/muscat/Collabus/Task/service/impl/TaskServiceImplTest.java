@@ -25,6 +25,7 @@ import com.muscat.Collabus.Todo.repository.TodoRepository;
 import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
@@ -32,15 +33,20 @@ import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
 import com.muscat.Collabus.enums.role.TaskRole;
+
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,409 +54,412 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("TaskService 단위 테스트")
 class TaskServiceImplTest {
 
-  @Mock
-  private TaskRepository taskRepository;
-
-  @Mock
-  private TaskUserRepository taskUserRepository;
-
-  @Mock
-  private TaskMapper taskMapper;
-
-  @Mock
-  private TaskUserMapper taskUserMapper;
-
-  @Mock
-  private TaskAuthorityUtil taskAuthorityUtil;
-
-  @Mock
-  private EntityFinderUtil finder;
-
-  @Mock
-  private TodoRepository todoRepository;
-
-  @Mock
-  private TodoWorkRepository todoWorkRepository;
-
-  @Mock
-  private TodoCommentRepository todoCommentRepository;
-
-  @Mock
-  private TodoFileRepository todoFileRepository;
-
-  @Mock
-  private NotificationService notificationService;
-
-  @InjectMocks
-  private TaskServiceImpl taskService;
-
-  private User user;
-  private Workspace workspace;
-  private Task task;
-  private TaskRequestDto taskRequestDto;
-  private TaskResponseDto taskResponseDto;
-  private TaskUpdateRequestDto taskUpdateRequestDto;
-  private TaskUser taskUser;
-
-  @BeforeEach
-  void setUp() {
-    user = User.builder()
-        .id(1L)
-        .email("user@example.com")
-        .nickname("testuser")
-        .password("encodedPassword")
-        .tag("1234")
-        .displayName("testuser#1234")
-        .role(SystemRole.USER)
-        .build();
-
-    workspace = Workspace.builder()
-        .id(1L)
-        .workspaceName("Test Workspace")
-        .description("Test Description")
-        .founder(user)
-        .build();
-
-    task = Task.builder()
-        .id(1L)
-        .workspace(workspace)
-        .taskManager(user)
-        .title("Test Task")
-        .description("Test Description")
-        .dueDate(LocalDate.now().plusDays(7))
-        .build();
-
-    taskRequestDto = new TaskRequestDto();
-    taskRequestDto.setWorkspaceId(1L);
-    taskRequestDto.setTitle("Test Task");
-    taskRequestDto.setDescription("Test Description");
-    taskRequestDto.setDueDate(LocalDate.now().plusDays(7));
-
-    taskResponseDto = TaskResponseDto.builder()
-        .id(1L)
-        .title("Test Task")
-        .description("Test Description")
-        .workspaceId(1L)
-        .managerDisplayName("testuser#1234")
-        .build();
-
-    taskUpdateRequestDto = TaskUpdateRequestDto.builder()
-        .title("Updated Task")
-        .description("Updated Description")
-        .dueDate(LocalDate.now().plusDays(14))
-        .build();
-  }
-
-  @Test
-  @DisplayName("Task 생성 성공")
-  void createTask_Success() {
-    // Given
-    Long userId = 1L;
-    when(finder.findUserById(userId)).thenReturn(user);
-    when(finder.findWorkspaceById(taskRequestDto.getWorkspaceId())).thenReturn(workspace);
-    when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
-    when(taskRepository.save(any(Task.class))).thenReturn(task);
-    when(taskUserRepository.save(any(TaskUser.class))).thenReturn(taskUser);
-    when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
-
-    // When
-    TaskResponseDto result = taskService.createTask(taskRequestDto, userId);
-
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.getTitle()).isEqualTo("Test Task");
-    verify(finder, times(1)).findUserById(userId);
-    verify(finder, times(1)).findWorkspaceById(taskRequestDto.getWorkspaceId());
-    verify(taskAuthorityUtil, times(1)).validateCanCreateTask(workspace, userId);
-    verify(taskRepository, times(1)).save(any(Task.class));
-    verify(taskUserRepository, times(1)).save(any(TaskUser.class));
-  }
-
-  @Test
-  @DisplayName("Task 생성 실패 - 권한 없음")
-  void createTask_Fail_Unauthorized() {
-    // Given
-    Long userId = 2L;
-    when(finder.findUserById(userId)).thenReturn(user);
-    when(finder.findWorkspaceById(taskRequestDto.getWorkspaceId())).thenReturn(workspace);
-    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
-        .when(taskAuthorityUtil).validateCanCreateTask(workspace, userId);
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.createTask(taskRequestDto, userId))
-        .isInstanceOf(BusinessException.class);
-
-    verify(taskRepository, times(0)).save(any(Task.class));
-  }
-
-  @Test
-  @DisplayName("Task 조회 성공")
-  void getTask_Success() {
-    // Given
-    Long taskId = 1L;
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
-
-    // When
-    TaskResponseDto result = taskService.getTask(taskId);
-
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.getId()).isEqualTo(taskId);
-    verify(finder, times(1)).findTaskById(taskId);
-  }
-
-  @Test
-  @DisplayName("Task 조회 실패 - 존재하지 않음")
-  void getTask_Fail_NotFound() {
-    // Given
-    Long taskId = 999L;
-    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.getTask(taskId))
-        .isInstanceOf(ResourceNotFoundException.class);
-  }
-
-  @Test
-  @DisplayName("Task 수정 성공")
-  void updateTask_Success() {
-    // Given
-    Long taskId = 1L;
-    Long userId = 1L;
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
-
-    // When
-    TaskResponseDto result = taskService.updateTask(taskId, taskUpdateRequestDto, userId);
-
-    // Then
-    assertThat(result).isNotNull();
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, userId);
-  }
-
-  @Test
-  @DisplayName("Task 수정 실패 - 권한 없음")
-  void updateTask_Fail_Unauthorized() {
-    // Given
-    Long taskId = 1L;
-    Long userId = 2L;
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
-        .when(taskAuthorityUtil).validateCanManageTask(task, userId);
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.updateTask(taskId, taskUpdateRequestDto, userId))
-        .isInstanceOf(BusinessException.class);
-  }
-
-  @Test
-  @DisplayName("Task 삭제 성공")
-  void deleteTask_Success() {
-    // Given
-    Long taskId = 1L;
-    when(finder.findTaskById(taskId)).thenReturn(task);
-
-    // When
-    taskService.deleteTask(taskId);
-
-    // Then
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskUserRepository, times(1)).deleteAllByTask(task);
-    verify(taskRepository, times(1)).delete(task);
-  }
-
-  @Test
-  @DisplayName("Task 삭제 실패 - Task 없음")
-  void deleteTask_Fail_NotFound() {
-    // Given
-    Long taskId = 999L;
-    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.deleteTask(taskId))
-        .isInstanceOf(ResourceNotFoundException.class);
-
-    verify(taskRepository, times(0)).delete(any(Task.class));
-  }
-
-  @Test
-  @DisplayName("워크스페이스별 Task 목록 조회 성공")
-  void getTasksByWorkspace_Success() {
-    // Given
-    Long workspaceId = 1L;
-    List<Task> tasks = Arrays.asList(task);
-    when(taskRepository.findAllByWorkspace_Id(workspaceId)).thenReturn(tasks);
-    when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
-
-    // When
-    List<TaskResponseDto> result = taskService.getTasksByWorkspace(workspaceId);
-
-    // Then
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getTitle()).isEqualTo("Test Task");
-    verify(taskRepository, times(1)).findAllByWorkspace_Id(workspaceId);
-  }
-
-  @Test
-  @DisplayName("Task에 사용자 추가 성공")
-  void assignUserToTask_Success() {
-    // Given
-    Long taskId = 1L;
-    Long targetUserId = 2L;
-    Long requesterId = 1L;
-    User targetUser = User.builder().id(2L).build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(finder.findUserById(targetUserId)).thenReturn(targetUser);
-    when(taskUserRepository.existsByTaskAndUser(task, targetUser)).thenReturn(false);
-    when(taskUserRepository.save(any(TaskUser.class))).thenReturn(taskUser);
-
-    // When
-    taskService.assignUserToTask(taskId, targetUserId, requesterId);
-
-    // Then
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskAuthorityUtil, times(1)).validateWorkspaceMaster(task, requesterId);
-    verify(finder, times(1)).findUserById(targetUserId);
-    verify(taskUserRepository, times(1)).save(any(TaskUser.class));
-  }
-
-  @Test
-  @DisplayName("Task에 사용자 추가 실패 - 이미 존재")
-  void assignUserToTask_Fail_AlreadyExists() {
-    // Given
-    Long taskId = 1L;
-    Long targetUserId = 2L;
-    Long requesterId = 1L;
-    User targetUser = User.builder().id(2L).build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(finder.findUserById(targetUserId)).thenReturn(targetUser);
-    when(taskUserRepository.existsByTaskAndUser(task, targetUser)).thenReturn(true);
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.assignUserToTask(taskId, targetUserId, requesterId))
-        .isInstanceOf(BusinessException.class);
-
-    verify(taskUserRepository, times(0)).save(any(TaskUser.class));
-  }
-
-  @Test
-  @DisplayName("Task에서 사용자 제거 성공")
-  void removeUserFromTask_Success() {
-    // Given
-    Long taskId = 1L;
-    Long targetUserId = 2L;
-    Long requesterId = 1L;
-    User targetUser = User.builder().id(2L).build();
-    TaskUser targetTaskUser = TaskUser.builder().build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(finder.findUserById(targetUserId)).thenReturn(targetUser);
-    when(taskUserRepository.findByTaskAndUser(task, targetUser))
-        .thenReturn(Optional.of(targetTaskUser));
-    when(taskAuthorityUtil.isTaskManager(task, requesterId)).thenReturn(true);
-
-    // When
-    taskService.removeUserFromTask(taskId, targetUserId, requesterId);
-
-    // Then
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, requesterId);
-    verify(taskUserRepository, times(1)).delete(targetTaskUser);
-  }
-
-  @Test
-  @DisplayName("Task에서 사용자 제거 실패 - 자기 자신 제거 (Manager)")
-  void removeUserFromTask_Fail_CannotRemoveSelf() {
-    // Given
-    Long taskId = 1L;
-    Long userId = 1L; // requesterId와 targetUserId가 동일
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(taskAuthorityUtil.isTaskManager(task, userId)).thenReturn(true);
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.removeUserFromTask(taskId, userId, userId))
-        .isInstanceOf(BusinessException.class);
-
-    verify(taskUserRepository, times(0)).delete(any(TaskUser.class));
-  }
-
-  @Test
-  @DisplayName("Task Manager 지정 성공")
-  void assignTaskManager_Success() {
-    // Given
-    Long taskId = 1L;
-    Long newManagerId = 2L;
-    Long requesterId = 1L;
-    User newManager = User.builder().id(2L).build();
-    TaskUser currentManager = TaskUser.builder().role(TaskRole.MANAGER).build();
-    TaskUser newManagerTaskUser = TaskUser.builder()
-        .role(TaskRole.NORMAL)
-        .user(newManager)
-        .build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(finder.findUserById(newManagerId)).thenReturn(newManager);
-    when(taskUserRepository.findByTaskAndUser(task, newManager))
-        .thenReturn(Optional.of(newManagerTaskUser));
-    when(taskUserRepository.findAllByTask(task)).thenReturn(Arrays.asList(currentManager));
-    when(taskRepository.save(task)).thenReturn(task);
-    when(taskUserRepository.save(any(TaskUser.class))).thenReturn(newManagerTaskUser);
-
-    // When
-    taskService.assignTaskManager(taskId, newManagerId, requesterId);
-
-    // Then
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskAuthorityUtil, times(1)).validateWorkspaceMaster(task, requesterId);
-    verify(finder, times(1)).findUserById(newManagerId);
-    verify(taskRepository, times(1)).save(task);
-    verify(taskUserRepository, times(2)).save(any(TaskUser.class));
-  }
-
-  @Test
-  @DisplayName("Task Manager 지정 실패 - 사용자가 Task에 없음")
-  void assignTaskManager_Fail_UserNotInTask() {
-    // Given
-    Long taskId = 1L;
-    Long newManagerId = 2L;
-    Long requesterId = 1L;
-    User newManager = User.builder().id(2L).build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(finder.findUserById(newManagerId)).thenReturn(newManager);
-    when(taskUserRepository.findByTaskAndUser(task, newManager))
-        .thenReturn(Optional.empty());
-
-    // When & Then
-    assertThatThrownBy(() -> taskService.assignTaskManager(taskId, newManagerId, requesterId))
-        .isInstanceOf(ResourceNotFoundException.class);
-
-    verify(taskRepository, times(0)).save(any(Task.class));
-  }
-
-  @Test
-  @DisplayName("Task 멤버 목록 조회 성공")
-  void getTaskMembers_Success() {
-    // Given
-    Long taskId = 1L;
-    TaskUser taskUser1 = TaskUser.builder().build();
-    List<TaskUser> taskUsers = Arrays.asList(taskUser1);
-    TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
-
-    when(finder.findTaskById(taskId)).thenReturn(task);
-    when(taskUserRepository.findAllByTask(task)).thenReturn(taskUsers);
-    when(taskUserMapper.mapToDto(taskUser1)).thenReturn(taskUserResponseDto);
-
-    // When
-    List<TaskUserResponseDto> result = taskService.getTaskMembers(taskId);
-
-    // Then
-    assertThat(result).hasSize(1);
-    verify(finder, times(1)).findTaskById(taskId);
-    verify(taskUserRepository, times(1)).findAllByTask(task);
-  }
+    @Mock
+    private TaskRepository taskRepository;
+
+    @Mock
+    private TaskUserRepository taskUserRepository;
+
+    @Mock
+    private TaskMapper taskMapper;
+
+    @Mock
+    private TaskUserMapper taskUserMapper;
+
+    @Mock
+    private TaskAuthorityUtil taskAuthorityUtil;
+
+    @Mock
+    private EntityFinderUtil finder;
+
+    @Mock
+    private TodoRepository todoRepository;
+
+    @Mock
+    private TodoWorkRepository todoWorkRepository;
+
+    @Mock
+    private TodoCommentRepository todoCommentRepository;
+
+    @Mock
+    private TodoFileRepository todoFileRepository;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @InjectMocks
+    private TaskServiceImpl taskService;
+
+    private User user;
+    private Workspace workspace;
+    private Task task;
+    private TaskRequestDto taskRequestDto;
+    private TaskResponseDto taskResponseDto;
+    private TaskUpdateRequestDto taskUpdateRequestDto;
+    private TaskUser taskUser;
+
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .id(1L)
+                .email("user@example.com")
+                .nickname("testuser")
+                .password("encodedPassword")
+                .tag("1234")
+                .displayName("testuser#1234")
+                .role(SystemRole.USER)
+                .build();
+
+        workspace = Workspace.builder()
+                .id(1L)
+                .workspaceName("Test Workspace")
+                .description("Test Description")
+                .founder(user)
+                .build();
+
+        task = Task.builder()
+                .id(1L)
+                .workspace(workspace)
+                .taskManager(user)
+                .title("Test Task")
+                .description("Test Description")
+                .dueDate(LocalDate.now().plusDays(7))
+                .build();
+
+        taskRequestDto = new TaskRequestDto();
+        taskRequestDto.setWorkspaceId(1L);
+        taskRequestDto.setTitle("Test Task");
+        taskRequestDto.setDescription("Test Description");
+        taskRequestDto.setDueDate(LocalDate.now().plusDays(7));
+
+        taskResponseDto = TaskResponseDto.builder()
+                .id(1L)
+                .title("Test Task")
+                .description("Test Description")
+                .workspaceId(1L)
+                .managerDisplayName("testuser#1234")
+                .build();
+
+        taskUpdateRequestDto = TaskUpdateRequestDto.builder()
+                .title("Updated Task")
+                .description("Updated Description")
+                .dueDate(LocalDate.now().plusDays(14))
+                .build();
+    }
+
+    @Test
+    @DisplayName("Task 생성 성공")
+    void createTask_Success() {
+        // Given
+        Long userId = 1L;
+        when(finder.findUserById(userId)).thenReturn(user);
+        when(finder.findWorkspaceById(taskRequestDto.getWorkspaceId())).thenReturn(workspace);
+        when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(taskUserRepository.save(any(TaskUser.class))).thenReturn(taskUser);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        // When
+        TaskResponseDto result = taskService.createTask(taskRequestDto, userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getTitle()).isEqualTo("Test Task");
+        verify(finder, times(1)).findUserById(userId);
+        verify(finder, times(1)).findWorkspaceById(taskRequestDto.getWorkspaceId());
+        verify(taskAuthorityUtil, times(1)).validateCanCreateTask(workspace, userId);
+        verify(taskRepository, times(1)).save(any(Task.class));
+        verify(taskUserRepository, times(1)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task 생성 실패 - 권한 없음")
+    void createTask_Fail_Unauthorized() {
+        // Given
+        Long userId = 2L;
+        when(finder.findUserById(userId)).thenReturn(user);
+        when(finder.findWorkspaceById(taskRequestDto.getWorkspaceId())).thenReturn(workspace);
+        doThrow(new BusinessException(CommonResponse.FORBIDDEN))
+                .when(taskAuthorityUtil).validateCanCreateTask(workspace, userId);
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.createTask(taskRequestDto, userId))
+                .isInstanceOf(BusinessException.class);
+
+        verify(taskRepository, times(0)).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("Task 조회 성공")
+    void getTask_Success() {
+        // Given
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        // When
+        TaskResponseDto result = taskService.getTask(taskId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(taskId);
+        verify(finder, times(1)).findTaskById(taskId);
+    }
+
+    @Test
+    @DisplayName("Task 조회 실패 - 존재하지 않음")
+    void getTask_Fail_NotFound() {
+        // Given
+        Long taskId = 999L;
+        when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.getTask(taskId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Task 수정 성공")
+    void updateTask_Success() {
+        // Given
+        Long taskId = 1L;
+        Long userId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        // When
+        TaskResponseDto result = taskService.updateTask(taskId, taskUpdateRequestDto, userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, userId);
+    }
+
+    @Test
+    @DisplayName("Task 수정 실패 - 권한 없음")
+    void updateTask_Fail_Unauthorized() {
+        // Given
+        Long taskId = 1L;
+        Long userId = 2L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        doThrow(new BusinessException(CommonResponse.FORBIDDEN))
+                .when(taskAuthorityUtil).validateCanManageTask(task, userId);
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.updateTask(taskId, taskUpdateRequestDto, userId))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("Task 삭제 성공")
+    void deleteTask_Success() {
+        // Given
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+
+        // When
+        taskService.deleteTask(taskId);
+
+        // Then
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskUserRepository, times(1)).deleteAllByTask(task);
+        verify(taskRepository, times(1)).delete(task);
+    }
+
+    @Test
+    @DisplayName("Task 삭제 실패 - Task 없음")
+    void deleteTask_Fail_NotFound() {
+        // Given
+        Long taskId = 999L;
+        when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.deleteTask(taskId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(taskRepository, times(0)).delete(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("워크스페이스별 Task 목록 조회 성공")
+    void getTasksByWorkspace_Success() {
+        // Given
+        Long workspaceId = 1L;
+        Pageable pageable = PageRequest.of(0, 20);
+        when(taskRepository.findAllByWorkspace_Id(workspaceId, pageable))
+                .thenReturn(new PageImpl<>(List.of(task), pageable, 1));
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        // When
+        PageResponseDto<TaskResponseDto> result =
+                taskService.getTasksByWorkspace(workspaceId, pageable);
+
+        // Then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test Task");
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        verify(taskRepository, times(1)).findAllByWorkspace_Id(workspaceId, pageable);
+    }
+
+    @Test
+    @DisplayName("Task에 사용자 추가 성공")
+    void assignUserToTask_Success() {
+        // Given
+        Long taskId = 1L;
+        Long targetUserId = 2L;
+        Long requesterId = 1L;
+        User targetUser = User.builder().id(2L).build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(finder.findUserById(targetUserId)).thenReturn(targetUser);
+        when(taskUserRepository.existsByTaskAndUser(task, targetUser)).thenReturn(false);
+        when(taskUserRepository.save(any(TaskUser.class))).thenReturn(taskUser);
+
+        // When
+        taskService.assignUserToTask(taskId, targetUserId, requesterId);
+
+        // Then
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskAuthorityUtil, times(1)).validateWorkspaceMaster(task, requesterId);
+        verify(finder, times(1)).findUserById(targetUserId);
+        verify(taskUserRepository, times(1)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task에 사용자 추가 실패 - 이미 존재")
+    void assignUserToTask_Fail_AlreadyExists() {
+        // Given
+        Long taskId = 1L;
+        Long targetUserId = 2L;
+        Long requesterId = 1L;
+        User targetUser = User.builder().id(2L).build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(finder.findUserById(targetUserId)).thenReturn(targetUser);
+        when(taskUserRepository.existsByTaskAndUser(task, targetUser)).thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.assignUserToTask(taskId, targetUserId, requesterId))
+                .isInstanceOf(BusinessException.class);
+
+        verify(taskUserRepository, times(0)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task에서 사용자 제거 성공")
+    void removeUserFromTask_Success() {
+        // Given
+        Long taskId = 1L;
+        Long targetUserId = 2L;
+        Long requesterId = 1L;
+        User targetUser = User.builder().id(2L).build();
+        TaskUser targetTaskUser = TaskUser.builder().build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(finder.findUserById(targetUserId)).thenReturn(targetUser);
+        when(taskUserRepository.findByTaskAndUser(task, targetUser))
+                .thenReturn(Optional.of(targetTaskUser));
+        when(taskAuthorityUtil.isTaskManager(task, requesterId)).thenReturn(true);
+
+        // When
+        taskService.removeUserFromTask(taskId, targetUserId, requesterId);
+
+        // Then
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, requesterId);
+        verify(taskUserRepository, times(1)).delete(targetTaskUser);
+    }
+
+    @Test
+    @DisplayName("Task에서 사용자 제거 실패 - 자기 자신 제거 (Manager)")
+    void removeUserFromTask_Fail_CannotRemoveSelf() {
+        // Given
+        Long taskId = 1L;
+        Long userId = 1L; // requesterId와 targetUserId가 동일
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskAuthorityUtil.isTaskManager(task, userId)).thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.removeUserFromTask(taskId, userId, userId))
+                .isInstanceOf(BusinessException.class);
+
+        verify(taskUserRepository, times(0)).delete(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task Manager 지정 성공")
+    void assignTaskManager_Success() {
+        // Given
+        Long taskId = 1L;
+        Long newManagerId = 2L;
+        Long requesterId = 1L;
+        User newManager = User.builder().id(2L).build();
+        TaskUser currentManager = TaskUser.builder().role(TaskRole.MANAGER).build();
+        TaskUser newManagerTaskUser = TaskUser.builder()
+                .role(TaskRole.NORMAL)
+                .user(newManager)
+                .build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(finder.findUserById(newManagerId)).thenReturn(newManager);
+        when(taskUserRepository.findByTaskAndUser(task, newManager))
+                .thenReturn(Optional.of(newManagerTaskUser));
+        when(taskUserRepository.findAllByTask(task)).thenReturn(Arrays.asList(currentManager));
+        when(taskRepository.save(task)).thenReturn(task);
+        when(taskUserRepository.save(any(TaskUser.class))).thenReturn(newManagerTaskUser);
+
+        // When
+        taskService.assignTaskManager(taskId, newManagerId, requesterId);
+
+        // Then
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskAuthorityUtil, times(1)).validateWorkspaceMaster(task, requesterId);
+        verify(finder, times(1)).findUserById(newManagerId);
+        verify(taskRepository, times(1)).save(task);
+        verify(taskUserRepository, times(2)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task Manager 지정 실패 - 사용자가 Task에 없음")
+    void assignTaskManager_Fail_UserNotInTask() {
+        // Given
+        Long taskId = 1L;
+        Long newManagerId = 2L;
+        Long requesterId = 1L;
+        User newManager = User.builder().id(2L).build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(finder.findUserById(newManagerId)).thenReturn(newManager);
+        when(taskUserRepository.findByTaskAndUser(task, newManager))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.assignTaskManager(taskId, newManagerId, requesterId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(taskRepository, times(0)).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("Task 멤버 목록 조회 성공")
+    void getTaskMembers_Success() {
+        // Given
+        Long taskId = 1L;
+        TaskUser taskUser1 = TaskUser.builder().build();
+        List<TaskUser> taskUsers = Arrays.asList(taskUser1);
+        TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
+
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskUserRepository.findAllByTask(task)).thenReturn(taskUsers);
+        when(taskUserMapper.mapToDto(taskUser1)).thenReturn(taskUserResponseDto);
+
+        // When
+        List<TaskUserResponseDto> result = taskService.getTaskMembers(taskId);
+
+        // Then
+        assertThat(result).hasSize(1);
+        verify(finder, times(1)).findTaskById(taskId);
+        verify(taskUserRepository, times(1)).findAllByTask(task);
+    }
 }

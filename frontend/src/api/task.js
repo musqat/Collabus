@@ -7,10 +7,12 @@ export const taskAPI = {
     return data;
   },
 
-  // 워크스페이스의 Task 목록
-  getByWorkspace: async (workspaceId) => {
-    const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/tasks`);
-    return data.data; // ResponseDto unwrapping
+  // 워크스페이스의 Task 목록 (페이지 응답)
+  getByWorkspace: async (workspaceId, page = 0, size = 20) => {
+    const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/tasks`, {
+      params: { page, size }
+    });
+    return data.data.content;
   },
 
   // Task 상세

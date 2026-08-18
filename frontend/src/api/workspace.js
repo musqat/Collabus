@@ -44,9 +44,11 @@ export const workspaceAPI = {
   },
 
   // 멤버 목록
-  getMembers: async (workspaceId) => {
-    const { data } = await apiClient.get(`/workspaces/${workspaceId}/users`);
-    return data.data; // ResponseDto unwrapping
+  getMembers: async (workspaceId, page = 0, size = 20) => {
+    const { data } = await apiClient.get(`/workspaces/${workspaceId}/users`, {
+      params: { page, size }
+    });
+    return data.data.content;
   },
 
   // 초대
