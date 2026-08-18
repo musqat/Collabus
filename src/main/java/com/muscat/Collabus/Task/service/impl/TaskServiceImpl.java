@@ -13,6 +13,8 @@ import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
 import com.muscat.Collabus.Task.model.TaskUserResponseDto;
 import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Task.service.TaskService;
 import com.muscat.Collabus.Todo.entity.Todo;
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,6 +43,8 @@ import org.springframework.stereotype.Service;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final TodoFileRepository todoFileRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final TaskUserRepository taskUserRepository;
     private final TaskMapper taskMapper;
     private final TaskUserMapper taskUserMapper;
@@ -124,8 +129,12 @@ public class TaskServiceImpl implements TaskService {
         // Workspace Master 또는 Task Manager 만 삭제할 수 있다
         taskAuthorityUtil.validateCanManageTask(task, userId);
 
-        // 하위 Todo·작업 내용·댓글·첨부·참여자는 FK 의 ON DELETE CASCADE 가 정리한다
+        // 레코드는 캐스케이드가 지우지만 디스크 파일은 남으므로 경로를 미리 모아둔다
+        List<String> fileUrls = todoFileRepository.findAllByWork_Todo_Task_Id(taskId)
+                .stream().map(TodoFileRepository.FileLocation::getFileUrl).toList();
+
         taskRepository.delete(task);
+        eventPublisher.publishEvent(new FilesDeletedEvent(fileUrls));
     }
 
     @Override
