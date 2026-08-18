@@ -263,7 +263,6 @@ class TaskServiceImplTest {
 
         // Then
         verify(finder, times(1)).findTaskById(taskId);
-        verify(taskUserRepository, times(1)).deleteAllByTask(task);
         verify(taskRepository, times(1)).delete(task);
     }
 

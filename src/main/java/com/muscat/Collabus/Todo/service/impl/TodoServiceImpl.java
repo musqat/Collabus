@@ -7,10 +7,7 @@ import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
-import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
-import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
-import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Todo.service.TodoService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.common.dto.PageResponseDto;
@@ -29,8 +26,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +33,6 @@ import java.util.List;
 public class TodoServiceImpl implements TodoService {
 
     private final TodoRepository todoRepository;
-    private final TodoWorkRepository todoWorkRepository;
-    private final TodoCommentRepository todoCommentRepository;
-    private final TodoFileRepository todoFileRepository;
     private final TodoMapper todoMapper;
     private final ParticipantUtil participantUtil;
     private final TaskAuthorityUtil taskAuthorityUtil;
@@ -89,9 +81,7 @@ public class TodoServiceImpl implements TodoService {
         Todo todo = finder.findTodoById(todoId);
         validateManagerAuthority(todo.getTask(), userId);
 
-        todoFileRepository.deleteAllByTodoId(todoId);
-        todoWorkRepository.deleteAllByTodoId(todoId);
-        todoCommentRepository.deleteAllByTodoId(todoId);
+        // 작업 내용·댓글·첨부는 FK 의 ON DELETE CASCADE 가 정리한다
         todoRepository.delete(todo);
     }
 
