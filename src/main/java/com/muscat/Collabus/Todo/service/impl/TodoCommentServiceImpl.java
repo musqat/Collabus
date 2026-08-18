@@ -66,13 +66,13 @@ public class TodoCommentServiceImpl implements TodoCommentService {
       notifyUserIds.add(todo.getAssignee().getId());
     }
 
-    // Task Manager에게 알림 (작성자 본인 제외)
+    // Task Manager 전원에게 알림 (작성자 본인 제외)
     Task task = todo.getTask();
-    TaskUser manager = taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER)
-        .stream().findFirst().orElse(null);
-    if (manager != null && !manager.getUser().getId().equals(userId)) {
-      notifyUserIds.add(manager.getUser().getId());
-    }
+    taskUserRepository.findByTaskAndRole(task, TaskRole.MANAGER).stream()
+        .map(TaskUser::getUser)
+        .map(User::getId)
+        .filter(managerId -> !managerId.equals(userId))
+        .forEach(notifyUserIds::add);
 
     // 알림 전송
     String message = String.format("'%s' 할일에 새 댓글이 추가되었습니다.", todo.getTitle());

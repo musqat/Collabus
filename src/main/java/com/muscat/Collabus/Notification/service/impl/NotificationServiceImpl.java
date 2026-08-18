@@ -7,13 +7,14 @@ import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
-import com.muscat.Collabus.config.websocket.WebSocketService;
+import com.muscat.Collabus.Notification.event.NotificationCreatedEvent;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,7 @@ public class NotificationServiceImpl implements NotificationService {
 
   private final NotificationRepository notificationRepository;
   private final EntityFinderUtil finder;
-  private final WebSocketService webSocketService;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   @Override
@@ -41,9 +42,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     Notification savedNotification = notificationRepository.save(notification);
 
-    // WebSocket으로 실시간 알림 전송
-    NotificationResponse response = NotificationResponse.from(savedNotification);
-    webSocketService.sendNotificationToUser(userId, response);
+    // 실제 전송은 트랜잭션 커밋 이후 NotificationEventListener 가 수행한다
+    eventPublisher.publishEvent(
+        new NotificationCreatedEvent(userId, NotificationResponse.from(savedNotification)));
   }
 
   @Override
