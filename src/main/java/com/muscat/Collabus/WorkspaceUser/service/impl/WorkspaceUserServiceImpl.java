@@ -1,5 +1,7 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.dto.PageResponseDto;
+import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
@@ -36,11 +38,12 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId, Long userId) {
+    public PageResponseDto<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId,
+                                                                         Long userId, Pageable pageable) {
         participantUtil.validateWorkspaceParticipant(workspaceId, userId);
-        return workspaceUserRepository.findAllById_WorkspaceId(workspaceId).stream()
-                .map(workspaceUserMapper::mapToDto)
-                .collect(Collectors.toList());
+        return PageResponseDto.of(
+                workspaceUserRepository.findAllById_WorkspaceId(workspaceId, pageable),
+                workspaceUserMapper::mapToDto);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.muscat.Collabus.Task.service.impl;
 
+import com.muscat.Collabus.common.dto.PageResponseDto;
+import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Task.entity.TaskUser;
@@ -151,9 +153,10 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskResponseDto> getTasksByWorkspace(Long workspaceId) {
-        return taskRepository.findAllByWorkspace_Id(workspaceId)
-                .stream().map(taskMapper::mapToDto).toList();
+    public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId,
+                                                                Pageable pageable) {
+        return PageResponseDto.of(
+                taskRepository.findAllByWorkspace_Id(workspaceId, pageable), taskMapper::mapToDto);
     }
 
     @Transactional

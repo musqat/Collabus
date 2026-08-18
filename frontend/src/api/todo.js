@@ -62,11 +62,11 @@ export const todoAPI = {
   },
 
   // 댓글 관련
-  getComments: async (todoId) => {
+  getComments: async (todoId, page = 0, size = 20) => {
     const { data } = await apiClient.get('/todo/comments', {
-      params: { todoId }
+      params: { todoId, page, size }
     });
-    return data.data;
+    return data.data.content;
   },
 
   createComment: async (todoId, content) => {

@@ -51,8 +51,8 @@ export default function TodoDetail() {
 
   const loadWorks = async () => {
     try {
-      const { data } = await apiClient.get('/todo/works', { params: { todoId } });
-      setWorks(Array.isArray(data.data) ? data.data : []);
+      const { data } = await apiClient.get('/todo/works', { params: { todoId, size: 20 } });
+      setWorks(data.data?.content ?? []);
     } catch (error) {
       console.error('Failed to load works:', error);
     }
@@ -60,8 +60,8 @@ export default function TodoDetail() {
 
   const loadComments = async () => {
     try {
-      const { data } = await apiClient.get('/todo/comments', { params: { todoId } });
-      setComments(Array.isArray(data.data) ? data.data : []);
+      const { data } = await apiClient.get('/todo/comments', { params: { todoId, size: 20 } });
+      setComments(data.data?.content ?? []);
     } catch (error) {
       console.error('Failed to load comments:', error);
     }

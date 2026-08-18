@@ -2,24 +2,31 @@ package com.muscat.Collabus.WorkspaceUser.repository;
 
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
+
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, WorkspaceUserPk> {
 
-  @EntityGraph(attributePaths = {"user"})
-  List<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId);
+    // 워크스페이스 탈퇴 시 마스터 승계 대상을 고르려면 전체 멤버가 필요하다
+    List<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId);
 
-  @EntityGraph(attributePaths = {"workspace", "workspace.founder"})
-  List<WorkspaceUser> findAllById_UserId(Long userId);
+    @EntityGraph(attributePaths = {"user"})
+    Page<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId, Pageable pageable);
 
-  Optional<WorkspaceUser> findById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
+    @EntityGraph(attributePaths = {"workspace", "workspace.founder"})
+    List<WorkspaceUser> findAllById_UserId(Long userId);
 
-  boolean existsById(WorkspaceUserPk id);
+    Optional<WorkspaceUser> findById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
 
-  boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
+    boolean existsById(WorkspaceUserPk id);
 
-  void deleteAllById_WorkspaceId(Long workspaceId);
+    boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
+
+    void deleteAllById_WorkspaceId(Long workspaceId);
 }
