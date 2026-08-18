@@ -99,10 +99,19 @@ public class TodoServiceImpl implements TodoService {
     @Override
     public List<TodoResponseDto> getTodosByTask(Long taskId, String status) {
         List<Todo> todos = (status != null)
-                ? todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.valueOf(status))
+                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status))
                 : todoRepository.findAllByTaskId(taskId);
 
         return todos.stream().map(todoMapper::mapToDto).toList();
+    }
+
+    private TodoStatus parseStatus(String status) {
+        try {
+            return TodoStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            // 잘못된 쿼리 파라미터는 500이 아니라 400으로 응답해야 한다
+            throw new BusinessException(TodoResponse.INVALID_STATUS);
+        }
     }
 
     @Override

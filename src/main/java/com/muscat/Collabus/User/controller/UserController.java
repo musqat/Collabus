@@ -104,11 +104,12 @@ public class UserController {
 
   @Operation(
       summary = "비밀번호 변경",
-      description = "유저의 비밀번호를 변경합니다.",
+      description = "유저의 비밀번호를 변경합니다. 현재 비밀번호 확인이 필요하며, "
+          + "변경 시 기존 Refresh Token 이 무효화되어 다른 기기 세션이 종료됩니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "변경 성공",
               content = @Content), // 본문 없음
-          @ApiResponse(responseCode = "400", description = "잘못된 요청",
+          @ApiResponse(responseCode = "400", description = "잘못된 요청 / 현재 비밀번호 불일치",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
@@ -117,7 +118,7 @@ public class UserController {
   public ResponseEntity<Void> updatePassword(
       @PathVariable Long id,
       @RequestBody @Valid UpdatePasswordDto dto) {
-    userService.updatePassword(id, dto.getPassword());
+    userService.updatePassword(id, dto.getCurrentPassword(), dto.getPassword());
     return ResponseEntity.ok().build();
   }
 

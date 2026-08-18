@@ -21,6 +21,9 @@ services:
       DB_NAME: ${DB_NAME:-collabus}
       DB_USERNAME: ${DB_USERNAME:-collabus}
       DB_PASSWORD: ${DB_PASSWORD}
+      FILE_UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
 
   mysql:
     image: mysql:8.0
@@ -43,7 +46,11 @@ services:
       retries: 5
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_WS_BASE_URL: ${VITE_WS_BASE_URL:-/ws}
     container_name: collabus-frontend
     ports:
       - "80:80"
@@ -69,3 +76,4 @@ networks:
 volumes:
   redis-data:
   mysql-data:
+  uploads:

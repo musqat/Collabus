@@ -179,6 +179,25 @@ export default function TodoDetail() {
     }
   };
 
+  // 다운로드 API는 인증이 필요하므로 <a download> 대신 blob 으로 받아 저장한다
+  const handleDownloadFile = async (file) => {
+    try {
+      const response = await apiClient.get(`/todo/files/${file.id}/download`, {
+        responseType: 'blob'
+      });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.originalFileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('파일 다운로드 실패');
+    }
+  };
+
   const handleDeleteFile = async (workId, fileId) => {
     if (!confirm('파일을 삭제하시겠습니까?')) return;
     try {
@@ -409,13 +428,12 @@ export default function TodoDetail() {
                                   </div>
                                 </div>
                                 <div className="flex gap-2">
-                                  <a
-                                    href={file.fileUrl}
-                                    download
+                                  <button
+                                    onClick={() => handleDownloadFile(file)}
                                     className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
                                   >
                                     다운로드
-                                  </a>
+                                  </button>
                                   {file.uploaderId === currentUser?.id && (
                                     <button
                                       onClick={() => handleDeleteFile(work.id, file.id)}

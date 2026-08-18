@@ -10,6 +10,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+      },
+      // SockJS는 /ws/info 폴링과 웹소켓 업그레이드를 모두 사용한다
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       }
     }
   }

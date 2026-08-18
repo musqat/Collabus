@@ -13,10 +13,16 @@ import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
+import com.muscat.Collabus.Notification.service.NotificationService;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
+import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.exception.BusinessException;
+import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
@@ -53,6 +59,21 @@ class TodoServiceImplTest {
 
   @Mock
   private EntityFinderUtil finder;
+
+  @Mock
+  private TodoWorkRepository todoWorkRepository;
+
+  @Mock
+  private TodoCommentRepository todoCommentRepository;
+
+  @Mock
+  private TodoFileRepository todoFileRepository;
+
+  @Mock
+  private TaskUserRepository taskUserRepository;
+
+  @Mock
+  private NotificationService notificationService;
 
   @InjectMocks
   private TodoServiceImpl todoService;
@@ -100,7 +121,6 @@ class TodoServiceImplTest {
         .description("Test Description")
         .dueDate(LocalDateTime.now().plusDays(7))
         .status(TodoStatus.IN_PROGRESS)
-        .isDone(false)
         .build();
 
     todoRequestDto = TodoRequestDto.builder()
@@ -140,7 +160,7 @@ class TodoServiceImplTest {
     assertThat(result).isNotNull();
     assertThat(result.getTitle()).isEqualTo("Test Todo");
     verify(finder, times(1)).findTaskById(todoRequestDto.getTaskId());
-    verify(participantUtil, times(1)).validateTaskParticipant(task.getId(), creatorId);
+    verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, creatorId);
     verify(todoRepository, times(1)).save(any(Todo.class));
   }
 
@@ -195,7 +215,7 @@ class TodoServiceImplTest {
     Long todoId = 1L;
     Long updaterId = 1L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(taskAuthorityUtil.isTaskManager(task, updaterId)).thenReturn(true);
+    when(taskAuthorityUtil.canManageTask(task, updaterId)).thenReturn(true);
     when(todoRepository.save(todo)).thenReturn(todo);
     when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
@@ -216,7 +236,7 @@ class TodoServiceImplTest {
     Long todoId = 1L;
     Long updaterId = 2L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(taskAuthorityUtil.isTaskManager(task, updaterId)).thenReturn(false);
+    when(taskAuthorityUtil.canManageTask(task, updaterId)).thenReturn(false);
 
     // When & Then
     assertThatThrownBy(() -> todoService.updateTodo(todoId, todoRequestDto, updaterId))
@@ -232,7 +252,7 @@ class TodoServiceImplTest {
     Long todoId = 1L;
     Long userId = 1L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(taskAuthorityUtil.isTaskManager(task, userId)).thenReturn(true);
+    when(taskAuthorityUtil.canManageTask(task, userId)).thenReturn(true);
 
     // When
     todoService.deleteTodo(todoId, userId);
@@ -249,7 +269,7 @@ class TodoServiceImplTest {
     Long todoId = 1L;
     Long userId = 2L;
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    when(taskAuthorityUtil.isTaskManager(task, userId)).thenReturn(false);
+    when(taskAuthorityUtil.canManageTask(task, userId)).thenReturn(false);
 
     // When & Then
     assertThatThrownBy(() -> todoService.deleteTodo(todoId, userId))
@@ -280,7 +300,7 @@ class TodoServiceImplTest {
   void getTodoById_Fail_NotFound() {
     // Given
     Long todoId = 999L;
-    when(finder.findTodoById(todoId)).thenThrow(new ResourceNotFoundException(null));
+    when(finder.findTodoById(todoId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> todoService.getTodoById(todoId))
@@ -430,7 +450,7 @@ class TodoServiceImplTest {
     Long managerId = 2L;
 
     when(finder.findTodoById(todoId)).thenReturn(todo);
-    doThrow(new BusinessException(null))
+    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
         .when(taskAuthorityUtil).validateTaskManager(task, managerId);
 
     // When & Then

@@ -65,17 +65,34 @@ docker compose down
 ### 로컬 개발
 
 ```bash
-# MySQL, Redis 컨테이너만 실행
+# 1. MySQL, Redis 컨테이너만 실행 (MySQL 은 호스트 3307 포트)
 docker compose up -d mysql redis
 
-# 백엔드
+# 2. 백엔드
 cp .env.example .env
-./gradlew bootRun --args='--spring.profiles.active=docker'
+./gradlew bootRun
 
-# 프론트엔드
+# 3. 프론트엔드
 cd frontend
+cp .env.example .env
 npm install && npm run dev
 ```
+
+| 서비스 | URL |
+|--------|-----|
+| 프론트엔드 (Vite dev) | http://localhost:3000 |
+| 백엔드 | http://localhost:8080 |
+
+> Vite dev 서버가 `/api` 와 `/ws` 를 `localhost:8080` 으로 프록시
+
+### 테스트
+
+```bash
+./gradlew build
+```
+
+> 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를 사용하고
+> MySQL 전용 시드(`data.sql`)는 비활성화
 
 ---
 
@@ -95,6 +112,17 @@ DB_ROOT_PASSWORD=rootpassword1234
 
 REDIS_HOST=localhost
 REDIS_PORT=6379
+
+# 로컬 실행 시 MySQL 접속 정보 (docker compose 는 mysql:3306 을 자동 주입)
+DB_HOST=localhost
+DB_PORT=3307
+```
+
+**`frontend/.env`**: `frontend/.env.example` 복사 후 바로 사용 가능
+
+```env
+VITE_API_BASE_URL=/api
+VITE_WS_BASE_URL=/ws
 ```
 
 ---
@@ -124,5 +152,22 @@ REDIS_PORT=6379
 | 로그아웃 | Access Token 블랙리스트 등록 (Redis) |
 | Brute Force 방어 | 5회 실패 시 10분 계정 잠금 (Redis) |
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
-| 비밀번호 변경 | 변경 즉시 기존 RT 무효화 → 타 기기 세션 강제 종료 |
+| 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
 | WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 |
+| 파일 접근 제어 | 업로드 · 목록 · 다운로드 모두 해당 Task 참여자만 허용 |
+| 업로드 제한 | 확장자 허용 목록 + 파일당 10MB, 경로 탈출 차단 |
+
+### 트레이드오프
+
+**토큰을 localStorage 에 저장**
+- XSS 가 발생하면 토큰이 그대로 노출됩니다. HttpOnly 쿠키가 더 안전하지만,
+  현재는 CSRF 대응과 쿠키 기반 재발급 흐름을 추가로 구현해야 해서 localStorage 를 사용합니다.
+- Access Token TTL 을 15분으로 짧게 잡고, 로그아웃 시 블랙리스트에 등록해 노출 창을 줄였습니다.
+
+**비밀번호 변경 후 기존 Access Token**
+- Refresh Token 은 즉시 삭제되지만, 이미 발급된 Access Token 은 만료(최대 15분)까지 유효합니다.
+- 발급된 모든 AT 를 즉시 차단하려면 사용자별 토큰 버전 관리가 필요합니다.
+
+**파일은 로컬 디스크에 저장**
+- `uploads` 디렉터리(도커에서는 named volume)에 저장합니다. 단일 인스턴스 전제이며,
+  다중 인스턴스로 확장하려면 오브젝트 스토리지로 옮겨야 합니다.

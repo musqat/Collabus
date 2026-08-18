@@ -16,11 +16,17 @@ import com.muscat.Collabus.Task.model.TaskRequestDto;
 import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
 import com.muscat.Collabus.Task.model.TaskUserResponseDto;
+import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
+import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.exception.BusinessException;
+import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
@@ -59,6 +65,21 @@ class TaskServiceImplTest {
 
   @Mock
   private EntityFinderUtil finder;
+
+  @Mock
+  private TodoRepository todoRepository;
+
+  @Mock
+  private TodoWorkRepository todoWorkRepository;
+
+  @Mock
+  private TodoCommentRepository todoCommentRepository;
+
+  @Mock
+  private TodoFileRepository todoFileRepository;
+
+  @Mock
+  private NotificationService notificationService;
 
   @InjectMocks
   private TaskServiceImpl taskService;
@@ -140,7 +161,7 @@ class TaskServiceImplTest {
     assertThat(result.getTitle()).isEqualTo("Test Task");
     verify(finder, times(1)).findUserById(userId);
     verify(finder, times(1)).findWorkspaceById(taskRequestDto.getWorkspaceId());
-    verify(taskAuthorityUtil, times(1)).validateWorkspaceMaster(workspace, userId);
+    verify(taskAuthorityUtil, times(1)).validateCanCreateTask(workspace, userId);
     verify(taskRepository, times(1)).save(any(Task.class));
     verify(taskUserRepository, times(1)).save(any(TaskUser.class));
   }
@@ -152,8 +173,8 @@ class TaskServiceImplTest {
     Long userId = 2L;
     when(finder.findUserById(userId)).thenReturn(user);
     when(finder.findWorkspaceById(taskRequestDto.getWorkspaceId())).thenReturn(workspace);
-    doThrow(new BusinessException(null))
-        .when(taskAuthorityUtil).validateWorkspaceMaster(workspace, userId);
+    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
+        .when(taskAuthorityUtil).validateCanCreateTask(workspace, userId);
 
     // When & Then
     assertThatThrownBy(() -> taskService.createTask(taskRequestDto, userId))
@@ -184,7 +205,7 @@ class TaskServiceImplTest {
   void getTask_Fail_NotFound() {
     // Given
     Long taskId = 999L;
-    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(null));
+    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> taskService.getTask(taskId))
@@ -216,7 +237,7 @@ class TaskServiceImplTest {
     Long taskId = 1L;
     Long userId = 2L;
     when(finder.findTaskById(taskId)).thenReturn(task);
-    doThrow(new BusinessException(null))
+    doThrow(new BusinessException(CommonResponse.FORBIDDEN))
         .when(taskAuthorityUtil).validateCanManageTask(task, userId);
 
     // When & Then
@@ -235,7 +256,7 @@ class TaskServiceImplTest {
     taskService.deleteTask(taskId);
 
     // Then
-    verify(finder, times(2)).findTaskById(taskId);
+    verify(finder, times(1)).findTaskById(taskId);
     verify(taskUserRepository, times(1)).deleteAllByTask(task);
     verify(taskRepository, times(1)).delete(task);
   }
@@ -245,7 +266,7 @@ class TaskServiceImplTest {
   void deleteTask_Fail_NotFound() {
     // Given
     Long taskId = 999L;
-    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(null));
+    when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> taskService.deleteTask(taskId))

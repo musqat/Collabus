@@ -1,0 +1,28 @@
+# 테스트 전용 설정
+# 인메모리 H2 를 쓰고 data.sql(MySQL 전용 INSERT IGNORE) 시드는 비활성화한다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: false
+  sql:
+    init:
+      mode: never
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+file:
+  upload-dir: ${java.io.tmpdir}/collabus-test-uploads
+
+jwt:
+  secret: test-only-secret-key-must-be-at-least-32-bytes-long
+  expiration: 900000
+  refresh-expiration: 604800000

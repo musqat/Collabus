@@ -22,39 +22,88 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// 재발급은 한 번만 수행하고, 그 사이 401을 받은 요청들은 큐에서 대기시킨다.
+// (Refresh Token Rotation 때문에 동시에 여러 번 재발급하면 서로를 무효화시킨다)
+let isRefreshing = false;
+let pendingRequests = [];
+
+const resolveQueue = (token) => {
+  pendingRequests.forEach(({ resolve }) => resolve(token));
+  pendingRequests = [];
+};
+
+const rejectQueue = (error) => {
+  pendingRequests.forEach(({ reject }) => reject(error));
+  pendingRequests = [];
+};
+
+const clearSession = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+};
+
+// 재발급 자체가 401이면 재시도할 수 없다
+const isAuthEndpoint = (url = '') =>
+  url.includes('/token/refresh') || url.includes('/users/login');
+
 // Response 인터셉터 - 토큰 만료 처리
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 401 에러 && 재시도 안했으면 토큰 갱신
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const { data } = await axios.post(`${API_BASE_URL}/token/refresh`, {
-          refreshToken
-        });
-
-        localStorage.setItem('accessToken', data.data.accessToken);
-        localStorage.setItem('refreshToken', data.data.refreshToken);
-
-        // 원래 요청 재시도
-        originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        // Refresh Token 만료 — 로그아웃
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      isAuthEndpoint(originalRequest.url)
+    ) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    originalRequest._retry = true;
+
+    // 이미 다른 요청이 재발급 중이면 완료될 때까지 기다렸다가 새 토큰으로 재시도
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        pendingRequests.push({ resolve, reject });
+      }).then((token) => {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return apiClient(originalRequest);
+      });
+    }
+
+    isRefreshing = true;
+
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw error;
+      }
+
+      const { data } = await axios.post(`${API_BASE_URL}/token/refresh`, {
+        refreshToken
+      });
+
+      const newAccessToken = data.data.accessToken;
+      localStorage.setItem('accessToken', newAccessToken);
+      localStorage.setItem('refreshToken', data.data.refreshToken);
+
+      resolveQueue(newAccessToken);
+
+      // 원래 요청 재시도
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      // Refresh Token 만료 — 대기 중인 요청까지 모두 실패시키고 로그아웃
+      rejectQueue(refreshError);
+      clearSession();
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
