@@ -44,6 +44,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -86,6 +87,9 @@ class TaskServiceImplTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private TaskServiceImpl taskService;

@@ -31,14 +31,13 @@ import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -78,6 +77,9 @@ class TodoServiceImplTest {
 
   @Mock
   private NotificationService notificationService;
+
+  @Mock
+  private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks
   private TodoServiceImpl todoService;

@@ -5,6 +5,8 @@ import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
 import com.muscat.Collabus.Workspace.model.WorkspaceRequestDto;
 import com.muscat.Collabus.Workspace.model.WorkspaceResponseDto;
+import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
 import com.muscat.Collabus.Workspace.service.WorkspaceService;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
@@ -16,6 +18,7 @@ import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkspaceServiceImpl implements WorkspaceService {
 
   private final WorkspaceRepository workspaceRepository;
+  private final TodoFileRepository todoFileRepository;
+  private final ApplicationEventPublisher eventPublisher;
   private final WorkspaceMapper workspaceMapper;
   private final WorkspaceUserRepository workspaceUserRepository;
   private final EntityFinderUtil entityFinderUtil;
@@ -91,7 +96,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     Workspace workspace = entityFinderUtil.findWorkspaceById(workspaceId);
     taskAuthorityUtil.validateWorkspaceMaster(workspace, userId);
 
-    // 하위 데이터(Task, Todo, 작업 내용, 댓글, 첨부, 멤버, 초대)는 FK 의 ON DELETE CASCADE 가 정리한다
+    // 레코드는 FK 의 ON DELETE CASCADE 가 지우지만 디스크 파일은 남는다
+    // 지워질 파일 경로를 미리 모아두고 커밋 이후에 정리한다.
+    List<String> fileUrls = todoFileRepository.findAllByWork_Todo_Task_Workspace_Id(workspaceId)
+        .stream().map(TodoFileRepository.FileLocation::getFileUrl).toList();
+
     workspaceRepository.delete(workspace);
+    eventPublisher.publishEvent(new FilesDeletedEvent(fileUrls));
   }
 }
