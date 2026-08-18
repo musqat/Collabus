@@ -1,6 +1,7 @@
 package com.muscat.Collabus.Todo.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,7 @@ public class TodoResponseDto {
   private String description;
 
   @Schema(description = "마감일", example = "2025-08-06T00:00:00")
-  private LocalDateTime dueDate;
+  private LocalDate dueDate;
 
   @Schema(description = "상태", example = "IN_PROGRESS")
   private String status;

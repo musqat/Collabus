@@ -1,5 +1,6 @@
 # 테스트 전용 설정
-# 인메모리 H2 를 쓰고 data.sql(MySQL 전용 INSERT IGNORE) 시드는 비활성화한다.
+# 마이그레이션(V1, V2)은 MySQL 전용 DDL/DML 이라 H2 에서 실행되지 않는다.
+# 테스트는 Flyway 를 끄고 Hibernate 가 엔티티에서 직접 스키마를 만들게 한다.
 spring:
   datasource:
     url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
@@ -11,6 +12,8 @@ spring:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: false
+  flyway:
+    enabled: false
   sql:
     init:
       mode: never
