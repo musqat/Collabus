@@ -18,9 +18,4 @@ public class WebSocketService {
         message
     );
   }
-
-  // 모든 사용자에게 브로드캐스트 메시지를 전송합니다.
-  public void broadcastMessage(Object message) {
-    messagingTemplate.convertAndSend("/topic/notifications", message);
-  }
 }

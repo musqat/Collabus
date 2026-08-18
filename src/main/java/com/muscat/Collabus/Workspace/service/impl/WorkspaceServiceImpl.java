@@ -48,7 +48,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     workspaceRepository.save(workspace);
 
     WorkspaceUser workspaceUser = WorkspaceUser.builder()
-        .id(new WorkspaceUserPk(founder.getId(), workspace.getId()))
+        .id(new WorkspaceUserPk(workspace.getId(), founder.getId()))
         .workspace(workspace)
         .user(founder)
         .role(WorkspaceRole.MASTER)
@@ -64,6 +64,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     return workspaceMapper.mapToDto(workspace);
   }
 
+  // 내가 만든 것만. 멤버로 참여만 한 워크스페이스는 getJoinedWorkspaces 를 쓴다
   @Override
   public List<WorkspaceResponseDto> getMyWorkspaces(Long userId) {
     return workspaceRepository.findAllByFounderId(userId).stream()
@@ -71,6 +72,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         .collect(Collectors.toList());
   }
 
+  // 멤버로 참여 중인 전부. 내가 만든 것도 포함된다
   @Override
   public List<WorkspaceResponseDto> getJoinedWorkspaces(Long userId) {
     return workspaceUserRepository.findAllById_UserId(userId).stream()

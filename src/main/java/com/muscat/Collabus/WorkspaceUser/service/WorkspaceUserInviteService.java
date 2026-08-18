@@ -2,8 +2,6 @@ package com.muscat.Collabus.WorkspaceUser.service;
 
 import com.muscat.Collabus.WorkspaceUser.model.InviteRequestDto;
 import com.muscat.Collabus.WorkspaceUser.model.InviteResponseDto;
-import com.muscat.Collabus.WorkspaceUser.model.WorkspaceUserResponseDto;
-import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
 
 public interface WorkspaceUserInviteService {

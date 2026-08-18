@@ -54,6 +54,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
                 .collect(Collectors.toList());
     }
 
+    // MASTER 만 변경 가능하고 자기 역할은 못 바꾼다. MASTER 로 올리면 기존 MASTER 는 MANAGER 로 내려간다
     @Override
     @Transactional
     public void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId) {
@@ -76,6 +77,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
         workspaceUserRepository.save(target);
     }
 
+    // MASTER 만 제거 가능. 자기 자신은 제거할 수 없다 (탈퇴를 쓴다)
     @Override
     @Transactional
     public void removeUser(Long workspaceId, Long userId, Long actorId) {
@@ -89,6 +91,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
         workspaceUserRepository.delete(user);
     }
 
+    // 마지막 멤버가 나가면 워크스페이스까지 삭제하고, MASTER 가 나가면 남은 멤버 중 최상위 역할자가 승계한다
     @Override
     @Transactional
     public void leaveWorkspace(Long workspaceId, Long userId) {

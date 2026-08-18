@@ -45,6 +45,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
     private final NotificationService notificationService;
 
 
+    // MASTER 만 초대 가능. 자기 초대·이미 멤버·대기 중 초대 중복을 막고 알림을 보낸다
     @Override
     public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
         // MASTER 권한 확인
@@ -80,6 +81,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
                 NotificationType.WORKSPACE_INVITED, message, savedInvite.getId());
     }
 
+    // 대기 중(PENDING) 초대만 돌려준다
     @Override
     public List<InviteResponseDto> getMyInvites(Long inviteeId) {
         return inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING).stream()
@@ -87,6 +89,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
                 .collect(Collectors.toList());
     }
 
+    // 수락 시 초대에 담긴 역할로 멤버가 된다. 이미 처리된 초대는 거부한다
     @Override
     @Transactional
     public void acceptInvite(Long inviteId, Long inviteeId) {
@@ -109,6 +112,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
         workspaceUserRepository.save(workspaceUser);
     }
 
+    // 본인에게 온 초대인지 조회 단계에서 함께 확인한다
     @Override
     @Transactional
     public void rejectInvite(Long inviteId, Long inviteeId) {
@@ -124,6 +128,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
                 .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
     }
 
+    // 워크스페이스 내 역할이 허용 목록에 있는지 확인
     private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
         WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
         Set<WorkspaceRole> allowed = Set.of(allowedRoles);

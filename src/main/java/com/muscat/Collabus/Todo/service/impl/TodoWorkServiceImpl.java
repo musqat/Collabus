@@ -16,7 +16,6 @@ import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.status.TodoStatus;
 
-import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -61,6 +60,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
         return todoWorkMapper.mapToDto(todoWorkRepository.save(work));
     }
 
+    // 작성자 본인만 수정 가능
     @Override
     @Transactional
     public TodoWorkDto updateWork(Long workId, TodoWorkDto dto, Long userId) {
@@ -83,6 +83,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
                 todoWorkRepository.findAllByTodoId(todoId, pageable), todoWorkMapper::mapToDto);
     }
 
+    // 작성자 본인만 삭제 가능
     @Override
     @Transactional
     public void deleteWork(Long workId, Long userId) {

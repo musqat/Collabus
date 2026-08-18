@@ -34,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final RefreshTokenService refreshTokenService;
 
+    // displayName 은 nickname#tag 형식이고, tag 는 중복되지 않게 자동 생성한다
     @Override
     @Transactional
     public void registerUser(UserRequestDto userDto) {
@@ -115,6 +116,7 @@ public class UserServiceImpl implements UserService {
         return true;
     }
 
+    // 비밀번호 불일치는 IllegalArgumentException. 실패 횟수 집계는 컨트롤러가 담당한다
     @Override
     public UserResponseDto login(String email, String password) {
         User user = userRepository.findByEmail(email)
@@ -127,6 +129,7 @@ public class UserServiceImpl implements UserService {
         return userMapper.mapToDto(user);
     }
 
+    // ADMIN 역할로 생성. 호출은 기존 ADMIN 만 가능하다
     @Override
     @Transactional
     public void createAdmin(UserRequestDto userDto) {

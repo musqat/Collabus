@@ -17,8 +17,6 @@ import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Task.service.TaskService;
-import com.muscat.Collabus.Todo.entity.Todo;
-import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.exception.BusinessException;
@@ -52,6 +50,7 @@ public class TaskServiceImpl implements TaskService {
     private final EntityFinderUtil finder;
     private final NotificationService notificationService;
 
+    // WM/MANAGER 만 생성 가능. managerId 가 없으면 생성자가 매니저가 되고, 추가 멤버에게는 알림이 간다
     @Transactional
     @Override
     public TaskResponseDto createTask(TaskRequestDto dto, Long userId) {
@@ -112,6 +111,7 @@ public class TaskServiceImpl implements TaskService {
         return taskMapper.mapToDto(finder.findTaskById(taskId));
     }
 
+    // WM 또는 TM 만 수정 가능
     @Transactional
     @Override
     public TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId) {
@@ -144,6 +144,7 @@ public class TaskServiceImpl implements TaskService {
                 taskRepository.findAllByWorkspace_Id(workspaceId, pageable), taskMapper::mapToDto);
     }
 
+    // WM 만 추가 가능. 추가된 사용자에게 알림이 간다
     @Transactional
     @Override
     public void assignUserToTask(Long taskId, Long targetUserId, Long requesterId) {
@@ -166,6 +167,7 @@ public class TaskServiceImpl implements TaskService {
         }
     }
 
+    // TM 은 자기 자신을 제거할 수 없다 (Task 에 매니저가 없어지는 것을 막는다)
     @Transactional
     @Override
     public void removeUserFromTask(Long taskId, Long targetUserId, Long requesterId) {
@@ -183,6 +185,7 @@ public class TaskServiceImpl implements TaskService {
         taskUserRepository.delete(taskUser);
     }
 
+    // 매니저 이전. 기존 매니저는 NORMAL 로 강등된다
     @Transactional
     @Override
     public void assignTaskManager(Long taskId, Long newManagerId, Long requesterId) {

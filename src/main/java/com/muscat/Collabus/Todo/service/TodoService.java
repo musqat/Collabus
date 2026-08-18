@@ -3,7 +3,6 @@ package com.muscat.Collabus.Todo.service;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.common.dto.PageResponseDto;
-import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 public interface TodoService {

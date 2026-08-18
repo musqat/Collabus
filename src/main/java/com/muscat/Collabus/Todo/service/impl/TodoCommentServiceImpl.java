@@ -24,7 +24,6 @@ import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.role.TaskRole;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
@@ -44,6 +43,7 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     private final NotificationService notificationService;
     private final TaskUserRepository taskUserRepository;
 
+    // Task 참여자만 작성 가능. 담당자와 MANAGER 전원에게 알림이 간다 (본인 제외)
     @Override
     @Transactional
     public TodoCommentDto addComment(Long todoId, String content, Long userId) {
