@@ -256,14 +256,33 @@ class TaskServiceImplTest {
     void deleteTask_Success() {
         // Given
         Long taskId = 1L;
+        Long userId = 1L;
         when(finder.findTaskById(taskId)).thenReturn(task);
 
         // When
-        taskService.deleteTask(taskId);
+        taskService.deleteTask(taskId, userId);
 
         // Then
         verify(finder, times(1)).findTaskById(taskId);
+        verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, userId);
         verify(taskRepository, times(1)).delete(task);
+    }
+
+    @Test
+    @DisplayName("Task 삭제 실패 - 관리 권한 없음")
+    void deleteTask_Fail_Unauthorized() {
+        // Given
+        Long taskId = 1L;
+        Long userId = 99L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        doThrow(new BusinessException(CommonResponse.FORBIDDEN))
+                .when(taskAuthorityUtil).validateCanManageTask(task, userId);
+
+        // When & Then
+        assertThatThrownBy(() -> taskService.deleteTask(taskId, userId))
+                .isInstanceOf(BusinessException.class);
+
+        verify(taskRepository, times(0)).delete(any(Task.class));
     }
 
     @Test
@@ -274,7 +293,7 @@ class TaskServiceImplTest {
         when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> taskService.deleteTask(taskId))
+        assertThatThrownBy(() -> taskService.deleteTask(taskId, 1L))
                 .isInstanceOf(ResourceNotFoundException.class);
 
         verify(taskRepository, times(0)).delete(any(Task.class));

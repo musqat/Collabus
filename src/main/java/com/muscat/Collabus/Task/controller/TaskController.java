@@ -126,8 +126,9 @@ public class TaskController {
                             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
             }
     )
-    public ResponseEntity<ResponseDto> deleteTask(@PathVariable Long taskId) {
-        taskService.deleteTask(taskId);
+    public ResponseEntity<ResponseDto> deleteTask(@PathVariable Long taskId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        taskService.deleteTask(taskId, userDetails.getUserId());
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS));
     }
 

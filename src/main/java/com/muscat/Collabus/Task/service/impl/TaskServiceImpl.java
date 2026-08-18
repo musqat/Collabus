@@ -119,8 +119,10 @@ public class TaskServiceImpl implements TaskService {
 
     @Transactional
     @Override
-    public void deleteTask(Long taskId) {
+    public void deleteTask(Long taskId, Long userId) {
         Task task = finder.findTaskById(taskId);
+        // Workspace Master 또는 Task Manager 만 삭제할 수 있다
+        taskAuthorityUtil.validateCanManageTask(task, userId);
 
         // 하위 Todo·작업 내용·댓글·첨부·참여자는 FK 의 ON DELETE CASCADE 가 정리한다
         taskRepository.delete(task);
