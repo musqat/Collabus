@@ -50,7 +50,8 @@ public class SecurityConfig {
             .requestMatchers(
                 "/swagger-ui/**",
                 "/v3/api-docs/**",
-                "/ws/**"
+                "/ws/**",
+                "/actuator/health"
             ).permitAll()
             .requestMatchers(
                 "/api/users/login",

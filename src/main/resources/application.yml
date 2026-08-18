@@ -42,3 +42,13 @@ jwt:
 logging:
   level:
     org.springframework.security: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 헬스체크
+        include: health
+  endpoint:
+    health:
+      show-details: never

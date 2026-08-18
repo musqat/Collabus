@@ -24,6 +24,12 @@ services:
       FILE_UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   mysql:
     image: mysql:8.0
@@ -55,7 +61,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     networks:
       - collabus-network
 
