@@ -1,5 +1,13 @@
 package com.muscat.Collabus.User.service.impl;
 
+import java.util.UUID;
+import com.muscat.Collabus.enums.role.WorkspaceRole;
+import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserService;
+import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
+import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceInviteRepository;
+import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.Task.entity.Task;
+import com.muscat.Collabus.Notification.repository.NotificationRepository;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
@@ -33,6 +41,11 @@ public class UserServiceImpl implements UserService {
     private static final int MIN_KEYWORD_LENGTH = 2;
 
     private final SortGuard sortGuard;
+    private final WorkspaceUserRepository workspaceUserRepository;
+    private final WorkspaceUserService workspaceUserService;
+    private final TaskRepository taskRepository;
+    private final NotificationRepository notificationRepository;
+    private final WorkspaceInviteRepository inviteRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
@@ -64,7 +77,7 @@ public class UserServiceImpl implements UserService {
         }
 
         return PageResponseDto.of(
-                userRepository.findByNicknameContainingIgnoreCase(trimmed,
+                userRepository.findByNicknameContainingIgnoreCaseAndDeletedAtIsNull(trimmed,
                         sortGuard.apply(pageable, User.class)),
                 userMapper::mapToSummary);
     }
@@ -72,6 +85,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserSummaryDto> findByDisplayName(String displayName) {
         return userRepository.findByDisplayName(displayName)
+                .filter(found -> !found.isDeleted())
                 .map(userMapper::mapToSummary);
     }
 
@@ -119,15 +133,50 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public boolean deleteUser(String email) {
         User user = userRepository.findByEmail(email)
+                .filter(found -> !found.isDeleted())
                 .orElseThrow(() -> new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
-        userRepository.delete(user);
+        leaveAllWorkspaces(user.getId());
+        handOverManagedTasks(user.getId());
+        notificationRepository.deleteByUser_Id(user.getId());
+        inviteRepository.deleteByInviteeIdOrInviterId(user.getId(), user.getId());
+
+        user.withdraw(
+                "withdrawn-" + user.getId() + "@removed.local",
+                "탈퇴한 사용자#" + user.getTag() + "-" + user.getId(),
+                passwordEncoder.encode(UUID.randomUUID().toString()));
+        userRepository.save(user);
         return true;
+    }
+
+    /**
+     * 참여 중인 워크스페이스에서 모두 나간다.
+     * 마지막 멤버면 워크스페이스까지 지우고, MASTER 면 남은 멤버가 승계한다.
+     */
+    private void leaveAllWorkspaces(Long userId) {
+        workspaceUserRepository.findAllById_UserId(userId).stream()
+                .map(member -> member.getId().getWorkspaceId())
+                .toList()
+                .forEach(workspaceId -> workspaceUserService.leaveWorkspace(workspaceId, userId));
+    }
+
+    /**
+     * 맡고 있던 Task 의 매니저를 워크스페이스 MASTER 에게 넘긴다.
+     * 매니저가 비면 그 Task 는 아무도 수정하거나 지울 수 없다.
+     */
+    private void handOverManagedTasks(Long userId) {
+        for (Task task : taskRepository.findAllByTaskManager_Id(userId)) {
+            workspaceUserRepository
+                    .findFirstById_WorkspaceIdAndRole(
+                            task.getWorkspace().getId(), WorkspaceRole.MASTER)
+                    .ifPresent(master -> task.changeManager(master.getUser()));
+        }
     }
 
     @Override
     public UserResponseDto login(String email, String password) {
         User user = userRepository.findByEmail(email)
+                .filter(found -> !found.isDeleted())
                 .orElseThrow(() -> new BusinessException(UserResponse.EMAIL_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

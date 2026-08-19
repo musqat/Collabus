@@ -1,5 +1,6 @@
 package com.muscat.Collabus.User.entity;
 
+import java.time.LocalDateTime;
 import com.muscat.Collabus.common.entity.BaseEntity;
 import com.muscat.Collabus.enums.role.SystemRole;
 import jakarta.persistence.Column;
@@ -50,6 +51,22 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private SystemRole role; // 시스템 역할 (일반 유저, 운영자)
 
+
+    // 탈퇴 시각. null 이면 활성 계정이다
+    private LocalDateTime deletedAt;
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    // 탈퇴 처리
+    public void withdraw(String maskedEmail, String maskedDisplayName, String unusablePassword) {
+        this.deletedAt = LocalDateTime.now();
+        this.email = maskedEmail;
+        this.nickname = "탈퇴한 사용자";
+        this.displayName = maskedDisplayName;
+        this.password = unusablePassword;
+    }
 
     public void changeNickname(String newNickname) {
         this.nickname = newNickname;

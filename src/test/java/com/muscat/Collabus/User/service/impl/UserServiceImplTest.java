@@ -10,6 +10,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.enums.role.WorkspaceRole;
+import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
+import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
+import com.muscat.Collabus.Workspace.entity.Workspace;
+import com.muscat.Collabus.Task.entity.Task;
+import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceInviteRepository;
+import com.muscat.Collabus.Notification.repository.NotificationRepository;
+import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserService;
+import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.PageImpl;
@@ -41,6 +51,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService 단위 테스트")
 class UserServiceImplTest {
+
+    @Mock
+
+    private WorkspaceUserRepository workspaceUserRepository;
+
+
+    @Mock
+
+    private WorkspaceUserService workspaceUserService;
+
+
+    @Mock
+
+    private TaskRepository taskRepository;
+
+
+    @Mock
+
+    private NotificationRepository notificationRepository;
+
+
+    @Mock
+
+    private WorkspaceInviteRepository inviteRepository;
+
 
     @Mock
 
@@ -137,7 +172,7 @@ class UserServiceImplTest {
         String keyword = "test";
         Pageable pageable = PageRequest.of(0, 20);
         when(sortGuard.apply(pageable, User.class)).thenReturn(pageable);
-        when(userRepository.findByNicknameContainingIgnoreCase(keyword, pageable))
+        when(userRepository.findByNicknameContainingIgnoreCaseAndDeletedAtIsNull(keyword, pageable))
                 .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
         when(userMapper.mapToSummary(user)).thenReturn(userSummaryDto);
 
@@ -348,8 +383,66 @@ class UserServiceImplTest {
 
         // Then
         assertThat(result).isTrue();
-        verify(userRepository, times(1)).findByEmail(email);
-        verify(userRepository, times(1)).delete(user);
+        assertThat(user.isDeleted()).isTrue();
+        assertThat(user.getNickname()).isEqualTo("탈퇴한 사용자");
+        assertThat(user.getEmail()).doesNotContain("test@example.com");
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("탈퇴하면 참여 중인 워크스페이스에서 모두 나간다")
+    void deleteUser_LeavesWorkspaces() {
+        String email = "test@example.com";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(workspaceUserRepository.findAllById_UserId(1L)).thenReturn(List.of(
+                WorkspaceUser.builder().id(new WorkspaceUserPk(10L, 1L)).build(),
+                WorkspaceUser.builder().id(new WorkspaceUserPk(20L, 1L)).build()));
+
+        userService.deleteUser(email);
+
+        verify(workspaceUserService, times(1)).leaveWorkspace(10L, 1L);
+        verify(workspaceUserService, times(1)).leaveWorkspace(20L, 1L);
+    }
+
+    @Test
+    @DisplayName("탈퇴하면 맡고 있던 Task 매니저가 워크스페이스 MASTER 에게 넘어간다")
+    void deleteUser_HandsOverTasks() {
+        String email = "test@example.com";
+        User master = User.builder().id(9L).email("master@test.com").build();
+        Workspace workspace = Workspace.builder().id(10L).build();
+        Task task = Task.builder().workspace(workspace).taskManager(user).build();
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(taskRepository.findAllByTaskManager_Id(1L)).thenReturn(List.of(task));
+        when(workspaceUserRepository.findFirstById_WorkspaceIdAndRole(10L, WorkspaceRole.MASTER))
+                .thenReturn(Optional.of(WorkspaceUser.builder().user(master).build()));
+
+        userService.deleteUser(email);
+
+        assertThat(task.getTaskManager()).isEqualTo(master);
+    }
+
+    @Test
+    @DisplayName("탈퇴하면 알림과 주고받은 초대를 지운다")
+    void deleteUser_ClearsNotificationsAndInvites() {
+        String email = "test@example.com";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        userService.deleteUser(email);
+
+        verify(notificationRepository, times(1)).deleteByUser_Id(1L);
+        verify(inviteRepository, times(1)).deleteByInviteeIdOrInviterId(1L, 1L);
+    }
+
+    @Test
+    @DisplayName("이미 탈퇴한 계정은 다시 탈퇴할 수 없다")
+    void deleteUser_Fail_AlreadyWithdrawn() {
+        String email = "test@example.com";
+        user.withdraw("withdrawn-1@removed.local", "탈퇴한 사용자#1234-1", "x");
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.deleteUser(email))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test

@@ -29,4 +29,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   // 기준선보다 오래된 알림을 한 번에 지운다
   void deleteByUser_IdAndIdLessThanEqual(Long userId, Long id);
 
+  // 탈퇴 시 받은 알림을 지운다.
+  void deleteByUser_Id(Long userId);
+
 }

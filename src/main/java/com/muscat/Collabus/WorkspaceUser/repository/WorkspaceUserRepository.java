@@ -22,6 +22,9 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
     @EntityGraph(attributePaths = {"user"})
     Page<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId, Pageable pageable);
 
+    // 탈퇴 처리에서 참여 중인 워크스페이스를 전부 순회한다
+    List<WorkspaceUser> findAllById_UserId(Long userId);
+
     // 내가 참여 중인 워크스페이스 목록. 워크스페이스와 생성자까지 함께 가져온다
     @EntityGraph(attributePaths = {"workspace", "workspace.founder"})
     Page<WorkspaceUser> findAllById_UserId(Long userId, Pageable pageable);
@@ -31,6 +34,10 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
 
     // 워크스페이스 참여자인지 확인
     boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
+
+    // 탈퇴 처리에서 Task 매니저를 넘길 대상을 찾는다
+    @EntityGraph(attributePaths = {"user"})
+    Optional<WorkspaceUser> findFirstById_WorkspaceIdAndRole(Long workspaceId, WorkspaceRole role);
 
     // 역할까지 맞는 멤버가 있는지만 확인한다. 엔티티를 로드하지 않는다
     boolean existsById_WorkspaceIdAndId_UserIdAndRole(Long workspaceId, Long userId, WorkspaceRole role);
