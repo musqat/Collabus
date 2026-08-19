@@ -4,6 +4,7 @@ import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,5 +34,9 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
 
     // 역할 확인만 필요할 때. 엔티티를 영속성 컨텍스트에 올리지 않는다.
     boolean existsById_WorkspaceIdAndId_UserIdAndRole(Long workspaceId, Long userId, WorkspaceRole role);
+
+    // 허용 역할이 여럿일 때 (예: Task 전체 조회는 MASTER·MANAGER 만)
+    boolean existsById_WorkspaceIdAndId_UserIdAndRoleIn(Long workspaceId, Long userId,
+        Collection<WorkspaceRole> roles);
 
 }

@@ -87,9 +87,12 @@ public class TaskController {
             }
     )
     public ResponseEntity<ResponseDto> getTasksByWorkspace(@PathVariable Long workspaceId,
+                                                           @RequestParam(required = false) String keyword,
+                                                           @AuthenticationPrincipal CustomUserDetails userDetails,
                                                            @PageableDefault(size = 20, sort = "dueDate") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                taskService.getTasksByWorkspace(workspaceId, pageable)));
+                taskService.getTasksByWorkspace(workspaceId, userDetails.getUserId(), keyword,
+                        pageable)));
     }
 
     @PatchMapping("/{taskId}")

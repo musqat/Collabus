@@ -13,6 +13,8 @@ import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
 import com.muscat.Collabus.Task.model.TaskUserResponseDto;
 import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.util.TaskSpecifications;
 import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -33,12 +35,15 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TaskServiceImpl implements TaskService {
+
+    private final SortGuard sortGuard;
 
     private final TaskRepository taskRepository;
     private final TodoFileRepository todoFileRepository;
@@ -137,11 +142,26 @@ public class TaskServiceImpl implements TaskService {
         eventPublisher.publishEvent(new FilesDeletedEvent(fileUrls));
     }
 
+    // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만 보이고, 검색어는 제목·설명에 걸린다
     @Override
-    public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId,
-                                                                Pageable pageable) {
+    public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
+                                                                String keyword, Pageable pageable) {
+        taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
+
+        Specification<Task> spec = TaskSpecifications.inWorkspace(workspaceId);
+
+        if (!taskAuthorityUtil.canViewAllTasks(workspaceId, requesterId)) {
+            spec = spec.and(TaskSpecifications.participatedBy(requesterId));
+        }
+
+        // 필터링 한 뒤에 페이지를 나눠야 페이지마다 건수가 어긋나지 않는다
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(TaskSpecifications.matches(keyword));
+        }
+
         return PageResponseDto.of(
-                taskRepository.findAllByWorkspace_Id(workspaceId, pageable), taskMapper::mapToDto);
+                taskRepository.findAll(spec, sortGuard.apply(pageable, Task.class)),
+                taskMapper::mapToDto);
     }
 
     // WM 만 추가 가능. 추가된 사용자에게 알림이 간다

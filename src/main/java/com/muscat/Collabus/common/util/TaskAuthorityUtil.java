@@ -4,6 +4,7 @@ import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
@@ -75,6 +76,19 @@ public class TaskAuthorityUtil {
   public void validateCanCreateTask(Workspace workspace, Long userId) {
     if (!canCreateTask(workspace, userId)) {
       throw new AccessDeniedException("Task 생성 권한이 없습니다. (MASTER 또는 MANAGER만 가능)");
+    }
+  }
+
+  // 워크스페이스의 Task 를 전부 볼 수 있는지. MEMBER 는 자신이 참여한 것만 본다
+  public boolean canViewAllTasks(Long workspaceId, Long userId) {
+    return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRoleIn(
+        workspaceId, userId, List.of(WorkspaceRole.MASTER, WorkspaceRole.MANAGER));
+  }
+
+  // 워크스페이스 참여자인지 검증
+  public void validateWorkspaceMember(Long workspaceId, Long userId) {
+    if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserId(workspaceId, userId)) {
+      throw new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다.");
     }
   }
 
