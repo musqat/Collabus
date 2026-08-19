@@ -1,7 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../hooks/useWorkspace';
-import { useTasks } from '../hooks/useTask';
+import { useTasks, useWorkspaceProgress } from '../hooks/useTask';
+import usePageParam from '../hooks/usePageParam';
+import useDebouncedValue from '../hooks/useDebouncedValue';
+import Pagination from '../components/Pagination';
 import { workspaceAPI } from '../api/workspace';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
@@ -9,13 +12,24 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import TaskCard from '../components/Task/TaskCard';
 import { EmptyState } from '../components/LoadingState';
 import { useQuery } from '@tanstack/react-query';
-import { taskAPI as importedTaskAPI } from '../api/task';
 
 export default function WorkspaceDetail() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const { workspace, isLoading: workspaceLoading } = useWorkspace(workspaceId);
-  const { tasks, isLoading: tasksLoading, createTask } = useTasks(workspaceId);
+  const [page, setPage] = usePageParam();
+  const [taskSearchText, setTaskSearchText] = useState('');
+  // 입력이 300ms 멈추면 그 값을 서버에 넘긴다
+  const keyword = useDebouncedValue(taskSearchText, 300);
+
+  const {
+    tasks,
+    totalPages,
+    totalElements,
+    isLoading: tasksLoading,
+    createTask,
+  } = useTasks(workspaceId, { page, keyword });
+  const { progress } = useWorkspaceProgress(workspaceId);
 
   const currentUser = useAuthStore((state) => state.user);
 
@@ -28,19 +42,11 @@ export default function WorkspaceDetail() {
   const [managerId, setManagerId] = useState('');
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [members, setMembers] = useState([]);
-  const [progressData, setProgressData] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedInvitee, setSelectedInvitee] = useState(null);
   const [showWorkspaceEditModal, setShowWorkspaceEditModal] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState(null);
-
-  // Task 검색 상태
-  const [taskSearchText, setTaskSearchText] = useState('');
-
-  // 통계 state
-  const [totalTodos, setTotalTodos] = useState(0);
-  const [completedTodos, setCompletedTodos] = useState(0);
 
   // 워크스페이스 멤버 로드
   useEffect(() => {
@@ -61,120 +67,21 @@ export default function WorkspaceDetail() {
     }
   }, [workspaceId]);
 
-  // NORMAL 사용자인 경우 자신이 속한 Task만 필터링
-  const [filteredTasks, setFilteredTasks] = useState([]);
-
+  // 검색어가 바뀌면 첫 페이지로 옮긴다. 첫 렌더는 건너뛰어 URL 의 page 를 살린다
+  const previousKeyword = useRef(keyword);
   useEffect(() => {
-    const filterTasks = async () => {
-      if (!tasks || !currentUser) {
-        setFilteredTasks([]);
-        return;
-      }
-
-      // members가 아직 로드되지 않았으면 모든 Task 표시
-      if (!members || members.length === 0) {
-        setFilteredTasks(tasks);
-        return;
-      }
-
-      const userRole = members.find(m => m.userId === currentUser.id)?.role;
-
-      // userRole이 없으면 (아직 워크스페이스 멤버가 아닌 경우) 모든 Task 표시
-      if (!userRole) {
-        setFilteredTasks(tasks);
-        return;
-      }
-
-      // MASTER나 MANAGER면 모든 Task 보여주기
-      if (userRole === 'MASTER' || userRole === 'MANAGER') {
-        setFilteredTasks(tasks);
-        return;
-      }
-
-      // NORMAL이면 자신이 속한 Task만 필터링
-      if (userRole === 'NORMAL') {
-        const taskAPI = (await import('../api/task')).taskAPI;
-        const userTasks = [];
-
-        for (const task of tasks) {
-          try {
-            const taskMembers = await taskAPI.getMembers(task.id);
-            if (Array.isArray(taskMembers) && taskMembers.some(m => m.userId === currentUser.id)) {
-              userTasks.push(task);
-            }
-          } catch (error) {
-            console.error(`Failed to fetch members for task ${task.id}:`, error);
-          }
-        }
-
-        setFilteredTasks(userTasks);
-      }
-    };
-
-    filterTasks();
-  }, [tasks, members, currentUser]);
-
-  // 검색 적용된 최종 Task 목록
-  const displayedTasks = useMemo(() => {
-    if (!filteredTasks) return [];
-
-    let result = [...filteredTasks];
-
-    // 텍스트 검색 적용
-    if (taskSearchText) {
-      result = result.filter(task =>
-        task.title?.toLowerCase().includes(taskSearchText.toLowerCase()) ||
-        task.description?.toLowerCase().includes(taskSearchText.toLowerCase())
-      );
+    if (previousKeyword.current !== keyword) {
+      previousKeyword.current = keyword;
+      setPage(0);
     }
+  }, [keyword, setPage]);
 
-    return result;
-  }, [filteredTasks, taskSearchText]);
-
-  // Todo 통계 계산
-  useEffect(() => {
-    const loadTodoStats = async () => {
-      if (!filteredTasks || filteredTasks.length === 0) {
-        setTotalTodos(0);
-        setCompletedTodos(0);
-        setProgressData([]);
-        return;
-      }
-
-      let total = 0;
-      let completed = 0;
-      let inProgress = 0;
-      let waitingReview = 0;
-
-      for (const task of filteredTasks) {
-        try {
-          const todos = await importedTaskAPI.getTodos(task.id);
-          if (Array.isArray(todos)) {
-            total += todos.length;
-            completed += todos.filter(t => t.status === 'CONFIRMED').length;
-            inProgress += todos.filter(t => t.status === 'IN_PROGRESS').length;
-            waitingReview += todos.filter(t => t.status === 'WAITING_REVIEW').length;
-          }
-        } catch (error) {
-          console.error(`Failed to fetch todos for task ${task.id}:`, error);
-        }
-      }
-
-      setTotalTodos(total);
-      setCompletedTodos(completed);
-
-      // Task 진행률 데이터 설정
-      const progressDataArray = [
-        { name: '완료', value: completed, color: '#10b981' },
-        { name: '검수대기', value: waitingReview, color: '#f59e0b' },
-        { name: '진행중', value: inProgress, color: '#3b82f6' }
-      ].filter(item => item.value > 0);
-
-      setProgressData(progressDataArray);
-    };
-
-    loadTodoStats();
-  }, [filteredTasks]);
+  // 서버 집계값을 파이 차트 형식으로 옮긴다
+  const progressData = [
+    { name: '완료', value: progress.confirmed, color: '#10b981' },
+    { name: '검수대기', value: progress.waitingReview, color: '#f59e0b' },
+    { name: '진행중', value: progress.inProgress, color: '#3b82f6' }
+  ].filter(item => item.value > 0);
 
   const handleCreate = (e) => {
     e.preventDefault();
@@ -353,18 +260,18 @@ export default function WorkspaceDetail() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <div className="text-sm text-blue-600 font-medium mb-1">총 Task</div>
-              <div className="text-3xl font-bold text-blue-900">{filteredTasks?.length || 0}</div>
+              <div className="text-3xl font-bold text-blue-900">{totalElements}</div>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-lg p-6">
               <div className="text-sm text-green-600 font-medium mb-1">총 Todo</div>
-              <div className="text-3xl font-bold text-green-900">{totalTodos}</div>
+              <div className="text-3xl font-bold text-green-900">{progress.total}</div>
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
               <div className="text-sm text-purple-600 font-medium mb-1">완료된 Todo</div>
-              <div className="text-3xl font-bold text-purple-900">{completedTodos}</div>
-              {totalTodos > 0 && (
+              <div className="text-3xl font-bold text-purple-900">{progress.confirmed}</div>
+              {progress.total > 0 && (
                 <div className="text-sm text-purple-600 mt-1">
-                  {Math.round((completedTodos / totalTodos) * 100)}% 완료
+                  {Math.round((progress.confirmed / progress.total) * 100)}% 완료
                 </div>
               )}
             </div>
@@ -405,7 +312,7 @@ export default function WorkspaceDetail() {
         {activeTab === 'tasks' ? (
           <>
             {/* Progress Chart */}
-            {filteredTasks && filteredTasks.length > 0 && progressData.length > 0 && (
+            {tasks && tasks.length > 0 && progressData.length > 0 && (
               <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Task 진행률</h3>
                 <div className="flex items-center gap-8">
@@ -445,7 +352,7 @@ export default function WorkspaceDetail() {
                       ))}
                     </div>
                     <div className="mt-4 text-sm text-gray-500">
-                      총 {filteredTasks.length}개의 Task · {totalTodos}개의 Todo
+                      총 {tasks.length}개의 Task · {progress.total}개의 Todo
                     </div>
                   </div>
                 </div>
@@ -480,23 +387,26 @@ export default function WorkspaceDetail() {
               </div>
 
               {/* 검색 결과 개수 */}
-              {taskSearchText && (
+              {keyword && (
                 <div className="flex items-center text-sm text-gray-600 px-2">
-                  {displayedTasks.length}개 결과
+                  {totalElements}개 결과
                 </div>
               )}
             </div>
 
             {/* Task Grid */}
-            {displayedTasks && displayedTasks.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
-                ))}
-              </div>
+            {tasks && tasks.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tasks.map((task) => (
+                    <TaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+                <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              </>
             ) : (
               <div className="text-center py-12 border border-gray-200 rounded-lg">
-                {filteredTasks && filteredTasks.length > 0 ? (
+                {tasks && tasks.length > 0 ? (
                   <div>
                     <p className="text-gray-400 mb-4">검색 결과가 없습니다</p>
                     <button

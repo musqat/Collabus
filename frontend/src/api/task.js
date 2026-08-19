@@ -7,12 +7,18 @@ export const taskAPI = {
     return data;
   },
 
-  // 워크스페이스의 Task 목록 (페이지 응답)
-  getByWorkspace: async (workspaceId, page = 0, size = 20) => {
+  // 워크스페이스의 Task 목록. page, size, keyword 를 넘긴다
+  getByWorkspace: async (workspaceId, { page = 0, size = 20, keyword } = {}) => {
     const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/tasks`, {
-      params: { page, size }
+      params: { page, size, keyword: keyword || undefined }
     });
-    return data.data.content;
+    return data.data;
+  },
+
+  // 워크스페이스 진행률. total, inProgress, waitingReview, confirmed 를 받는다
+  getWorkspaceProgress: async (workspaceId) => {
+    const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/progress`);
+    return data.data;
   },
 
   // Task 상세
