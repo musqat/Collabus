@@ -176,7 +176,7 @@ class WorkspaceServiceImplTest {
         when(workspaceMapper.mapToDto(workspace)).thenReturn(responseDto);
 
         // When
-        WorkspaceResponseDto result = workspaceService.getWorkspaceById(workspaceId);
+        WorkspaceResponseDto result = workspaceService.getWorkspaceById(workspaceId, 1L);
 
         // Then
         assertThat(result).isNotNull();
@@ -194,7 +194,7 @@ class WorkspaceServiceImplTest {
                 .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> workspaceService.getWorkspaceById(workspaceId))
+        assertThatThrownBy(() -> workspaceService.getWorkspaceById(workspaceId, 1L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

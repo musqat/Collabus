@@ -59,8 +59,10 @@ public class WorkspaceController {
             }
     )
     @GetMapping("/{id}")
-    public ResponseEntity<WorkspaceResponseDto> getWorkspaceById(@PathVariable Long id) {
-        return ResponseEntity.ok(workspaceService.getWorkspaceById(id));
+    public ResponseEntity<WorkspaceResponseDto> getWorkspaceById(@PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(
+                workspaceService.getWorkspaceById(id, userDetails.getUserId()));
     }
 
     @Operation(

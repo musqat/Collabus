@@ -11,39 +11,39 @@ import com.muscat.Collabus.Task.model.TodoProgressDto;
 
 public interface TaskService {
 
-    // 워크스페이스 MASTER·MANAGER 만 생성 가능
+    // Task 를 만든다
     TaskResponseDto createTask(TaskRequestDto dto, Long creatorId);
 
-    // 참여자이거나 워크스페이스 MASTER·MANAGER 만 조회 가능
+    // Task 단건 조회
     TaskResponseDto getTask(Long taskId, Long requesterId);
 
-    // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만 보이고, keyword 는 제목·설명에 걸린다.
+    // 워크스페이스의 Task 목록. keyword 는 제목·설명에 걸린다
     PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
         String keyword, Pageable pageable);
 
-    // 볼 수 있는 Task 의 Todo 를 상태별로 센다
+    // 워크스페이스의 Todo 를 상태별로 센다
     TodoProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId);
 
     // Task 의 Todo 를 상태별로 센다
     TodoProgressDto getTaskProgress(Long taskId, Long requesterId);
 
-    // 워크스페이스 MASTER 또는 Task Manager 만 수정 가능
+    // Task 를 수정한다
     TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId);
 
-    // 워크스페이스 MASTER 또는 Task Manager 만 삭제 가능. 하위 Todo 와 첨부 파일까지 정리된다
+    // Task 를 삭제한다. 하위 Todo 와 첨부 파일까지 지운다
     void deleteTask(Long taskId, Long userId);
 
-    // 워크스페이스 MASTER 만 추가 가능. 추가된 사용자에게 알림이 간다
+    // Task 에 참여자를 추가한다
     void assignUserToTask(Long taskId, Long targetUserId, Long requesterId);
 
-    // 워크스페이스 MASTER 만 제거 가능. Task Manager 는 자기 자신을 뺄 수 없다
+    // Task 에서 참여자를 제거한다
     void removeUserFromTask(Long taskId, Long targetUserId, Long requesterId);
 
     // Task 참여자 목록
     PageResponseDto<TaskUserResponseDto> getTaskMembers(Long taskId, Long requesterId,
         Pageable pageable);
 
-    // 매니저 이전. 기존 매니저는 NORMAL 로 강등된다
+    // Task Manager 를 넘긴다. 기존 매니저는 NORMAL 로 내려간다
     void assignTaskManager(Long taskId, Long newManagerId, Long requesterId);
 
 }

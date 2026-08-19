@@ -1,5 +1,7 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.common.util.EntityFinderUtil;
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TodoCommentServiceImpl implements TodoCommentService {
 
+    private final EntityFinderUtil finder;
+    private final TaskAuthorityUtil taskAuthorityUtil;
     private final SortGuard sortGuard;
     private final TodoRepository todoRepository;
     private final UserRepository userRepository;
@@ -45,7 +49,6 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     private final NotificationService notificationService;
     private final TaskUserRepository taskUserRepository;
 
-    // Task 참여자만 작성 가능. 담당자와 MANAGER 전원에게 알림이 간다 (본인 제외)
     @Override
     @Transactional
     public TodoCommentDto addComment(Long todoId, String content, Long userId) {
@@ -120,7 +123,10 @@ public class TodoCommentServiceImpl implements TodoCommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDto<TodoCommentDto> getComments(Long todoId, Pageable pageable) {
+    public PageResponseDto<TodoCommentDto> getComments(Long todoId, Long requesterId,
+                                                       Pageable pageable) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTodoById(todoId).getTask(), requesterId);
+
         return PageResponseDto.of(
                 commentRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoComment.class)),
                 commentMapper::mapToDto);

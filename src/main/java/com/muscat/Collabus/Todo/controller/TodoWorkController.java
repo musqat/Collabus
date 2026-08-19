@@ -61,9 +61,10 @@ public class TodoWorkController {
             }
     )
     public ResponseEntity<ResponseDto> getWorks(@RequestParam Long todoId,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails,
                                                 @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                todoWorkService.getWorksByTodoId(todoId, pageable)));
+                todoWorkService.getWorksByTodoId(todoId, userDetails.getUserId(), pageable)));
     }
 
     @PatchMapping("/{workId}")

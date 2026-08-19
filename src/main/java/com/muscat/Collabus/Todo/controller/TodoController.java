@@ -73,10 +73,11 @@ public class TodoController {
   public ResponseEntity<ResponseDto> getTodosByTask(
       @RequestParam Long taskId,
       @RequestParam(required = false) String status,
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @PageableDefault(size = 20, sort = "dueDate") Pageable pageable
   ) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-        todoService.getTodosByTask(taskId, status, pageable)));
+        todoService.getTodosByTask(taskId, userDetails.getUserId(), status, pageable)));
   }
 
   @GetMapping("/{todoId}")
@@ -90,9 +91,10 @@ public class TodoController {
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
-  public ResponseEntity<ResponseDto> getTodo(@PathVariable Long todoId) {
+  public ResponseEntity<ResponseDto> getTodo(@PathVariable Long todoId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-        todoService.getTodoById(todoId)));
+        todoService.getTodoById(todoId, userDetails.getUserId())));
   }
 
   @PatchMapping("/{todoId}")

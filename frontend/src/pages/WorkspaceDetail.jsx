@@ -709,7 +709,7 @@ export default function WorkspaceDetail() {
                         />
                         <div className="flex-1">
                           <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div className="text-xs text-gray-500">{user.displayName}</div>
                         </div>
                       </label>
                     ))}

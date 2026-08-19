@@ -18,8 +18,6 @@ import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.TodoResponse;
 
-import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -73,6 +71,7 @@ public class TodoFileServiceImpl implements TodoFileService {
                 todoFileMapper::mapToDto);
     }
 
+    // 이전 파일은 커밋 후에 지운다
     @Override
     @Transactional
     public TodoFileDto updateFile(Long fileId, Long userId, MultipartFile newFile) {
