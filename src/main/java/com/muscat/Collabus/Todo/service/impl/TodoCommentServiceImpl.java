@@ -19,7 +19,6 @@ import com.muscat.Collabus.Todo.service.TodoCommentService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
@@ -53,12 +52,12 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     @Transactional
     public TodoCommentDto addComment(Long todoId, String content, Long userId) {
         Todo todo = todoRepository.findById(todoId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.TODO_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.TODO_NOT_FOUND));
 
         participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
 
         TodoComment comment = TodoComment.builder()
                 .todo(todo)
@@ -98,10 +97,10 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     @Transactional
     public TodoCommentDto updateComment(Long commentId, String content, Long userId) {
         TodoComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.COMMENT_NOT_FOUND));
 
         if (!comment.getAuthor().getId().equals(userId)) {
-            throw new BusinessException(CommonResponse.UNAUTHORIZED);
+            throw new BusinessException(CommonResponse.FORBIDDEN);
         }
 
         comment.updateContent(content);
@@ -112,10 +111,10 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
         TodoComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.COMMENT_NOT_FOUND));
 
         if (!comment.getAuthor().getId().equals(userId)) {
-            throw new BusinessException(CommonResponse.UNAUTHORIZED);
+            throw new BusinessException(CommonResponse.FORBIDDEN);
         }
 
         commentRepository.delete(comment);
@@ -125,7 +124,7 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     @Transactional(readOnly = true)
     public PageResponseDto<TodoCommentDto> getComments(Long todoId, Long requesterId,
                                                        Pageable pageable) {
-        taskAuthorityUtil.validateCanViewTask(finder.findTodoById(todoId).getTask(), requesterId);
+        taskAuthorityUtil.requireViewableTodo(todoId, requesterId);
 
         return PageResponseDto.of(
                 commentRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoComment.class)),

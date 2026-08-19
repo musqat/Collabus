@@ -13,6 +13,7 @@ public enum UserResponse implements BaseResponseEnum {
   EMAIL_ALREADY_EXISTS("409", "이미 사용 중인 이메일입니다."),
   NICKNAME_ALREADY_EXISTS("409", "이미 사용 중인 닉네임입니다."),
   PASSWORD_BLANK("400", "비밀번호를 입력해주세요."),
+  SEARCH_KEYWORD_TOO_SHORT("400", "검색어는 2자 이상 입력해주세요."),
   EMAIL_NOT_FOUND("404", "해당 이메일이 존재하지 않습니다."),
   INVALID_PASSWORD("401", "비밀번호가 일치하지 않습니다."),
   CURRENT_PASSWORD_MISMATCH("400", "현재 비밀번호가 일치하지 않습니다."),

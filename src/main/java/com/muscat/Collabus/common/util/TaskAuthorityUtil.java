@@ -1,5 +1,10 @@
 package com.muscat.Collabus.common.util;
 
+import com.muscat.Collabus.enums.response.CommonResponse;
+import com.muscat.Collabus.common.exception.BusinessException;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Todo.entity.Todo;
+import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -7,41 +12,42 @@ import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class TaskAuthorityUtil {
 
+  private final TodoRepository todoRepository;
+  private final TaskRepository taskRepository;
   private final WorkspaceUserRepository workspaceUserRepository;
   private final TaskUserRepository taskUserRepository;
 
   // Task 기반 Workspace Master 권한 검증
   public void validateWorkspaceMaster(Task task, Long userId) {
     if (!isWorkspaceMaster(task, userId)) {
-      throw new AccessDeniedException("Workspace Master 권한이 필요합니다.");
+      throw new BusinessException(CommonResponse.WORKSPACE_MASTER_REQUIRED);
     }
   }
 
   // Workspace 기반 Workspace Master 권한 검증
   public void validateWorkspaceMaster(Workspace workspace, Long userId) {
     if (!isWorkspaceMaster(workspace, userId)) {
-      throw new AccessDeniedException("Workspace Master 권한이 필요합니다.");
+      throw new BusinessException(CommonResponse.WORKSPACE_MASTER_REQUIRED);
     }
   }
 
   // Task Manager 권한 검증
   public void validateTaskManager(Task task, Long userId) {
     if (!isTaskManager(task, userId)) {
-      throw new AccessDeniedException("Task Manager 권한이 필요합니다.");
+      throw new BusinessException(CommonResponse.TASK_MANAGER_REQUIRED);
     }
   }
 
   // Task 관리 권한 (WM or TM) 검증
   public void validateCanManageTask(Task task, Long userId) {
     if (!canManageTask(task, userId)) {
-      throw new AccessDeniedException("Task 관리 권한이 없습니다.");
+      throw new BusinessException(CommonResponse.TASK_MANAGE_DENIED);
     }
   }
 
@@ -77,7 +83,7 @@ public class TaskAuthorityUtil {
   // Task 생성 권한 검증 (Workspace Master 또는 Manager)
   public void validateCanCreateTask(Workspace workspace, Long userId) {
     if (!canCreateTask(workspace, userId)) {
-      throw new AccessDeniedException("Task 생성 권한이 없습니다. (MASTER 또는 MANAGER만 가능)");
+      throw new BusinessException(CommonResponse.TASK_CREATE_DENIED);
     }
   }
 
@@ -87,10 +93,24 @@ public class TaskAuthorityUtil {
         || taskUserRepository.existsById_TaskIdAndId_UserId(task.getId(), userId);
   }
 
-  // 볼 수 없으면 AccessDeniedException
+  // 볼 수 있는 Task 를 돌려준다. 없거나 볼 수 없으면 똑같은 예외를 낸다
+  public Task requireViewableTask(Long taskId, Long userId) {
+    return taskRepository.findById(taskId)
+        .filter(task -> canViewTask(task, userId))
+        .orElseThrow(() -> new BusinessException(CommonResponse.TASK_VIEW_DENIED));
+  }
+
+  // 볼 수 있는 Todo 를 돌려준다. 없거나 볼 수 없으면 똑같은 예외를 낸다
+  public Todo requireViewableTodo(Long todoId, Long userId) {
+    return todoRepository.findById(todoId)
+        .filter(todo -> canViewTask(todo.getTask(), userId))
+        .orElseThrow(() -> new BusinessException(CommonResponse.TODO_VIEW_DENIED));
+  }
+
+  // 볼 수 없으면 예외
   public void validateCanViewTask(Task task, Long userId) {
     if (!canViewTask(task, userId)) {
-      throw new AccessDeniedException("Task 를 볼 권한이 없습니다.");
+      throw new BusinessException(CommonResponse.TASK_VIEW_DENIED);
     }
   }
 
@@ -100,18 +120,18 @@ public class TaskAuthorityUtil {
         workspaceId, userId, List.of(WorkspaceRole.MASTER, WorkspaceRole.MANAGER));
   }
 
-  // 워크스페이스 MASTER 가 아니면 AccessDeniedException
+  // 워크스페이스 MASTER 가 아니면 예외
   public void validateWorkspaceMaster(Long workspaceId, Long userId) {
     if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
         workspaceId, userId, WorkspaceRole.MASTER)) {
-      throw new AccessDeniedException("Workspace Master 권한이 필요합니다.");
+      throw new BusinessException(CommonResponse.WORKSPACE_MASTER_REQUIRED);
     }
   }
 
-  // 워크스페이스 멤버가 아니면 AccessDeniedException
+  // 워크스페이스 멤버가 아니면 예외
   public void validateWorkspaceMember(Long workspaceId, Long userId) {
     if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserId(workspaceId, userId)) {
-      throw new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다.");
+      throw new BusinessException(CommonResponse.WORKSPACE_PARTICIPANT_REQUIRED);
     }
   }
 

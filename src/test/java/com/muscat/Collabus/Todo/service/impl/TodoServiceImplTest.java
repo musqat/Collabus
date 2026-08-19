@@ -27,7 +27,6 @@ import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.enums.response.CommonResponse;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
@@ -299,9 +298,8 @@ class TodoServiceImplTest {
     @Test
     @DisplayName("볼 수 없는 Task 의 Todo 는 단건 조회가 막힌다")
     void getTodoById_Fail_CannotViewTask() {
-        when(finder.findTodoById(1L)).thenReturn(todo);
-        doThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."))
-                .when(taskAuthorityUtil).validateCanViewTask(todo.getTask(), 99L);
+        when(taskAuthorityUtil.requireViewableTodo(1L, 99L))
+                .thenThrow(new AccessDeniedException("Todo 를 볼 권한이 없습니다."));
 
         assertThatThrownBy(() -> todoService.getTodoById(1L, 99L))
                 .isInstanceOf(AccessDeniedException.class);
@@ -310,9 +308,8 @@ class TodoServiceImplTest {
     @Test
     @DisplayName("볼 수 없는 Task 는 Todo 목록도 막힌다")
     void getTodosByTask_Fail_CannotViewTask() {
-        when(finder.findTaskById(1L)).thenReturn(task);
-        doThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."))
-                .when(taskAuthorityUtil).validateCanViewTask(task, 99L);
+        when(taskAuthorityUtil.requireViewableTask(1L, 99L))
+                .thenThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."));
 
         assertThatThrownBy(() ->
                 todoService.getTodosByTask(1L, 99L, null, PageRequest.of(0, 20)))
@@ -326,7 +323,7 @@ class TodoServiceImplTest {
     void getTodoById_Success() {
         // Given
         Long todoId = 1L;
-        when(finder.findTodoById(todoId)).thenReturn(todo);
+        when(taskAuthorityUtil.requireViewableTodo(todoId, 1L)).thenReturn(todo);
         when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
         // When
@@ -335,7 +332,6 @@ class TodoServiceImplTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(todoId);
-        verify(finder, times(1)).findTodoById(todoId);
     }
 
     @Test
@@ -343,11 +339,12 @@ class TodoServiceImplTest {
     void getTodoById_Fail_NotFound() {
         // Given
         Long todoId = 999L;
-        when(finder.findTodoById(todoId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+        when(taskAuthorityUtil.requireViewableTodo(todoId, 1L))
+                .thenThrow(new AccessDeniedException("Todo 를 볼 권한이 없습니다."));
 
         // When & Then
         assertThatThrownBy(() -> todoService.getTodoById(todoId, 1L))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test

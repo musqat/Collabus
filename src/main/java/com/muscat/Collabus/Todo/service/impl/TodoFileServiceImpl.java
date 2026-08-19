@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.common.exception.BusinessException;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
@@ -12,14 +13,12 @@ import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Todo.service.TodoFileService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.FileUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.TodoResponse;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,7 +44,7 @@ public class TodoFileServiceImpl implements TodoFileService {
         validateParticipant(work, userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
 
         String fileUrl = fileUtil.saveFile(file);
 
@@ -108,12 +107,12 @@ public class TodoFileServiceImpl implements TodoFileService {
 
     private TodoWork findWork(Long workId) {
         return todoWorkRepository.findById(workId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.TODO_WORK_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.TODO_WORK_NOT_FOUND));
     }
 
     private TodoFile findFile(Long fileId) {
         return todoFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.FILE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.FILE_NOT_FOUND));
     }
 
     // 파일은 Todo → Task 에 속하므로 해당 Task 참여자만 접근할 수 있다
@@ -124,7 +123,7 @@ public class TodoFileServiceImpl implements TodoFileService {
     // 파일 수정·삭제는 업로더 본인만 가능하다
     private void validateUploader(TodoFile file, Long userId) {
         if (!file.getUploader().getId().equals(userId)) {
-            throw new AccessDeniedException(TodoResponse.UNAUTHORIZED_TODO_WORK.getMessage());
+            throw new BusinessException(TodoResponse.UNAUTHORIZED_TODO_WORK);
         }
     }
 }

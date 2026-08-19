@@ -23,18 +23,6 @@ public class GlobalExceptionHandler {
 
   private static final String GENERIC_ERROR_MESSAGE = "서버 오류가 발생했습니다.";
 
-  @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<ErrorResponseDto> handleNotFound(ResourceNotFoundException ex,
-      HttpServletRequest request) {
-    return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), ErrorType.NOT_FOUND, request);
-  }
-
-  @ExceptionHandler(ResourceAlreadyExistsException.class)
-  public ResponseEntity<ErrorResponseDto> handleResourceExists(ResourceAlreadyExistsException ex,
-      HttpServletRequest request) {
-    return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), ErrorType.CONFLICT, request);
-  }
-
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ErrorResponseDto> handleAccessDenied(AccessDeniedException ex,
       HttpServletRequest request) {

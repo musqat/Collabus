@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
@@ -17,8 +18,6 @@ import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceInviteRepository;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserInviteService;
 import com.muscat.Collabus.common.dto.PageResponseDto;
-import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.InviteResponse;
@@ -59,21 +58,21 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
         }
 
         if (workspaceUserRepository.existsById(new WorkspaceUserPk(workspaceId, dto.getUserId()))) {
-            throw new ResourceAlreadyExistsException(WorkspaceUserResponse.USER_ALREADY_MEMBER);
+            throw new BusinessException(WorkspaceUserResponse.USER_ALREADY_MEMBER);
         }
 
         if (inviteRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, dto.getUserId(),
                 InviteStatus.PENDING)) {
-            throw new ResourceAlreadyExistsException(InviteResponse.INVITE_ALREADY_PENDING);
+            throw new BusinessException(InviteResponse.INVITE_ALREADY_PENDING);
         }
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(
-                        () -> new ResourceNotFoundException(CommonResponse.WORKSPACE_NOT_FOUND));
+                        () -> new BusinessException(CommonResponse.WORKSPACE_NOT_FOUND));
         User inviter = userRepository.findById(inviterId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
         User invitee = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
 
         WorkspaceInvite invite = inviteMapper.mapToEntity(workspace, inviter, invitee, dto);
         WorkspaceInvite savedInvite = inviteRepository.save(invite);
@@ -98,7 +97,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
     @Transactional
     public void acceptInvite(Long inviteId, Long inviteeId) {
         WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
-                .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(InviteResponse.INVITE_NOT_FOUND));
 
         if (invite.getStatus() != InviteStatus.PENDING) {
             throw new IllegalStateException(InviteResponse.INVITE_ALREADY_PROCESSED.getMessage());
@@ -121,7 +120,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
     @Transactional
     public void rejectInvite(Long inviteId, Long inviteeId) {
         WorkspaceInvite invite = inviteRepository.findByIdAndInviteeId(inviteId, inviteeId)
-                .orElseThrow(() -> new ResourceNotFoundException(InviteResponse.INVITE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(InviteResponse.INVITE_NOT_FOUND));
 
         invite.reject();
         inviteRepository.save(invite);
@@ -129,7 +128,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
 
     private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
         return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
     }
 
 }

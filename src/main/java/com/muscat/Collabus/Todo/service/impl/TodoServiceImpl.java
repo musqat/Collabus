@@ -103,15 +103,13 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public TodoResponseDto getTodoById(Long todoId, Long requesterId) {
-        Todo todo = finder.findTodoById(todoId);
-        taskAuthorityUtil.validateCanViewTask(todo.getTask(), requesterId);
-        return todoMapper.mapToDto(todo);
+        return todoMapper.mapToDto(taskAuthorityUtil.requireViewableTodo(todoId, requesterId));
     }
 
     @Override
     public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, Long requesterId,
             String status, Pageable pageable) {
-        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        taskAuthorityUtil.requireViewableTask(taskId, requesterId);
 
         Pageable safePageable = sortGuard.apply(pageable, Todo.class, SORT_PATHS);
         Page<Todo> todos = (status != null)

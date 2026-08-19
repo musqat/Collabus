@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.common.exception.BusinessException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.PageImpl;
@@ -26,7 +27,6 @@ import com.muscat.Collabus.Todo.service.TodoFileService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.Workspace.entity.Workspace;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.FileUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
@@ -228,7 +228,7 @@ class TodoFileServiceImplTest {
     when(todoFileRepository.findById(FILE_ID)).thenReturn(Optional.of(file));
 
     assertThatThrownBy(() -> todoFileService.deleteFile(FILE_ID, OUTSIDER_ID))
-        .isInstanceOf(AccessDeniedException.class);
+        .isInstanceOf(BusinessException.class);
 
     verify(fileUtil, never()).deleteFile(any());
     verify(todoFileRepository, never()).delete(any());
@@ -257,7 +257,7 @@ class TodoFileServiceImplTest {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> todoFileService.createFile(WORK_ID, OWNER_ID, multipartFile))
-        .isInstanceOf(ResourceNotFoundException.class);
+        .isInstanceOf(BusinessException.class);
   }
 
   @Test

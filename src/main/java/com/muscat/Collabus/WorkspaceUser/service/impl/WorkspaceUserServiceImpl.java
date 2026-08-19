@@ -12,7 +12,6 @@ import com.muscat.Collabus.WorkspaceUser.model.WorkspaceUserResponseDto;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserService;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
@@ -112,7 +111,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
     private WorkspaceUser getWorkspaceUserOrThrow(Long workspaceId, Long userId) {
         return workspaceUserRepository.findById(new WorkspaceUserPk(workspaceId, userId))
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
     }
 
 }

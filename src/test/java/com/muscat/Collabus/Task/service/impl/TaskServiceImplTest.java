@@ -31,7 +31,6 @@ import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.enums.response.CommonResponse;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
@@ -218,7 +217,7 @@ class TaskServiceImplTest {
     void getTask_Success() {
         // Given
         Long taskId = 1L;
-        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskAuthorityUtil.requireViewableTask(taskId, 1L)).thenReturn(task);
         when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
 
         // When
@@ -227,19 +226,19 @@ class TaskServiceImplTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(taskId);
-        verify(finder, times(1)).findTaskById(taskId);
     }
 
     @Test
-    @DisplayName("Task 조회 실패 - 존재하지 않음")
+    @DisplayName("없는 Task 도 볼 권한이 없는 것과 같은 예외가 난다")
     void getTask_Fail_NotFound() {
         // Given
         Long taskId = 999L;
-        when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+        when(taskAuthorityUtil.requireViewableTask(taskId, 1L))
+                .thenThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."));
 
         // When & Then
         assertThatThrownBy(() -> taskService.getTask(taskId, 1L))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -314,11 +313,11 @@ class TaskServiceImplTest {
     void deleteTask_Fail_NotFound() {
         // Given
         Long taskId = 999L;
-        when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+        when(finder.findTaskById(taskId)).thenThrow(new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
         assertThatThrownBy(() -> taskService.deleteTask(taskId, 1L))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(taskRepository, times(0)).delete(any(Task.class));
     }
@@ -541,7 +540,7 @@ class TaskServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> taskService.assignTaskManager(taskId, newManagerId, requesterId))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(taskRepository, times(0)).save(any(Task.class));
     }
@@ -555,7 +554,6 @@ class TaskServiceImplTest {
         TaskUser taskUser1 = TaskUser.builder().build();
         TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
 
-        when(finder.findTaskById(taskId)).thenReturn(task);
         when(taskUserRepository.findAllByTask_Id(taskId, pageable))
                 .thenReturn(new PageImpl<>(List.of(taskUser1), pageable, 1));
         when(taskUserMapper.mapToDto(taskUser1)).thenReturn(taskUserResponseDto);
@@ -566,16 +564,15 @@ class TaskServiceImplTest {
 
         // Then
         assertThat(result.getContent()).hasSize(1);
-        verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, 1L);
+        verify(taskAuthorityUtil, times(1)).requireViewableTask(taskId, 1L);
     }
 
     @Test
     @DisplayName("볼 수 없는 Task 는 참여자 목록도 막힌다")
     void getTaskMembers_Fail_CannotView() {
         Long taskId = 1L;
-        when(finder.findTaskById(taskId)).thenReturn(task);
-        doThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."))
-                .when(taskAuthorityUtil).validateCanViewTask(task, 99L);
+        when(taskAuthorityUtil.requireViewableTask(taskId, 99L))
+                .thenThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."));
 
         assertThatThrownBy(() ->
                 taskService.getTaskMembers(taskId, 99L, PageRequest.of(0, 20)))
@@ -586,7 +583,7 @@ class TaskServiceImplTest {
     @DisplayName("Task 진행률은 상태별로 집계된다")
     void getTaskProgress_Counts() {
         Long taskId = 1L;
-        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(taskAuthorityUtil.requireViewableTask(taskId, 1L)).thenReturn(task);
         when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
                 .thenReturn(9L, 5L, 3L, 1L);
 
