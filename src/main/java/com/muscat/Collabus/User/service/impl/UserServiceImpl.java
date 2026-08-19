@@ -1,5 +1,8 @@
 package com.muscat.Collabus.User.service.impl;
 
+import org.springframework.data.domain.Pageable;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.User.model.UserSummaryDto;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.mapper.UserMapper;
@@ -8,17 +11,13 @@ import com.muscat.Collabus.User.model.UserResponseDto;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.User.service.UserService;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.DisplayNameUtil;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.UserResponse;
 import com.muscat.Collabus.enums.role.SystemRole;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
+    // 한두 글자로는 전체 명부가 나오므로 최소 길이를 요구한다
+    private static final int MIN_KEYWORD_LENGTH = 2;
+
+    private final SortGuard sortGuard;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
@@ -39,7 +42,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void registerUser(UserRequestDto userDto) {
         if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException(UserResponse.EMAIL_ALREADY_EXISTS);
+            throw new BusinessException(UserResponse.EMAIL_ALREADY_EXISTS);
         }
 
         String tag = DisplayNameUtil.generateUniqueTag(
@@ -54,10 +57,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserSummaryDto> searchByNickname(String keyword) {
-        return userRepository.findByNicknameContainingIgnoreCase(keyword).stream()
-                .map(userMapper::mapToSummary)
-                .collect(Collectors.toList());
+    public PageResponseDto<UserSummaryDto> searchByNickname(String keyword, Pageable pageable) {
+        String trimmed = keyword == null ? "" : keyword.trim();
+        if (trimmed.length() < MIN_KEYWORD_LENGTH) {
+            throw new BusinessException(UserResponse.SEARCH_KEYWORD_TOO_SHORT);
+        }
+
+        return PageResponseDto.of(
+                userRepository.findByNicknameContainingIgnoreCase(trimmed,
+                        sortGuard.apply(pageable, User.class)),
+                userMapper::mapToSummary);
     }
 
     @Override
@@ -70,13 +79,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateNickname(Long userId, String newNickname) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         if (!newNickname.equals(user.getNickname())) {
             String newDisplayName = newNickname + "#" + user.getTag();
 
             if (userRepository.existsByDisplayNameAndIdNot(newDisplayName, userId)) {
-                throw new ResourceAlreadyExistsException(UserResponse.NICKNAME_ALREADY_EXISTS);
+                throw new BusinessException(UserResponse.NICKNAME_ALREADY_EXISTS);
             }
 
             user.changeNickname(newNickname);
@@ -92,7 +101,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // 토큰만 탈취해도 비밀번호를 바꿀 수 있으면 계정이 그대로 넘어가므로 현재 비밀번호를 확인한다
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
@@ -110,7 +119,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public boolean deleteUser(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         userRepository.delete(user);
         return true;
@@ -119,7 +128,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(UserResponse.EMAIL_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(UserResponse.EMAIL_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException(UserResponse.INVALID_PASSWORD.getMessage());
@@ -132,7 +141,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void createAdmin(UserRequestDto userDto) {
         if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException(UserResponse.EMAIL_ALREADY_EXISTS);
+            throw new BusinessException(UserResponse.EMAIL_ALREADY_EXISTS);
         }
 
         String tag = DisplayNameUtil.generateUniqueTag(

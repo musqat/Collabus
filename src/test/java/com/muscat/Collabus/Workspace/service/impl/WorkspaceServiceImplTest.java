@@ -29,7 +29,6 @@ import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.enums.response.CommonResponse;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
@@ -158,11 +157,11 @@ class WorkspaceServiceImplTest {
         // Given
         Long founderId = 999L;
         when(entityFinderUtil.findUserById(founderId))
-                .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .thenThrow(new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
         assertThatThrownBy(() -> workspaceService.createWorkspace(requestDto, founderId))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(workspaceRepository, times(0)).save(any(Workspace.class));
     }
@@ -191,11 +190,11 @@ class WorkspaceServiceImplTest {
         // Given
         Long workspaceId = 999L;
         when(entityFinderUtil.findWorkspaceById(workspaceId))
-                .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .thenThrow(new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
         assertThatThrownBy(() -> workspaceService.getWorkspaceById(workspaceId, 1L))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -296,11 +295,11 @@ class WorkspaceServiceImplTest {
                 .build();
 
         when(entityFinderUtil.findWorkspaceById(workspaceId))
-                .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .thenThrow(new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
         assertThatThrownBy(() -> workspaceService.updateWorkspace(workspaceId, updateDto, userId))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -344,11 +343,11 @@ class WorkspaceServiceImplTest {
         Long workspaceId = 999L;
         Long userId = 1L;
         when(entityFinderUtil.findWorkspaceById(workspaceId))
-                .thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
+                .thenThrow(new BusinessException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
         assertThatThrownBy(() -> workspaceService.deleteWorkspace(workspaceId, userId))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(workspaceRepository, times(0)).delete(any(Workspace.class));
     }

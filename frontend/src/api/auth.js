@@ -24,11 +24,11 @@ export const authAPI = {
     return data;
   },
 
-  // 사용자 검색
-  searchUsers: async (keyword) => {
+  // 닉네임으로 사용자 검색. 두 글자 이상이어야 한다
+  searchUsers: async (keyword, { page = 0, size = 20 } = {}) => {
     const { data } = await apiClient.get('/users/search', {
-      params: { keyword }
+      params: { keyword, page, size }
     });
-    return data.data;
+    return data.data.content;
   }
 };

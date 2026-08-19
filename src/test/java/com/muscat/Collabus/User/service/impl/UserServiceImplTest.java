@@ -10,6 +10,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.User.model.UserSummaryDto;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.config.token.RefreshTokenService;
@@ -18,8 +23,6 @@ import com.muscat.Collabus.User.model.UserRequestDto;
 import com.muscat.Collabus.User.model.UserResponseDto;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.enums.role.SystemRole;
 
 import java.util.Arrays;
@@ -38,6 +41,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService 단위 테스트")
 class UserServiceImplTest {
+
+    @Mock
+
+    private SortGuard sortGuard;
+
 
     @Mock
     private UserRepository userRepository;
@@ -117,7 +125,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.registerUser(userRequestDto))
-                .isInstanceOf(ResourceAlreadyExistsException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).save(any(User.class));
     }
@@ -127,17 +135,35 @@ class UserServiceImplTest {
     void searchByNickname_Success() {
         // Given
         String keyword = "test";
-        List<User> users = Arrays.asList(user);
-        when(userRepository.findByNicknameContainingIgnoreCase(keyword)).thenReturn(users);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(sortGuard.apply(pageable, User.class)).thenReturn(pageable);
+        when(userRepository.findByNicknameContainingIgnoreCase(keyword, pageable))
+                .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
         when(userMapper.mapToSummary(user)).thenReturn(userSummaryDto);
 
         // When
-        List<UserSummaryDto> result = userService.searchByNickname(keyword);
+        PageResponseDto<UserSummaryDto> result = userService.searchByNickname(keyword, pageable);
 
         // Then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getDisplayName()).isEqualTo("testuser#1234");
-        verify(userRepository, times(1)).findByNicknameContainingIgnoreCase(keyword);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getDisplayName()).isEqualTo("testuser#1234");
+    }
+
+    @Test
+    @DisplayName("검색어가 두 글자보다 짧으면 거부한다")
+    void searchByNickname_Fail_TooShort() {
+        assertThatThrownBy(() -> userService.searchByNickname("a", PageRequest.of(0, 20)))
+                .isInstanceOf(BusinessException.class);
+
+        verify(userRepository, times(0))
+                .findByNicknameContainingIgnoreCase(any(), any());
+    }
+
+    @Test
+    @DisplayName("공백만 있는 검색어도 거부한다")
+    void searchByNickname_Fail_Blank() {
+        assertThatThrownBy(() -> userService.searchByNickname("   ", PageRequest.of(0, 20)))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -198,7 +224,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateNickname(userId, newNickname))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -212,7 +238,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateNickname(userId, newNickname))
-                .isInstanceOf(ResourceAlreadyExistsException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).save(any(User.class));
     }
@@ -307,7 +333,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", newPassword))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -335,7 +361,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.deleteUser(email))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).delete(any(User.class));
     }
@@ -370,7 +396,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.login(email, password))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -412,7 +438,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.createAdmin(userRequestDto))
-                .isInstanceOf(ResourceAlreadyExistsException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).save(any(User.class));
     }

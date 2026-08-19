@@ -127,7 +127,8 @@ export default function WorkspaceDetail() {
   };
 
   const handleSearch = async () => {
-    if (searchKeyword.trim()) {
+    // 서버가 두 글자 미만을 거부한다
+    if (searchKeyword.trim().length >= 2) {
       try {
         const results = await authAPI.searchUsers(searchKeyword);
         // 본인과 이미 멤버인 사용자 제외

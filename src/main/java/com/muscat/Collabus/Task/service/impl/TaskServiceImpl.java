@@ -28,7 +28,6 @@ import com.muscat.Collabus.Task.service.TaskService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.NotificationType;
@@ -122,9 +121,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponseDto getTask(Long taskId, Long requesterId) {
-        Task task = finder.findTaskById(taskId);
-        taskAuthorityUtil.validateCanViewTask(task, requesterId);
-        return taskMapper.mapToDto(task);
+        return taskMapper.mapToDto(taskAuthorityUtil.requireViewableTask(taskId, requesterId));
     }
 
     @Override
@@ -233,7 +230,7 @@ public class TaskServiceImpl implements TaskService {
         TaskUser taskUser = taskUserRepository.findByTaskAndUser(task,
                         finder.findUserById(targetUserId))
                 .orElseThrow(
-                        () -> new ResourceNotFoundException(TaskResponse.TASK_USER_NOT_FOUND));
+                        () -> new BusinessException(TaskResponse.TASK_USER_NOT_FOUND));
         taskUserRepository.delete(taskUser);
     }
 
@@ -246,7 +243,7 @@ public class TaskServiceImpl implements TaskService {
         User newManager = finder.findUserById(newManagerId);
         TaskUser newManagerTaskUser = taskUserRepository.findByTaskAndUser(task, newManager)
                 .orElseThrow(
-                        () -> new ResourceNotFoundException(TaskResponse.TASK_USER_NOT_FOUND));
+                        () -> new BusinessException(TaskResponse.TASK_USER_NOT_FOUND));
 
         taskUserRepository.findAllByTask(task).stream()
                 .filter(tu -> tu.getRole() == TaskRole.MANAGER)
@@ -265,7 +262,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public PageResponseDto<TaskUserResponseDto> getTaskMembers(Long taskId, Long requesterId,
                                                                Pageable pageable) {
-        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        taskAuthorityUtil.requireViewableTask(taskId, requesterId);
         return PageResponseDto.of(
                 taskUserRepository.findAllByTask_Id(taskId, sortGuard.apply(pageable, TaskUser.class)),
                 taskUserMapper::mapToDto);
@@ -273,7 +270,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TodoProgressDto getTaskProgress(Long taskId, Long requesterId) {
-        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        taskAuthorityUtil.requireViewableTask(taskId, requesterId);
         return countProgress(TodoSpecifications.inTask(taskId));
     }
 }

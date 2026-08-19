@@ -13,7 +13,6 @@ import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.Todo.service.TodoWorkService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.TodoResponse;
@@ -69,7 +68,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
     @Transactional
     public TodoWorkDto updateWork(Long workId, TodoWorkDto dto, Long userId) {
         TodoWork work = todoWorkRepository.findById(workId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.TODO_WORK_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.TODO_WORK_NOT_FOUND));
 
         if (!work.getAuthor().getId().equals(userId)) {
             throw new BusinessException(TodoResponse.UNAUTHORIZED_TODO_WORK);
@@ -84,7 +83,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
     @Transactional(readOnly = true)
     public PageResponseDto<TodoWorkDto> getWorksByTodoId(Long todoId, Long requesterId,
                                                          Pageable pageable) {
-        taskAuthorityUtil.validateCanViewTask(finder.findTodoById(todoId).getTask(), requesterId);
+        taskAuthorityUtil.requireViewableTodo(todoId, requesterId);
 
         return PageResponseDto.of(
                 todoWorkRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoWork.class)),
@@ -95,7 +94,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
     @Transactional
     public void deleteWork(Long workId, Long userId) {
         TodoWork work = todoWorkRepository.findById(workId)
-                .orElseThrow(() -> new ResourceNotFoundException(TodoResponse.TODO_WORK_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(TodoResponse.TODO_WORK_NOT_FOUND));
 
         if (!work.getAuthor().getId().equals(userId)) {
             throw new BusinessException(TodoResponse.UNAUTHORIZED_TODO_WORK);
