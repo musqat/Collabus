@@ -11,7 +11,7 @@ export default function Invitations() {
   const { data, isLoading } = useQuery({
     queryKey: ['invitations', page],
     queryFn: () => workspaceAPI.getMyInvitations(page),
-    // 페이지를 넘길 때 목록이 빈 화면으로 깜빡이지 않게 이전 페이지를 유지한다
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
     placeholderData: keepPreviousData,
   });
 
@@ -48,7 +48,7 @@ export default function Invitations() {
 
   const pendingInvitations = data?.content ?? [];
 
-  // 마지막 페이지의 초대를 전부 처리하면 빈 페이지에 남으므로 앞으로 물러난다
+  // 현재 페이지가 비면 앞 페이지로 옮긴다
   useEffect(() => {
     if (!isLoading && page > 0 && pendingInvitations.length === 0) {
       setPage(page - 1);

@@ -7,8 +7,7 @@ import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * Task 목록 조회 조건
- * 조건을 따로 두고 서비스에서 필요한 것만 합친다
+ * Task 목록 조회 조건. 서비스에서 필요한 것만 골라 합친다.
  */
 public final class TaskSpecifications {
 
@@ -22,8 +21,7 @@ public final class TaskSpecifications {
   }
 
   /**
-   * 참여자인 Task만
-   * 조인하면 참여자 수만큼 행이 늘어 페이지 건수가 어긋나므로 exists 로 확인한다.
+   * TaskUser 에 해당 사용자 행이 있는 Task 만. exists 서브쿼리로 확인한다.
    */
   public static Specification<Task> participatedBy(Long userId) {
     return (root, query, cb) -> {
@@ -37,7 +35,7 @@ public final class TaskSpecifications {
     };
   }
 
-  // 제목·설명 부분 일치. 설명은 비어 있을 수 있다
+  // 제목이나 설명에 부분 일치. 설명이 null 이면 빈 문자열로 본다
   public static Specification<Task> matches(String keyword) {
     return (root, query, cb) -> {
       String pattern = "%" + escape(keyword.toLowerCase()) + "%";
@@ -48,8 +46,7 @@ public final class TaskSpecifications {
   }
 
   /**
-   * LIKE를 값으로 취급한다.
-   * 검색어에 % 나 _ 가 들어오면 전체가 걸린다 -> 안걸리게 필터링
+   * LIKE 메타문자 %, _, 역슬래시 앞에 이스케이프 문자를 붙인다.
    */
   private static String escape(String keyword) {
     return keyword

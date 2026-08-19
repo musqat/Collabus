@@ -123,7 +123,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     // WM 또는 TM 만 수정 가능
-    // 목록과 같은 가시성 규칙으로 집계한다. 규칙이 갈리면 통계와 목록이 어긋난다
+    // 볼 수 있는 Task 의 Todo 를 상태별로 센다
     @Override
     public WorkspaceProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId) {
         taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
@@ -163,7 +163,7 @@ public class TaskServiceImpl implements TaskService {
         // Workspace Master 또는 Task Manager 만 삭제할 수 있다
         taskAuthorityUtil.validateCanManageTask(task, userId);
 
-        // 레코드는 캐스케이드가 지우지만 디스크 파일은 남으므로 경로를 미리 모아둔다
+        // 삭제 전에 하위 첨부 파일 경로를 모아 이벤트로 넘긴다
         List<String> fileUrls = todoFileRepository.findAllByWork_Todo_Task_Id(taskId)
                 .stream().map(TodoFileRepository.FileLocation::getFileUrl).toList();
 
@@ -171,7 +171,7 @@ public class TaskServiceImpl implements TaskService {
         eventPublisher.publishEvent(new FilesDeletedEvent(fileUrls));
     }
 
-    // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만 보이고, 검색어는 제목·설명에 걸린다
+    // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만, keyword 는 제목·설명에 걸린다
     @Override
     public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
                                                                 String keyword, Pageable pageable) {
@@ -183,7 +183,7 @@ public class TaskServiceImpl implements TaskService {
             spec = spec.and(TaskSpecifications.participatedBy(requesterId));
         }
 
-        // 필터링 한 뒤에 페이지를 나눠야 페이지마다 건수가 어긋나지 않는다
+        // 검색어가 있으면 조건을 더한다
         if (keyword != null && !keyword.isBlank()) {
             spec = spec.and(TaskSpecifications.matches(keyword));
         }

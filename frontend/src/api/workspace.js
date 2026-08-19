@@ -86,7 +86,7 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 받은 초대 목록. 더 불러올 게 남았는지 판단해야 해서 페이지 객체를 그대로 넘긴다
+  // 받은 초대 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
   getMyInvitations: async (page = 0, size = 20) => {
     const { data } = await apiClient.get('/workspaces/invites/me', {
       params: { page, size }

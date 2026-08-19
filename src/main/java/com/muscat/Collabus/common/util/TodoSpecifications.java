@@ -8,7 +8,7 @@ import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * 워크스페이스 진행률 집계 조건
+ * 진행률 집계 조건
  */
 public final class TodoSpecifications {
 
@@ -20,7 +20,7 @@ public final class TodoSpecifications {
         cb.equal(root.get("task").get("workspace").get("id"), workspaceId);
   }
 
-  // 참여 중인 Task 의 Todo 만. TaskSpecifications.participatedBy 와 같은 규칙이다
+  // TaskUser 에 해당 사용자 행이 있는 Task 의 Todo 만
   public static Specification<Todo> inTaskParticipatedBy(Long userId) {
     return (root, query, cb) -> {
       Subquery<Integer> sub = query.subquery(Integer.class);

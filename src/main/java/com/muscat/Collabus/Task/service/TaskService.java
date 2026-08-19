@@ -22,7 +22,7 @@ public interface TaskService {
     PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
         String keyword, Pageable pageable);
 
-    // 워크스페이스 진행률
+    // 볼 수 있는 Task 의 Todo 를 상태별로 센다
     WorkspaceProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId);
 
     // 워크스페이스 MASTER 또는 Task Manager 만 수정 가능

@@ -13,8 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 /**
- * 엔티티에 매핑된 속성으로만 정렬하게 한다.
- * ?sort=taskManager.password 처럼 연관을 타고 들어가는 정렬을 막는다.
+ * 엔티티 메타모델에 있는 속성만 정렬 조건으로 남기고 나머지는 버린다.
  */
 @Component
 @RequiredArgsConstructor
@@ -38,7 +37,7 @@ public class SortGuard {
       return pageable;
     }
 
-    // 허용되지 않은 정렬은 조용히 버린다
+    // 버린 조건을 뺀 나머지로 다시 만든다
     return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), filtered);
   }
 

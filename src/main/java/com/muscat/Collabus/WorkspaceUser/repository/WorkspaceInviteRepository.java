@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceInviteRepository extends JpaRepository<WorkspaceInvite, Long> {
 
-  // 초대는 타인이 늘릴 수 있어 페이징한다. 목록에 초대자·워크스페이스가 필요해 함께 가져온다
+  // 상태별 초대 목록. 초대자와 워크스페이스를 함께 가져온다
   @EntityGraph(attributePaths = {"inviter", "workspace"})
   Page<WorkspaceInvite> findAllByInviteeIdAndStatus(Long inviteeId, InviteStatus status,
       Pageable pageable);

@@ -15,7 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, WorkspaceUserPk> {
 
-    // 워크스페이스 탈퇴 시 마스터 승계 대상을 고르려면 전체 멤버가 필요하다
+    // 워크스페이스의 전체 멤버. 마스터 승계 대상을 고를 때 쓴다
     List<WorkspaceUser> findAllById_WorkspaceId(Long workspaceId);
 
     // 멤버 목록 화면용. 이름을 함께 보여주므로 사용자까지 가져온다
@@ -32,10 +32,10 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
     // 워크스페이스 참여자인지 확인
     boolean existsById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);
 
-    // 역할 확인만 필요할 때. 엔티티를 영속성 컨텍스트에 올리지 않는다.
+    // 역할까지 맞는 멤버가 있는지만 확인한다. 엔티티를 로드하지 않는다
     boolean existsById_WorkspaceIdAndId_UserIdAndRole(Long workspaceId, Long userId, WorkspaceRole role);
 
-    // 허용 역할이 여럿일 때 (예: Task 전체 조회는 MASTER·MANAGER 만)
+    // 역할이 주어진 목록 안에 드는 멤버가 있는지 확인한다
     boolean existsById_WorkspaceIdAndId_UserIdAndRoleIn(Long workspaceId, Long userId,
         Collection<WorkspaceRole> roles);
 

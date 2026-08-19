@@ -57,7 +57,7 @@ public class TaskAuthorityUtil {
 
   // Workspace 기준 Workspace Master 여부
   public boolean isWorkspaceMaster(Workspace workspace, Long userId) {
-    // 엔티티를 로드하지 않고 존재 여부만 확인한다
+    // 엔티티를 로드하지 않고 존재 여부만 본다
     return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
         workspace.getId(), userId, WorkspaceRole.MASTER);
   }
@@ -79,13 +79,13 @@ public class TaskAuthorityUtil {
     }
   }
 
-  // 워크스페이스의 Task 를 전부 볼 수 있는지. MEMBER 는 자신이 참여한 것만 본다
+  // 워크스페이스 MASTER 또는 MANAGER 인지
   public boolean canViewAllTasks(Long workspaceId, Long userId) {
     return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRoleIn(
         workspaceId, userId, List.of(WorkspaceRole.MASTER, WorkspaceRole.MANAGER));
   }
 
-  // 워크스페이스 참여자인지 검증
+  // 워크스페이스 멤버가 아니면 AccessDeniedException
   public void validateWorkspaceMember(Long workspaceId, Long userId) {
     if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserId(workspaceId, userId)) {
       throw new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다.");

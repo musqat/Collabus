@@ -8,7 +8,7 @@ export default function Pagination({ page, totalPages, onChange }) {
     return null;
   }
 
-  // 현재 페이지를 가운데 두되, 양 끝에서는 창을 안쪽으로 민다
+  // 현재 페이지를 가운데 두고 WINDOW 개를 보여준다. 양 끝에서는 안쪽으로 민다
   const start = Math.max(0, Math.min(page - Math.floor(WINDOW / 2), totalPages - WINDOW));
   const numbers = Array.from(
     { length: Math.min(WINDOW, totalPages) },
