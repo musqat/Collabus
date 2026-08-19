@@ -13,6 +13,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // email 조회
     Optional<User> findByEmail(String email);
 
+    // 검색은 페이징이라 조건을 쿼리에 넣는다. 자른 뒤에 거르면 페이지마다 건수가 어긋난다
+    Page<User> findByNicknameContainingIgnoreCaseAndDeletedAtIsNull(String keyword,
+                                                                    Pageable pageable);
+
     // displayName 조회
     Optional<User> findByDisplayName(String displayName);
 

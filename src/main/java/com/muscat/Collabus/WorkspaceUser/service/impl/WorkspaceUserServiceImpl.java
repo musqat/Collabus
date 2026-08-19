@@ -97,9 +97,11 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
         }
 
         if (user.getRole() == WorkspaceRole.MASTER) {
+            // 역할이 높은 사람, 같으면 먼저 참여한 사람이 받는다
             WorkspaceUser newMaster = members.stream()
                     .filter(u -> !u.getId().getUserId().equals(userId))
-                    .min(Comparator.comparing(u -> u.getRole().ordinal()))
+                    .min(Comparator.comparingInt((WorkspaceUser u) -> u.getRole().ordinal())
+                            .thenComparing(WorkspaceUser::getCreatedAt))
                     .orElseThrow(() -> new BusinessException(WorkspaceUserResponse.NOT_FOUND_NEXT_MASTER));
 
             newMaster.changeRole(WorkspaceRole.MASTER);

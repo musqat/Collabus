@@ -18,6 +18,9 @@ public interface WorkspaceInviteRepository extends JpaRepository<WorkspaceInvite
   // 초대 중복 방지
   boolean existsByWorkspaceIdAndInviteeIdAndStatus(Long workspaceId, Long inviteeId, InviteStatus status);
 
+  // 탈퇴 시 주고받은 초대를 지운다
+  void deleteByInviteeIdOrInviterId(Long inviteeId, Long inviterId);
+
   // 수락·거절 시 본인에게 온 초대인지 함께 확인한다
   Optional<WorkspaceInvite> findByIdAndInviteeId(Long inviteId, Long inviteeId);
 

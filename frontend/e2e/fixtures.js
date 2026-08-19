@@ -31,8 +31,7 @@ export const test = base.extend({
  * 워크스페이스를 지우면 하위 Task·Todo·첨부까지 캐스케이드로 정리된다.
  */
 export async function cleanup() {
-  if (!created.workspaceIds.length) {
-    created.accounts = [];
+  if (!created.workspaceIds.length && !created.accounts.length) {
     return;
   }
   const api = await request.newContext({ baseURL: API });
@@ -46,7 +45,18 @@ export async function cleanup() {
   for (const id of created.workspaceIds) {
     await api.delete(`/api/workspaces/${id}`, { headers });
   }
-  // 계정은 지우지 않는다. 회원 탈퇴가 FK 때문에 500 을 낸다
+  for (const account of created.accounts) {
+    const own = await api.post('/api/users/login', {
+      data: { email: account.email, password: account.password },
+    });
+    const ownToken = (await own.json()).data?.accessToken;
+    if (ownToken) {
+      await api.delete(`/api/users/delete?email=${encodeURIComponent(account.email)}`, {
+        headers: { Authorization: `Bearer ${ownToken}` },
+      });
+    }
+  }
+
   created.workspaceIds = [];
   created.accounts = [];
   await api.dispose();
@@ -184,6 +194,36 @@ export async function createUser() {
   await api.dispose();
   created.accounts.push(account);
   return account;
+}
+
+/**
+ * 초대를 수락하고 댓글을 남긴 뒤 탈퇴한다.
+ */
+export async function joinCommentAndWithdraw({ workspaceId, taskId, todoId }, account, content) {
+  const api = await request.newContext({ baseURL: API });
+  const auth = await api.post('/api/users/login', {
+    data: { email: account.email, password: account.password },
+  });
+  const body = (await auth.json()).data;
+  const headers = { Authorization: `Bearer ${body.accessToken}` };
+
+  const invites = await api.get('/api/workspaces/invites/me?size=100', { headers });
+  const target = (await invites.json()).data.content
+    .find((row) => row.workspaceId === workspaceId);
+  await api.post(`/api/workspaces/invites/${target.inviteId}/accept`, { headers });
+
+  // 댓글은 Task 참여자만 쓸 수 있다
+  const masterAuth = await api.post('/api/users/login', {
+    data: { email: ACCOUNTS.master.email, password: ACCOUNTS.master.password },
+  });
+  const masterToken = (await masterAuth.json()).data.accessToken;
+  await api.post(`/api/tasks/${taskId}/members?targetUserId=${body.id}`, {
+    headers: { Authorization: `Bearer ${masterToken}` },
+  });
+
+  await api.post(`/api/todo/comments?todoId=${todoId}`, { headers, data: { content } });
+  await api.delete(`/api/users/delete?email=${encodeURIComponent(account.email)}`, { headers });
+  await api.dispose();
 }
 
 export { expect };
