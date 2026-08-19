@@ -95,6 +95,23 @@ public class TaskController {
                         pageable)));
     }
 
+    @GetMapping("/workspaces/{workspaceId}/progress")
+    @Operation(
+            summary = "워크스페이스 진행률",
+            description = "볼 수 있는 Task 의 할일을 상태별로 집계합니다. 목록과 같은 가시성 규칙을 따릅니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공",
+                            content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+                    @ApiResponse(responseCode = "403", description = "워크스페이스 참여자가 아님",
+                            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+            }
+    )
+    public ResponseEntity<ResponseDto> getWorkspaceProgress(@PathVariable Long workspaceId,
+                                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
+                taskService.getWorkspaceProgress(workspaceId, userDetails.getUserId())));
+    }
+
     @PatchMapping("/{taskId}")
     @Operation(
             summary = "Task 수정",

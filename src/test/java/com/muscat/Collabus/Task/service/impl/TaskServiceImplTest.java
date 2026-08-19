@@ -46,6 +46,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
+import com.muscat.Collabus.Task.model.WorkspaceProgressDto;
+import com.muscat.Collabus.Todo.entity.Todo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -372,6 +374,35 @@ class TaskServiceImplTest {
         ArgumentCaptor<Specification<Task>> captor = ArgumentCaptor.forClass(Specification.class);
         verify(taskRepository, times(2)).findAll(captor.capture(), eq(pageable));
         assertThat(captor.getAllValues().get(0)).isNotEqualTo(captor.getAllValues().get(1));
+    }
+
+    @Test
+    @DisplayName("진행률은 상태별로 집계된다")
+    void getWorkspaceProgress_Counts() {
+        Long workspaceId = 1L;
+        when(taskAuthorityUtil.canViewAllTasks(workspaceId, 1L)).thenReturn(true);
+        when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
+                .thenReturn(10L, 4L, 3L, 2L);
+
+        WorkspaceProgressDto result = taskService.getWorkspaceProgress(workspaceId, 1L);
+
+        assertThat(result.getTotal()).isEqualTo(10);
+        assertThat(result.getInProgress()).isEqualTo(4);
+        assertThat(result.getWaitingReview()).isEqualTo(3);
+        assertThat(result.getConfirmed()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("워크스페이스 참여자가 아니면 진행률을 볼 수 없다")
+    void getWorkspaceProgress_Fail_NotMember() {
+        Long workspaceId = 1L;
+        doThrow(new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다."))
+                .when(taskAuthorityUtil).validateWorkspaceMember(workspaceId, 99L);
+
+        assertThatThrownBy(() -> taskService.getWorkspaceProgress(workspaceId, 99L))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(todoRepository, times(0)).count(ArgumentMatchers.<Specification<Todo>>any());
     }
 
     @Test

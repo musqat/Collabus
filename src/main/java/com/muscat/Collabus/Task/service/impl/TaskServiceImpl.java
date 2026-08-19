@@ -15,6 +15,11 @@ import com.muscat.Collabus.Task.model.TaskUserResponseDto;
 import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.util.TaskSpecifications;
+import com.muscat.Collabus.enums.status.TodoStatus;
+import com.muscat.Collabus.common.util.TodoSpecifications;
+import com.muscat.Collabus.Todo.entity.Todo;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Task.model.WorkspaceProgressDto;
 import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -47,6 +52,7 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final TodoFileRepository todoFileRepository;
+    private final TodoRepository todoRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TaskUserRepository taskUserRepository;
     private final TaskMapper taskMapper;
@@ -117,6 +123,29 @@ public class TaskServiceImpl implements TaskService {
     }
 
     // WM 또는 TM 만 수정 가능
+    // 목록과 같은 가시성 규칙으로 집계한다. 규칙이 갈리면 통계와 목록이 어긋난다
+    @Override
+    public WorkspaceProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId) {
+        taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
+
+        Specification<Todo> visible = TodoSpecifications.inWorkspace(workspaceId);
+        if (!taskAuthorityUtil.canViewAllTasks(workspaceId, requesterId)) {
+            visible = visible.and(TodoSpecifications.inTaskParticipatedBy(requesterId));
+        }
+
+        Specification<Todo> scope = visible;
+        return WorkspaceProgressDto.builder()
+                .total(todoRepository.count(scope))
+                .inProgress(countByStatus(scope, TodoStatus.IN_PROGRESS))
+                .waitingReview(countByStatus(scope, TodoStatus.WAITING_REVIEW))
+                .confirmed(countByStatus(scope, TodoStatus.CONFIRMED))
+                .build();
+    }
+
+    private long countByStatus(Specification<Todo> scope, TodoStatus status) {
+        return todoRepository.count(scope.and(TodoSpecifications.hasStatus(status)));
+    }
+
     @Transactional
     @Override
     public TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId) {

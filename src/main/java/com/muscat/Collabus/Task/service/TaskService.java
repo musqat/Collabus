@@ -6,6 +6,7 @@ import com.muscat.Collabus.Task.model.TaskRequestDto;
 import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
 import com.muscat.Collabus.Task.model.TaskUserResponseDto;
+import com.muscat.Collabus.Task.model.WorkspaceProgressDto;
 
 import java.util.List;
 
@@ -20,6 +21,9 @@ public interface TaskService {
     // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만 보이고, keyword 는 제목·설명에 걸린다.
     PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
         String keyword, Pageable pageable);
+
+    // 워크스페이스 진행률
+    WorkspaceProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId);
 
     // 워크스페이스 MASTER 또는 Task Manager 만 수정 가능
     TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId);
