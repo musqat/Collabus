@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -56,18 +58,18 @@ public class WorkspaceUserInviteController {
   @GetMapping("/invites/me")
   @Operation(
       summary = "받은 초대 목록",
-      description = "사용자가 받은 모든 워크스페이스 초대 목록을 조회합니다.",
+      description = "사용자가 받은 대기 중 초대 목록을 페이지 단위로 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
               content = @Content(schema = @Schema(implementation = ResponseDto.class)))
       }
   )
   public ResponseEntity<ResponseDto> getMyInvites(
-      @AuthenticationPrincipal CustomUserDetails userDetails
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
   ) {
-    return ResponseEntity.ok(
-        new ResponseDto(CommonResponse.SUCCESS, inviteService.getMyInvites(userDetails.getUserId()))
-    );
+    return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
+        inviteService.getMyInvites(userDetails.getUserId(), pageable)));
   }
 
   @PostMapping("/invites/{inviteId}/accept")

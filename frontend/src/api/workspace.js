@@ -60,12 +60,6 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 받은 초대 목록
-  getMyInvites: async () => {
-    const { data } = await apiClient.get('/workspaces/invites/me');
-    return data;
-  },
-
   // 초대 수락
   acceptInvite: async (inviteId) => {
     const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/accept`);
@@ -92,10 +86,12 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 내가 받은 초대 목록 (alias for getMyInvites)
-  getMyInvitations: async () => {
-    const { data } = await apiClient.get('/workspaces/invites/me');
-    return data.data; // ResponseDto unwrapping
+  // 받은 초대 목록. 더 불러올 게 남았는지 판단해야 해서 페이지 객체를 그대로 넘긴다
+  getMyInvitations: async (page = 0, size = 20) => {
+    const { data } = await apiClient.get('/workspaces/invites/me', {
+      params: { page, size }
+    });
+    return data.data;
   },
 
   // 초대 수락 (alias for acceptInvite)

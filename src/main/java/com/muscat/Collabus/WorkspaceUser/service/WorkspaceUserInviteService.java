@@ -2,7 +2,8 @@ package com.muscat.Collabus.WorkspaceUser.service;
 
 import com.muscat.Collabus.WorkspaceUser.model.InviteRequestDto;
 import com.muscat.Collabus.WorkspaceUser.model.InviteResponseDto;
-import java.util.List;
+import com.muscat.Collabus.common.dto.PageResponseDto;
+import org.springframework.data.domain.Pageable;
 
 public interface WorkspaceUserInviteService {
 
@@ -10,7 +11,7 @@ public interface WorkspaceUserInviteService {
   void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto);
 
   // 현재 로그인 유저 기준으로 받은 초대 목록 조회
-  List<InviteResponseDto> getMyInvites(Long inviteeId);
+  PageResponseDto<InviteResponseDto> getMyInvites(Long inviteeId, Pageable pageable);
 
   // 초대 수락
   void acceptInvite(Long inviteId, Long inviteeId);
