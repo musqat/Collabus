@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Task.service.impl;
 
+import java.util.Set;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Notification.service.NotificationService;
@@ -49,6 +50,9 @@ import org.springframework.stereotype.Service;
 public class TaskServiceImpl implements TaskService {
 
     private final SortGuard sortGuard;
+
+    // 담당자 이름순 정렬을 위해 연관 경로를 하나 열어 둔다
+    private static final Set<String> SORT_PATHS = Set.of("taskManager.displayName");
 
     private final TaskRepository taskRepository;
     private final TodoFileRepository todoFileRepository;
@@ -190,7 +194,7 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return PageResponseDto.of(
-                taskRepository.findAll(spec, sortGuard.apply(pageable, Task.class)),
+                taskRepository.findAll(spec, sortGuard.apply(pageable, Task.class, SORT_PATHS)),
                 taskMapper::mapToDto);
     }
 

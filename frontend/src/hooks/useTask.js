@@ -1,12 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { taskAPI } from '../api/task';
 
-export const useTasks = (workspaceId, { page = 0, keyword = '' } = {}) => {
+export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['tasks', workspaceId, page, keyword],
-    queryFn: () => taskAPI.getByWorkspace(workspaceId, { page, keyword }),
+    queryKey: ['tasks', workspaceId, page, keyword, sort],
+    queryFn: () => taskAPI.getByWorkspace(workspaceId, { page, keyword, sort }),
     enabled: !!workspaceId,
     // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
     placeholderData: keepPreviousData,

@@ -8,9 +8,9 @@ export const taskAPI = {
   },
 
   // 워크스페이스의 Task 목록. page, size, keyword 를 넘긴다
-  getByWorkspace: async (workspaceId, { page = 0, size = 20, keyword } = {}) => {
+  getByWorkspace: async (workspaceId, { page = 0, size = 20, keyword, sort } = {}) => {
     const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/tasks`, {
-      params: { page, size, keyword: keyword || undefined }
+      params: { page, size, keyword: keyword || undefined, sort: sort || undefined }
     });
     return data.data;
   },

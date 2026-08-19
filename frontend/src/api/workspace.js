@@ -17,8 +17,9 @@ export const workspaceAPI = {
   },
 
   // 참여 중인 워크스페이스 목록. WorkspaceController 는 ResponseDto 없이 직접 반환한다
-  getJoinedWorkspaces: async ({ page = 0, size = 20 } = {}) => {
-    const { data } = await apiClient.get('/workspaces/joined', { params: { page, size } });
+  getJoinedWorkspaces: async ({ page = 0, size = 20, sort } = {}) => {
+    const { data } = await apiClient.get('/workspaces/joined',
+      { params: { page, size, sort: sort || undefined } });
     return data;
   },
 
