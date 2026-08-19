@@ -28,11 +28,12 @@ export const taskAPI = {
   },
 
   // Task의 Todo 목록
-  getTodos: async (taskId) => {
-    const { data } = await apiClient.get(`/todo`, {
-      params: { taskId }
+  // Task 의 Todo 목록. 사이드바 트리에서 쓰므로 배열만 돌려준다
+  getTodos: async (taskId, { size = 100 } = {}) => {
+    const { data } = await apiClient.get('/todo', {
+      params: { taskId, size }
     });
-    return data.data; // ResponseDto unwrapping
+    return data.data.content;
   },
 
   // Task 수정

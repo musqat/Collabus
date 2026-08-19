@@ -10,10 +10,6 @@ public interface WorkspaceUserService {
     // 워크스페이스 멤버 목록
     PageResponseDto<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId, Long userId, Pageable pageable);
 
-    // 내가 참여 중인 워크스페이스 목록
-    PageResponseDto<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId,
-        Pageable pageable);
-
     // 멤버 역할을 바꾼다. MASTER 로 올리면 기존 MASTER 는 MANAGER 로 내려간다
     void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId);
 
