@@ -7,25 +7,28 @@ import org.springframework.data.domain.Pageable;
 
 public interface TodoService {
 
-  // 생성
+  // Todo 를 만든다
   TodoResponseDto createTodo(TodoRequestDto dto, Long creatorId);
 
-  // 수정
+  // Todo 를 수정한다
   TodoResponseDto updateTodo(Long todoId, TodoRequestDto dto, Long updaterId);
 
-  // 삭제
+  // Todo 를 삭제한다. 하위 작업 내용과 첨부 파일까지 지운다
   void deleteTodo(Long todoId, Long userId);
 
-  // 조회
-  TodoResponseDto getTodoById(Long todoId);
+  // Todo 단건 조회
+  TodoResponseDto getTodoById(Long todoId, Long requesterId);
 
-  PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, String status, Pageable pageable);
+  // Task 의 Todo 목록. status 를 주면 그 상태만 걸러낸다
+  PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, Long requesterId, String status,
+      Pageable pageable);
 
-  // 상태 변경
-  void completeOwnTodo(Long todoId, Long userId);         // 나의 할일 완료 처리
+  // 완료를 요청한다. 상태가 WAITING_REVIEW 로 바뀐다
+  void completeOwnTodo(Long todoId, Long userId);
 
-  TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId); // TM이 확인
+  // 완료를 승인한다. 상태가 CONFIRMED 로 바뀐다
+  TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId);
 
-  // 담당자 변경 ( TM -> Member )
+  // 담당자를 바꾼다
   void changeAssignee(Long todoId, Long newAssigneeId, Long managerId);
 }

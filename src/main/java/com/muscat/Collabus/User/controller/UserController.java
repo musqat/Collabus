@@ -3,6 +3,7 @@ package com.muscat.Collabus.User.controller;
 import static com.muscat.Collabus.enums.response.CommonResponse.*;
 import static com.muscat.Collabus.enums.response.UserResponse.*;
 
+import com.muscat.Collabus.User.model.UserSummaryDto;
 import com.muscat.Collabus.User.model.*;
 import com.muscat.Collabus.User.service.UserService;
 import com.muscat.Collabus.common.dto.ResponseDto;
@@ -60,7 +61,7 @@ public class UserController {
   )
   @GetMapping("/search")
   public ResponseEntity<ResponseDto> searchUsers(@RequestParam String keyword) {
-    List<UserResponseDto> result = userService.searchByNickname(keyword);
+    List<UserSummaryDto> result = userService.searchByNickname(keyword);
     return ResponseEntity.ok(new ResponseDto(SUCCESS, result));
   }
 

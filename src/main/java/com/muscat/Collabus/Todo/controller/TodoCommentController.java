@@ -73,9 +73,10 @@ public class TodoCommentController {
             }
     )
     public ResponseEntity<ResponseDto> getComments(@RequestParam Long todoId,
+                                                   @AuthenticationPrincipal CustomUserDetails userDetails,
                                                    @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                todoCommentService.getComments(todoId, pageable)));
+                todoCommentService.getComments(todoId, userDetails.getUserId(), pageable)));
     }
 
     @PatchMapping("/{commentId}")

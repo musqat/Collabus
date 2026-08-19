@@ -98,13 +98,17 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
-    public TodoResponseDto getTodoById(Long todoId) {
-        return todoMapper.mapToDto(finder.findTodoById(todoId));
+    public TodoResponseDto getTodoById(Long todoId, Long requesterId) {
+        Todo todo = finder.findTodoById(todoId);
+        taskAuthorityUtil.validateCanViewTask(todo.getTask(), requesterId);
+        return todoMapper.mapToDto(todo);
     }
 
     @Override
-    public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, String status,
-            Pageable pageable) {
+    public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, Long requesterId,
+            String status, Pageable pageable) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+
         Pageable safePageable = sortGuard.apply(pageable, Todo.class);
         Page<Todo> todos = (status != null)
                 ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), safePageable)
@@ -122,7 +126,6 @@ public class TodoServiceImpl implements TodoService {
         }
     }
 
-    // 담당자 본인만 완료 요청 가능. Task 의 MANAGER 전원에게 검수 요청 알림이 간다
     @Override
     @Transactional
     public void completeOwnTodo(Long todoId, Long userId) {
@@ -141,7 +144,7 @@ public class TodoServiceImpl implements TodoService {
                         m.getUser().getId(), NotificationType.TODO_REVIEW_REQUESTED, reviewMessage, todoId));
     }
 
-    // TM 만 검수 승인 가능. WAITING_REVIEW 상태 검사는 Todo.confirm() 안에 있다
+    // WAITING_REVIEW 상태 검사는 Todo.confirm() 안에 있다
     @Override
     @Transactional
     public TodoResponseDto confirmTodoCompletion(Long todoId, Long taskManagerId) {
@@ -160,7 +163,6 @@ public class TodoServiceImpl implements TodoService {
         return todoMapper.mapToDto(todo);
     }
 
-    // TM 만 변경 가능. 새 담당자는 Task 참여자여야 한다
     @Override
     @Transactional
     public void changeAssignee(Long todoId, Long newAssigneeId, Long managerId) {

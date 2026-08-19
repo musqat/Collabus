@@ -62,12 +62,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
-  public WorkspaceResponseDto getWorkspaceById(Long workspaceId) {
+  public WorkspaceResponseDto getWorkspaceById(Long workspaceId, Long requesterId) {
+    taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
     Workspace workspace = entityFinderUtil.findWorkspaceById(workspaceId);
     return workspaceMapper.mapToDto(workspace);
   }
 
-  // 내가 만든 것만. 멤버로 참여만 한 워크스페이스는 getJoinedWorkspaces 를 쓴다
   @Override
   public PageResponseDto<WorkspaceResponseDto> getMyWorkspaces(Long userId, Pageable pageable) {
     return PageResponseDto.of(
@@ -75,7 +75,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceMapper::mapToDto);
   }
 
-  // 멤버로 참여 중인 전부. 내가 만든 것도 포함된다
   @Override
   public PageResponseDto<WorkspaceResponseDto> getJoinedWorkspaces(Long userId,
       Pageable pageable) {

@@ -35,6 +35,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final EntityFinderUtil finder;
     private final ApplicationEventPublisher eventPublisher;
 
+    // 전송은 커밋 이후 리스너가 맡는다. 보관 개수를 넘긴 오래된 알림은 여기서 지운다
     @Transactional
     @Override
     public void createNotification(Long userId, NotificationType type, String message,
@@ -135,6 +136,7 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.delete(notification);
     }
 
+    // 최근 N개. 첫 페이지를 limit 크기로 요청한다
     @Override
     public List<NotificationResponse> getRecentNotifications(Long userId, int limit) {
         User user = finder.findUserById(userId);

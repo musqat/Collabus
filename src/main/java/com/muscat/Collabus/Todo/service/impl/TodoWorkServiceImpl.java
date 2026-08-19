@@ -1,6 +1,7 @@
 package com.muscat.Collabus.Todo.service.impl;
 
 
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TodoWorkServiceImpl implements TodoWorkService {
 
+    private final TaskAuthorityUtil taskAuthorityUtil;
     private final SortGuard sortGuard;
     private final TodoWorkMapper todoWorkMapper;
     private final TodoWorkRepository todoWorkRepository;
@@ -63,7 +65,6 @@ public class TodoWorkServiceImpl implements TodoWorkService {
         return todoWorkMapper.mapToDto(todoWorkRepository.save(work));
     }
 
-    // 작성자 본인만 수정 가능
     @Override
     @Transactional
     public TodoWorkDto updateWork(Long workId, TodoWorkDto dto, Long userId) {
@@ -81,13 +82,15 @@ public class TodoWorkServiceImpl implements TodoWorkService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDto<TodoWorkDto> getWorksByTodoId(Long todoId, Pageable pageable) {
+    public PageResponseDto<TodoWorkDto> getWorksByTodoId(Long todoId, Long requesterId,
+                                                         Pageable pageable) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTodoById(todoId).getTask(), requesterId);
+
         return PageResponseDto.of(
                 todoWorkRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoWork.class)),
                 todoWorkMapper::mapToDto);
     }
 
-    // 작성자 본인만 삭제 가능
     @Override
     @Transactional
     public void deleteWork(Long workId, Long userId) {
