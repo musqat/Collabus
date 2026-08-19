@@ -1,5 +1,8 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import org.springframework.data.domain.Pageable;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.Todo.entity.TodoFile;
 import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.Todo.mapper.TodoFileMapper;
@@ -27,6 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TodoFileServiceImpl implements TodoFileService {
+
+    private final SortGuard sortGuard;
 
     private final TodoWorkRepository todoWorkRepository;
     private final TodoFileRepository todoFileRepository;
@@ -58,12 +63,14 @@ public class TodoFileServiceImpl implements TodoFileService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TodoFileDto> getFilesByWorkId(Long workId, Long userId) {
+    public PageResponseDto<TodoFileDto> getFilesByWorkId(Long workId, Long userId,
+                                                         Pageable pageable) {
         validateParticipant(findWork(workId), userId);
 
-        return todoFileRepository.findAllByWorkId(workId).stream()
-                .map(todoFileMapper::mapToDto)
-                .toList();
+        return PageResponseDto.of(
+                todoFileRepository.findAllByWorkId(workId,
+                        sortGuard.apply(pageable, TodoFile.class)),
+                todoFileMapper::mapToDto);
     }
 
     @Override

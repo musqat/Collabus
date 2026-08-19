@@ -3,12 +3,16 @@ package com.muscat.Collabus.Workspace.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
@@ -30,7 +34,6 @@ import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +48,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WorkspaceService 단위 테스트")
 class WorkspaceServiceImplTest {
+
+    @Mock
+    private SortGuard sortGuard;
+
 
     @Mock
     private WorkspaceRepository workspaceRepository;
@@ -196,17 +203,19 @@ class WorkspaceServiceImplTest {
     void getMyWorkspaces_Success() {
         // Given
         Long userId = 1L;
-        List<Workspace> workspaces = Arrays.asList(workspace);
-        when(workspaceRepository.findAllByFounderId(userId)).thenReturn(workspaces);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(sortGuard.apply(pageable, Workspace.class)).thenReturn(pageable);
+        when(workspaceRepository.findAllByFounderId(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(workspace), pageable, 1));
         when(workspaceMapper.mapToDto(workspace)).thenReturn(responseDto);
 
         // When
-        List<WorkspaceResponseDto> result = workspaceService.getMyWorkspaces(userId);
+        PageResponseDto<WorkspaceResponseDto> result =
+                workspaceService.getMyWorkspaces(userId, pageable);
 
         // Then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getWorkspaceName()).isEqualTo("Test Workspace");
-        verify(workspaceRepository, times(1)).findAllByFounderId(userId);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getWorkspaceName()).isEqualTo("Test Workspace");
     }
 
     @Test
@@ -214,14 +223,17 @@ class WorkspaceServiceImplTest {
     void getMyWorkspaces_EmptyList() {
         // Given
         Long userId = 1L;
-        when(workspaceRepository.findAllByFounderId(userId)).thenReturn(Arrays.asList());
+        Pageable pageable = PageRequest.of(0, 20);
+        when(sortGuard.apply(pageable, Workspace.class)).thenReturn(pageable);
+        when(workspaceRepository.findAllByFounderId(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         // When
-        List<WorkspaceResponseDto> result = workspaceService.getMyWorkspaces(userId);
+        PageResponseDto<WorkspaceResponseDto> result =
+                workspaceService.getMyWorkspaces(userId, pageable);
 
         // Then
-        assertThat(result).isEmpty();
-        verify(workspaceRepository, times(1)).findAllByFounderId(userId);
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test

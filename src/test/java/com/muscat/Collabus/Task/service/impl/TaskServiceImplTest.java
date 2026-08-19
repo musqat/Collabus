@@ -1,13 +1,16 @@
 package com.muscat.Collabus.Task.service.impl;
 
+import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Task.entity.TaskUser;
 import com.muscat.Collabus.Task.mapper.TaskMapper;
@@ -39,6 +42,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+import com.muscat.Collabus.Task.model.TodoProgressDto;
+import com.muscat.Collabus.Todo.entity.Todo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +63,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TaskService 단위 테스트")
 class TaskServiceImplTest {
+
+    @Mock
+
+    private SortGuard sortGuard;
+
 
     @Mock
     private TaskRepository taskRepository;
@@ -104,6 +118,10 @@ class TaskServiceImplTest {
 
     @BeforeEach
     void setUp() {
+
+        // 정렬 검증은 SortGuard 가 맡는다. 여기서는 그대로 통과시킨다
+        lenient().when(sortGuard.apply(any(Pageable.class), any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         user = User.builder()
                 .id(1L)
                 .email("user@example.com")
@@ -202,7 +220,7 @@ class TaskServiceImplTest {
         when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
 
         // When
-        TaskResponseDto result = taskService.getTask(taskId);
+        TaskResponseDto result = taskService.getTask(taskId, 1L);
 
         // Then
         assertThat(result).isNotNull();
@@ -218,7 +236,7 @@ class TaskServiceImplTest {
         when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> taskService.getTask(taskId))
+        assertThatThrownBy(() -> taskService.getTask(taskId, 1L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -309,19 +327,82 @@ class TaskServiceImplTest {
         // Given
         Long workspaceId = 1L;
         Pageable pageable = PageRequest.of(0, 20);
-        when(taskRepository.findAllByWorkspace_Id(workspaceId, pageable))
+        when(taskAuthorityUtil.canViewAllTasks(workspaceId, 1L)).thenReturn(true);
+        when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(task), pageable, 1));
         when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
 
         // When
         PageResponseDto<TaskResponseDto> result =
-                taskService.getTasksByWorkspace(workspaceId, pageable);
+                taskService.getTasksByWorkspace(workspaceId, 1L, null, pageable);
 
         // Then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test Task");
         assertThat(result.getTotalElements()).isEqualTo(1);
-        verify(taskRepository, times(1)).findAllByWorkspace_Id(workspaceId, pageable);
+    }
+
+    @Test
+    @DisplayName("워크스페이스 참여자가 아니면 Task 목록을 볼 수 없다")
+    void getTasksByWorkspace_Fail_NotMember() {
+        Long workspaceId = 1L;
+        doThrow(new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다."))
+                .when(taskAuthorityUtil).validateWorkspaceMember(workspaceId, 99L);
+
+        assertThatThrownBy(() ->
+                taskService.getTasksByWorkspace(workspaceId, 99L, null, PageRequest.of(0, 20)))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(taskRepository, times(0))
+                .findAll(ArgumentMatchers.<Specification<Task>>any(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("전체 조회 권한이 없으면 참여 조건이 붙어 다른 조회가 나간다")
+    void getTasksByWorkspace_Member_NarrowsSpec() {
+        Long workspaceId = 1L;
+        Pageable pageable = PageRequest.of(0, 20);
+        when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        when(taskAuthorityUtil.canViewAllTasks(workspaceId, 1L)).thenReturn(true);
+        taskService.getTasksByWorkspace(workspaceId, 1L, null, pageable);
+
+        when(taskAuthorityUtil.canViewAllTasks(workspaceId, 2L)).thenReturn(false);
+        taskService.getTasksByWorkspace(workspaceId, 2L, null, pageable);
+
+        ArgumentCaptor<Specification<Task>> captor = ArgumentCaptor.forClass(Specification.class);
+        verify(taskRepository, times(2)).findAll(captor.capture(), eq(pageable));
+        assertThat(captor.getAllValues().get(0)).isNotEqualTo(captor.getAllValues().get(1));
+    }
+
+    @Test
+    @DisplayName("진행률은 상태별로 집계된다")
+    void getWorkspaceProgress_Counts() {
+        Long workspaceId = 1L;
+        when(taskAuthorityUtil.canViewAllTasks(workspaceId, 1L)).thenReturn(true);
+        when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
+                .thenReturn(10L, 4L, 3L, 2L);
+
+        TodoProgressDto result = taskService.getWorkspaceProgress(workspaceId, 1L);
+
+        assertThat(result.getTotal()).isEqualTo(10);
+        assertThat(result.getInProgress()).isEqualTo(4);
+        assertThat(result.getWaitingReview()).isEqualTo(3);
+        assertThat(result.getConfirmed()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("워크스페이스 참여자가 아니면 진행률을 볼 수 없다")
+    void getWorkspaceProgress_Fail_NotMember() {
+        Long workspaceId = 1L;
+        doThrow(new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다."))
+                .when(taskAuthorityUtil).validateWorkspaceMember(workspaceId, 99L);
+
+        assertThatThrownBy(() -> taskService.getWorkspaceProgress(workspaceId, 99L))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(todoRepository, times(0)).count(ArgumentMatchers.<Specification<Todo>>any());
     }
 
     @Test
@@ -468,20 +549,50 @@ class TaskServiceImplTest {
     void getTaskMembers_Success() {
         // Given
         Long taskId = 1L;
+        Pageable pageable = PageRequest.of(0, 20);
         TaskUser taskUser1 = TaskUser.builder().build();
-        List<TaskUser> taskUsers = Arrays.asList(taskUser1);
         TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
 
         when(finder.findTaskById(taskId)).thenReturn(task);
-        when(taskUserRepository.findAllByTask(task)).thenReturn(taskUsers);
+        when(taskUserRepository.findAllByTask_Id(taskId, pageable))
+                .thenReturn(new PageImpl<>(List.of(taskUser1), pageable, 1));
         when(taskUserMapper.mapToDto(taskUser1)).thenReturn(taskUserResponseDto);
 
         // When
-        List<TaskUserResponseDto> result = taskService.getTaskMembers(taskId);
+        PageResponseDto<TaskUserResponseDto> result =
+                taskService.getTaskMembers(taskId, 1L, pageable);
 
         // Then
-        assertThat(result).hasSize(1);
-        verify(finder, times(1)).findTaskById(taskId);
-        verify(taskUserRepository, times(1)).findAllByTask(task);
+        assertThat(result.getContent()).hasSize(1);
+        verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, 1L);
+    }
+
+    @Test
+    @DisplayName("볼 수 없는 Task 는 참여자 목록도 막힌다")
+    void getTaskMembers_Fail_CannotView() {
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        doThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."))
+                .when(taskAuthorityUtil).validateCanViewTask(task, 99L);
+
+        assertThatThrownBy(() ->
+                taskService.getTaskMembers(taskId, 99L, PageRequest.of(0, 20)))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Task 진행률은 상태별로 집계된다")
+    void getTaskProgress_Counts() {
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
+                .thenReturn(9L, 5L, 3L, 1L);
+
+        TodoProgressDto result = taskService.getTaskProgress(taskId, 1L);
+
+        assertThat(result.getTotal()).isEqualTo(9);
+        assertThat(result.getInProgress()).isEqualTo(5);
+        assertThat(result.getWaitingReview()).isEqualTo(3);
+        assertThat(result.getConfirmed()).isEqualTo(1);
     }
 }

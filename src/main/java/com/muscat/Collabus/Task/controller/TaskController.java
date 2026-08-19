@@ -71,9 +71,10 @@ public class TaskController {
                             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
             }
     )
-    public ResponseEntity<ResponseDto> getTask(@PathVariable Long taskId) {
+    public ResponseEntity<ResponseDto> getTask(@PathVariable Long taskId,
+                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                taskService.getTask(taskId)));
+                taskService.getTask(taskId, userDetails.getUserId())));
     }
 
     @GetMapping("/workspaces/{workspaceId}/tasks")
@@ -87,9 +88,29 @@ public class TaskController {
             }
     )
     public ResponseEntity<ResponseDto> getTasksByWorkspace(@PathVariable Long workspaceId,
+                                                           @RequestParam(required = false) String keyword,
+                                                           @AuthenticationPrincipal CustomUserDetails userDetails,
                                                            @PageableDefault(size = 20, sort = "dueDate") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                taskService.getTasksByWorkspace(workspaceId, pageable)));
+                taskService.getTasksByWorkspace(workspaceId, userDetails.getUserId(), keyword,
+                        pageable)));
+    }
+
+    @GetMapping("/workspaces/{workspaceId}/progress")
+    @Operation(
+            summary = "워크스페이스 진행률",
+            description = "볼 수 있는 Task 의 할일을 상태별로 집계합니다. 목록과 같은 가시성 규칙을 따릅니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공",
+                            content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+                    @ApiResponse(responseCode = "403", description = "워크스페이스 참여자가 아님",
+                            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+            }
+    )
+    public ResponseEntity<ResponseDto> getWorkspaceProgress(@PathVariable Long workspaceId,
+                                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
+                taskService.getWorkspaceProgress(workspaceId, userDetails.getUserId())));
     }
 
     @PatchMapping("/{taskId}")
@@ -127,7 +148,7 @@ public class TaskController {
             }
     )
     public ResponseEntity<ResponseDto> deleteTask(@PathVariable Long taskId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                                  @AuthenticationPrincipal CustomUserDetails userDetails) {
         taskService.deleteTask(taskId, userDetails.getUserId());
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS));
     }
@@ -188,9 +209,28 @@ public class TaskController {
                             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
             }
     )
-    public ResponseEntity<ResponseDto> getMembers(@PathVariable Long taskId) {
+    public ResponseEntity<ResponseDto> getMembers(@PathVariable Long taskId,
+                                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                  @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                taskService.getTaskMembers(taskId)));
+                taskService.getTaskMembers(taskId, userDetails.getUserId(), pageable)));
+    }
+
+    @GetMapping("/{taskId}/progress")
+    @Operation(
+            summary = "Task 진행률",
+            description = "Task 의 할일을 상태별로 집계합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공",
+                            content = @Content(schema = @Schema(implementation = ResponseDto.class))),
+                    @ApiResponse(responseCode = "403", description = "볼 권한 없음",
+                            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+            }
+    )
+    public ResponseEntity<ResponseDto> getTaskProgress(@PathVariable Long taskId,
+                                                       @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
+                taskService.getTaskProgress(taskId, userDetails.getUserId())));
     }
 
     @PatchMapping("/{taskId}/manager")

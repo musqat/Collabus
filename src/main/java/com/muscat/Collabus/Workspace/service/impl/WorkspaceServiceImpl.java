@@ -1,5 +1,8 @@
 package com.muscat.Collabus.Workspace.service.impl;
 
+import org.springframework.data.domain.Pageable;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Workspace.mapper.WorkspaceMapper;
@@ -16,7 +19,6 @@ import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceServiceImpl implements WorkspaceService {
 
+  private final SortGuard sortGuard;
   private final WorkspaceRepository workspaceRepository;
   private final TodoFileRepository todoFileRepository;
   private final ApplicationEventPublisher eventPublisher;
@@ -66,19 +69,20 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
   // 내가 만든 것만. 멤버로 참여만 한 워크스페이스는 getJoinedWorkspaces 를 쓴다
   @Override
-  public List<WorkspaceResponseDto> getMyWorkspaces(Long userId) {
-    return workspaceRepository.findAllByFounderId(userId).stream()
-        .map(workspaceMapper::mapToDto)
-        .collect(Collectors.toList());
+  public PageResponseDto<WorkspaceResponseDto> getMyWorkspaces(Long userId, Pageable pageable) {
+    return PageResponseDto.of(
+        workspaceRepository.findAllByFounderId(userId, sortGuard.apply(pageable, Workspace.class)),
+        workspaceMapper::mapToDto);
   }
 
   // 멤버로 참여 중인 전부. 내가 만든 것도 포함된다
   @Override
-  public List<WorkspaceResponseDto> getJoinedWorkspaces(Long userId) {
-    return workspaceUserRepository.findAllById_UserId(userId).stream()
-        .map(WorkspaceUser::getWorkspace)
-        .map(workspaceMapper::mapToDto)
-        .collect(Collectors.toList());
+  public PageResponseDto<WorkspaceResponseDto> getJoinedWorkspaces(Long userId,
+      Pageable pageable) {
+    return PageResponseDto.of(
+        workspaceUserRepository.findAllById_UserId(userId,
+            sortGuard.apply(pageable, WorkspaceUser.class)),
+        workspaceUser -> workspaceMapper.mapToDto(workspaceUser.getWorkspace()));
   }
 
   @Override

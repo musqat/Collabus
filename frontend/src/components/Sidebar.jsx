@@ -14,14 +14,10 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   // 워크스페이스 목록 조회
   useEffect(() => {
-    workspaceAPI.getJoinedWorkspaces()
+    // 트리에는 페이지 버튼이 어울리지 않아 첫 100건만 보여준다
+    workspaceAPI.getJoinedWorkspaces({ size: 100 })
       .then(data => {
-        if (Array.isArray(data)) {
-          setWorkspaces(data);
-        } else {
-          console.error('Workspaces data is not an array:', data);
-          setWorkspaces([]);
-        }
+        setWorkspaces(data?.content ?? []);
       })
       .catch(err => {
         console.error('Failed to fetch workspaces:', err);
@@ -35,7 +31,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       // 펼쳐진 워크스페이스의 Task 목록 새로고침
       for (const workspaceId of expandedWorkspaces) {
         try {
-          const tasks = await taskAPI.getByWorkspace(workspaceId);
+          const { content: tasks } = await taskAPI.getByWorkspace(workspaceId);
           setWorkspaceTasks(prev => ({
             ...prev,
             [workspaceId]: Array.isArray(tasks) ? tasks : []
@@ -73,7 +69,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
       // Task 목록 로드 (항상 최신 데이터 로드)
       try {
-        const tasks = await taskAPI.getByWorkspace(workspaceId);
+        const { content: tasks } = await taskAPI.getByWorkspace(workspaceId);
         setWorkspaceTasks(prev => ({
           ...prev,
           [workspaceId]: Array.isArray(tasks) ? tasks : []

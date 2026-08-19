@@ -1,20 +1,25 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Pagination from '../components/Pagination';
+import usePageParam from '../hooks/usePageParam';
 import { workspaceAPI } from '../api/workspace';
 
 export default function Invitations() {
   const queryClient = useQueryClient();
+  const [page, setPage] = usePageParam();
 
-  const { data: invitations, isLoading } = useQuery({
-    queryKey: ['invitations'],
-    queryFn: workspaceAPI.getMyInvitations,
+  const { data, isLoading } = useQuery({
+    queryKey: ['invitations', page],
+    queryFn: () => workspaceAPI.getMyInvitations(page),
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
   });
 
   const acceptMutation = useMutation({
     mutationFn: workspaceAPI.acceptInvitation,
     onSuccess: () => {
-      queryClient.invalidateQueries(['invitations']);
-      queryClient.invalidateQueries(['workspaces']);
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       alert('초대를 수락했습니다');
     },
     onError: (error) => {
@@ -25,7 +30,7 @@ export default function Invitations() {
   const rejectMutation = useMutation({
     mutationFn: workspaceAPI.rejectInvitation,
     onSuccess: () => {
-      queryClient.invalidateQueries(['invitations']);
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
       alert('초대를 거절했습니다');
     },
     onError: (error) => {
@@ -41,6 +46,15 @@ export default function Invitations() {
     rejectMutation.mutate(inviteId);
   };
 
+  const pendingInvitations = data?.content ?? [];
+
+  // 현재 페이지가 비면 앞 페이지로 옮긴다
+  useEffect(() => {
+    if (!isLoading && page > 0 && pendingInvitations.length === 0) {
+      setPage(page - 1);
+    }
+  }, [isLoading, page, setPage, pendingInvitations.length]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -48,8 +62,6 @@ export default function Invitations() {
       </div>
     );
   }
-
-  const pendingInvitations = invitations?.filter(inv => inv.status === 'PENDING') || [];
 
   return (
     <div className="min-h-screen bg-white">
@@ -100,6 +112,12 @@ export default function Invitations() {
                 </div>
               </div>
             ))}
+
+            <Pagination
+              page={data?.page ?? 0}
+              totalPages={data?.totalPages ?? 0}
+              onChange={setPage}
+            />
           </div>
         ) : (
           <div className="text-center py-16 border border-gray-200 rounded-lg bg-gray-50">

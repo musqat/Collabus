@@ -7,6 +7,8 @@ import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.enums.role.TaskRole;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -16,8 +18,15 @@ public interface TaskUserRepository extends JpaRepository<TaskUser, TaskUserPk> 
   @EntityGraph(attributePaths = {"user"})
   List<TaskUser> findAllByTask(Task task);
 
+  // 멤버 목록 화면용. 이름을 함께 보여주므로 사용자까지 가져온다
+  @EntityGraph(attributePaths = {"user"})
+  Page<TaskUser> findAllByTask_Id(Long taskId, Pageable pageable);
+
   // 특정 사용자의 Task 참여 정보 (역할 변경·제거에 사용)
   Optional<TaskUser> findByTaskAndUser(Task task, User user);
+
+  // 참여자인지 확인. 엔티티를 로드하지 않는다
+  boolean existsById_TaskIdAndId_UserId(Long taskId, Long userId);
 
   // Task 참여자인지 확인
   boolean existsByTaskAndUser(Task task, User user);

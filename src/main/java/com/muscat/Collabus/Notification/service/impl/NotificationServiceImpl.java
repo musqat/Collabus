@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Notification.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.dto.NotificationResponse;
 import com.muscat.Collabus.Notification.entity.Notification;
 import com.muscat.Collabus.Notification.repository.NotificationRepository;
@@ -27,6 +28,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 사용자당 보관할 최대 알림 수
     private static final int KEEP_PER_USER = 500;
+
+    private final SortGuard sortGuard;
 
     private final NotificationRepository notificationRepository;
     private final EntityFinderUtil finder;
@@ -71,7 +74,8 @@ public class NotificationServiceImpl implements NotificationService {
                                                                       Pageable pageable) {
         User user = finder.findUserById(userId);
         return PageResponseDto.of(
-                notificationRepository.findByUserOrderByCreatedAtDesc(user, pageable),
+                notificationRepository.findByUserOrderByCreatedAtDesc(user,
+                        sortGuard.apply(pageable, Notification.class)),
                 NotificationResponse::from);
     }
 
@@ -80,7 +84,8 @@ public class NotificationServiceImpl implements NotificationService {
                                                                         Pageable pageable) {
         User user = finder.findUserById(userId);
         return PageResponseDto.of(
-                notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(user, pageable),
+                notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(user,
+                        sortGuard.apply(pageable, Notification.class)),
                 NotificationResponse::from);
     }
 

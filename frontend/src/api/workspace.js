@@ -10,16 +10,16 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 내 워크스페이스 목록
-  getMyWorkspaces: async () => {
-    const { data } = await apiClient.get('/workspaces/my');
+  // 내가 만든 워크스페이스 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
+  getMyWorkspaces: async ({ page = 0, size = 20 } = {}) => {
+    const { data } = await apiClient.get('/workspaces/my', { params: { page, size } });
     return data;
   },
 
-  // 참여 중인 워크스페이스 목록
-  getJoinedWorkspaces: async () => {
-    const { data } = await apiClient.get('/workspaces/joined');
-    return data; // WorkspaceController는 ResponseDto 없이 직접 반환
+  // 참여 중인 워크스페이스 목록. WorkspaceController 는 ResponseDto 없이 직접 반환한다
+  getJoinedWorkspaces: async ({ page = 0, size = 20 } = {}) => {
+    const { data } = await apiClient.get('/workspaces/joined', { params: { page, size } });
+    return data;
   },
 
   // 워크스페이스 상세
@@ -60,12 +60,6 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 받은 초대 목록
-  getMyInvites: async () => {
-    const { data } = await apiClient.get('/workspaces/invites/me');
-    return data;
-  },
-
   // 초대 수락
   acceptInvite: async (inviteId) => {
     const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/accept`);
@@ -92,10 +86,12 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 내가 받은 초대 목록 (alias for getMyInvites)
-  getMyInvitations: async () => {
-    const { data } = await apiClient.get('/workspaces/invites/me');
-    return data.data; // ResponseDto unwrapping
+  // 받은 초대 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
+  getMyInvitations: async (page = 0, size = 20) => {
+    const { data } = await apiClient.get('/workspaces/invites/me', {
+      params: { page, size }
+    });
+    return data.data;
   },
 
   // 초대 수락 (alias for acceptInvite)

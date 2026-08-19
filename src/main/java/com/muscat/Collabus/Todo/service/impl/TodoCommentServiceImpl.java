@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Notification.service.NotificationService;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TodoCommentServiceImpl implements TodoCommentService {
 
+    private final SortGuard sortGuard;
     private final TodoRepository todoRepository;
     private final UserRepository userRepository;
     private final TodoCommentRepository commentRepository;
@@ -120,6 +122,7 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     @Transactional(readOnly = true)
     public PageResponseDto<TodoCommentDto> getComments(Long todoId, Pageable pageable) {
         return PageResponseDto.of(
-                commentRepository.findAllByTodoId(todoId, pageable), commentMapper::mapToDto);
+                commentRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoComment.class)),
+                commentMapper::mapToDto);
     }
 }

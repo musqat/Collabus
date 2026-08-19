@@ -1,14 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { todoAPI } from '../api/todo';
 
-export const useTodos = (taskId, status = null) => {
+export const useTodos = (taskId, { status = null, page = 0 } = {}) => {
   const queryClient = useQueryClient();
 
-  // 서버가 페이지 응답을 주므로 목록은 content 에서 꺼낸다
   const { data: todoPage, isLoading } = useQuery({
-    queryKey: ['todos', taskId, status],
-    queryFn: () => todoAPI.getByTask(taskId, status),
+    queryKey: ['todos', taskId, status, page],
+    queryFn: () => todoAPI.getByTask(taskId, status, page),
     enabled: !!taskId,
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
@@ -19,6 +20,7 @@ export const useTodos = (taskId, status = null) => {
       todoAPI.create(taskId, assigneeId, title, description, dueDate),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       alert('Todo가 생성되었습니다.');
     },
     onError: (error) => {
@@ -31,6 +33,7 @@ export const useTodos = (taskId, status = null) => {
       todoAPI.update(todoId, title, description, dueDate),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       alert('Todo가 수정되었습니다.');
     },
     onError: (error) => {
@@ -42,6 +45,7 @@ export const useTodos = (taskId, status = null) => {
     mutationFn: (todoId) => todoAPI.delete(todoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       alert('Todo가 삭제되었습니다.');
     },
     onError: (error) => {
@@ -53,6 +57,7 @@ export const useTodos = (taskId, status = null) => {
     mutationFn: (todoId) => todoAPI.complete(todoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       alert('Todo가 완료 처리되었습니다.');
     },
     onError: (error) => {
@@ -64,6 +69,7 @@ export const useTodos = (taskId, status = null) => {
     mutationFn: (todoId) => todoAPI.confirm(todoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       alert('Todo가 최종 승인되었습니다.');
     },
     onError: (error) => {
@@ -73,6 +79,9 @@ export const useTodos = (taskId, status = null) => {
 
   return {
     todos,
+    page: todoPage?.page ?? 0,
+    totalPages: todoPage?.totalPages ?? 0,
+    totalElements: todoPage?.totalElements ?? 0,
     isLoading,
     createTodo: createMutation.mutate,
     updateTodo: updateMutation.mutate,

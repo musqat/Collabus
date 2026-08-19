@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
+    private final SortGuard sortGuard;
     private final WorkspaceUserRepository workspaceUserRepository;
     private final WorkspaceUserMapper workspaceUserMapper;
     private final ParticipantUtil participantUtil;
@@ -42,16 +44,19 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
                                                                          Long userId, Pageable pageable) {
         participantUtil.validateWorkspaceParticipant(workspaceId, userId);
         return PageResponseDto.of(
-                workspaceUserRepository.findAllById_WorkspaceId(workspaceId, pageable),
+                workspaceUserRepository.findAllById_WorkspaceId(workspaceId,
+                        sortGuard.apply(pageable, WorkspaceUser.class)),
                 workspaceUserMapper::mapToDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId) {
-        return workspaceUserRepository.findAllById_UserId(userId).stream()
-                .map(workspaceUserMapper::mapToDto)
-                .collect(Collectors.toList());
+    public PageResponseDto<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId,
+                                                                          Pageable pageable) {
+        return PageResponseDto.of(
+                workspaceUserRepository.findAllById_UserId(userId,
+                        sortGuard.apply(pageable, WorkspaceUser.class)),
+                workspaceUserMapper::mapToDto);
     }
 
     // MASTER 만 변경 가능하고 자기 역할은 못 바꾼다. MASTER 로 올리면 기존 MASTER 는 MANAGER 로 내려간다

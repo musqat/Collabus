@@ -2,8 +2,10 @@ package com.muscat.Collabus.common.util;
 
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class TaskAuthorityUtil {
 
   private final WorkspaceUserRepository workspaceUserRepository;
+  private final TaskUserRepository taskUserRepository;
 
   // Task 기반 Workspace Master 권한 검증
   public void validateWorkspaceMaster(Task task, Long userId) {
@@ -56,7 +59,7 @@ public class TaskAuthorityUtil {
 
   // Workspace 기준 Workspace Master 여부
   public boolean isWorkspaceMaster(Workspace workspace, Long userId) {
-    // 엔티티를 로드하지 않고 존재 여부만 확인한다
+    // 엔티티를 로드하지 않고 존재 여부만 본다
     return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
         workspace.getId(), userId, WorkspaceRole.MASTER);
   }
@@ -75,6 +78,32 @@ public class TaskAuthorityUtil {
   public void validateCanCreateTask(Workspace workspace, Long userId) {
     if (!canCreateTask(workspace, userId)) {
       throw new AccessDeniedException("Task 생성 권한이 없습니다. (MASTER 또는 MANAGER만 가능)");
+    }
+  }
+
+  // 워크스페이스 MASTER·MANAGER 이거나 Task 참여자인지
+  public boolean canViewTask(Task task, Long userId) {
+    return canViewAllTasks(task.getWorkspace().getId(), userId)
+        || taskUserRepository.existsById_TaskIdAndId_UserId(task.getId(), userId);
+  }
+
+  // 볼 수 없으면 AccessDeniedException
+  public void validateCanViewTask(Task task, Long userId) {
+    if (!canViewTask(task, userId)) {
+      throw new AccessDeniedException("Task 를 볼 권한이 없습니다.");
+    }
+  }
+
+  // 워크스페이스 MASTER 또는 MANAGER 인지
+  public boolean canViewAllTasks(Long workspaceId, Long userId) {
+    return workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRoleIn(
+        workspaceId, userId, List.of(WorkspaceRole.MASTER, WorkspaceRole.MANAGER));
+  }
+
+  // 워크스페이스 멤버가 아니면 AccessDeniedException
+  public void validateWorkspaceMember(Long workspaceId, Long userId) {
+    if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserId(workspaceId, userId)) {
+      throw new AccessDeniedException("워크스페이스 참여자만 접근할 수 있습니다.");
     }
   }
 

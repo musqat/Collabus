@@ -1,19 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTask } from '../hooks/useTask';
+import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
+import usePageParam from '../hooks/usePageParam';
+import Pagination from '../components/Pagination';
 import { useTodos } from '../hooks/useTodo';
 import { workspaceAPI } from '../api/workspace';
 import { taskAPI } from '../api/task';
 import { todoAPI } from '../api/todo';
 import { useAuthStore } from '../store/authStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function TaskDetail() {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { task, isLoading: taskLoading } = useTask(taskId);
-  const { todos, isLoading: todosLoading, createTodo, completeTodo, confirmTodo } = useTodos(taskId);
+  const [todoPage, setTodoPage] = usePageParam();
+  const {
+    todos,
+    totalPages: todoTotalPages,
+    isLoading: todosLoading,
+    createTodo,
+    completeTodo,
+    confirmTodo,
+  } = useTodos(taskId, { page: todoPage });
   const currentUser = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
+
+  const [memberPage, setMemberPage] = usePageParam('memberPage');
+  const { progress } = useTaskProgress(taskId);
+  // 담당자 선택과 역할 판정에 전체 목록이 필요해 한 번에 받는다
+  const { members: taskMembers } = useTaskMembers(taskId, { size: 100 });
+  const {
+    members: memberPageItems,
+    totalPages: memberTotalPages,
+  } = useTaskMembers(taskId, { page: memberPage });
 
   const [activeTab, setActiveTab] = useState('todos'); // 'todos' or 'members'
   const [showModal, setShowModal] = useState(false);
@@ -21,8 +42,6 @@ export default function TaskDetail() {
   const [showTaskEditModal, setShowTaskEditModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
-  const [taskMembers, setTaskMembers] = useState([]);
-  const [progressData, setProgressData] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [editingTodo, setEditingTodo] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
@@ -34,25 +53,17 @@ export default function TaskDetail() {
     dueDate: ''
   });
 
-  // Todo 진행률 계산
-  useEffect(() => {
-    if (todos && todos.length > 0) {
-      const confirmed = todos.filter(t => t.status === 'CONFIRMED').length;
-      const waitingReview = todos.filter(t => t.status === 'WAITING_REVIEW').length;
-      const inProgress = todos.filter(t => t.status === 'IN_PROGRESS').length;
-
-      setProgressData([
-        { name: '완료', value: confirmed, color: '#10b981' },
-        { name: '검수대기', value: waitingReview, color: '#f59e0b' },
-        { name: '진행중', value: inProgress, color: '#3b82f6' }
-      ].filter(item => item.value > 0));
-    }
-  }, [todos]);
+  // 서버 집계값을 파이 차트 형식으로 옮긴다
+  const progressData = [
+    { name: '완료', value: progress.confirmed, color: '#10b981' },
+    { name: '검수대기', value: progress.waitingReview, color: '#f59e0b' },
+    { name: '진행중', value: progress.inProgress, color: '#3b82f6' }
+  ].filter(item => item.value > 0);
 
   // 워크스페이스 멤버 조회 및 권한 확인
   useEffect(() => {
     if (task?.workspaceId) {
-      workspaceAPI.getMembers(task.workspaceId)
+      workspaceAPI.getMembers(task.workspaceId, 0, 100)
         .then(data => {
           if (Array.isArray(data)) {
             setWorkspaceMembers(data);
@@ -72,25 +83,6 @@ export default function TaskDetail() {
         });
     }
   }, [task?.workspaceId, currentUser?.id]);
-
-  // Task 멤버 조회
-  useEffect(() => {
-    if (taskId) {
-      taskAPI.getMembers(taskId)
-        .then(data => {
-          if (Array.isArray(data)) {
-            setTaskMembers(data);
-          } else {
-            console.error('Task members data is not an array:', data);
-            setTaskMembers([]);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch task members:', err);
-          setTaskMembers([]);
-        });
-    }
-  }, [taskId]);
 
   const handleCreate = (e) => {
     e.preventDefault();
@@ -138,11 +130,7 @@ export default function TaskDetail() {
       setShowAddMemberModal(false);
       setSelectedMember(null);
 
-      // Reload task members
-      const data = await taskAPI.getMembers(taskId);
-      if (Array.isArray(data)) {
-        setTaskMembers(data);
-      }
+      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
     } catch (error) {
       alert(error.response?.data?.statusMsg || '멤버 추가 실패');
     }
@@ -162,11 +150,7 @@ export default function TaskDetail() {
       await taskAPI.removeMember(taskId, userId);
       alert('멤버가 제거되었습니다.');
 
-      // Reload task members
-      const data = await taskAPI.getMembers(taskId);
-      if (Array.isArray(data)) {
-        setTaskMembers(data);
-      }
+      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
     } catch (error) {
       alert(error.response?.data?.statusMsg || '멤버 제거 실패');
     }
@@ -498,6 +482,9 @@ export default function TaskDetail() {
                     })}
                   </tbody>
                 </table>
+
+                <Pagination page={todoPage} totalPages={todoTotalPages} onChange={setTodoPage} />
+
               </div>
             ) : (
               <div className="text-center py-12 border border-gray-200 rounded-lg">
@@ -542,7 +529,7 @@ export default function TaskDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {taskMembers.map((member) => (
+                  {memberPageItems.map((member) => (
                     <tr key={member.userId} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -582,6 +569,8 @@ export default function TaskDetail() {
                   ))}
                 </tbody>
               </table>
+
+              <Pagination page={memberPage} totalPages={memberTotalPages} onChange={setMemberPage} />
             </div>
           </>
         ) : null}

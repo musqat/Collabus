@@ -1,13 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { taskAPI } from '../api/task';
 
-export const useTasks = (workspaceId) => {
+export const useTasks = (workspaceId, { page = 0, keyword = '' } = {}) => {
   const queryClient = useQueryClient();
 
-  const { data: tasks, isLoading } = useQuery({
-    queryKey: ['tasks', workspaceId],
-    queryFn: () => taskAPI.getByWorkspace(workspaceId),
+  const { data, isLoading } = useQuery({
+    queryKey: ['tasks', workspaceId, page, keyword],
+    queryFn: () => taskAPI.getByWorkspace(workspaceId, { page, keyword }),
     enabled: !!workspaceId,
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
@@ -15,6 +17,7 @@ export const useTasks = (workspaceId) => {
     mutationFn: (taskData) => taskAPI.create(taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-progress', workspaceId] });
       alert('Task가 생성되었습니다.');
     },
     onError: (error) => {
@@ -38,6 +41,7 @@ export const useTasks = (workspaceId) => {
     mutationFn: (taskId) => taskAPI.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-progress', workspaceId] });
       alert('Task가 삭제되었습니다.');
     },
     onError: (error) => {
@@ -46,11 +50,58 @@ export const useTasks = (workspaceId) => {
   });
 
   return {
-    tasks,
+    tasks: data?.content ?? [],
+    page: data?.page ?? 0,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
     isLoading,
     createTask: createMutation.mutate,
     updateTask: updateMutation.mutate,
     deleteTask: deleteMutation.mutate
+  };
+};
+
+// Task 참여자 목록. page 로 페이지를 넘긴다
+export const useTaskMembers = (taskId, { page = 0, size = 20 } = {}) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['task-members', taskId, page, size],
+    queryFn: () => taskAPI.getMembers(taskId, { page, size }),
+    enabled: !!taskId,
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
+  });
+
+  return {
+    members: data?.content ?? [],
+    page: data?.page ?? 0,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
+    isLoading,
+  };
+};
+
+// Task 의 Todo 를 상태별로 센 값을 받는다
+export const useTaskProgress = (taskId) => {
+  const { data } = useQuery({
+    queryKey: ['task-progress', taskId],
+    queryFn: () => taskAPI.getTaskProgress(taskId),
+    enabled: !!taskId,
+  });
+
+  return { progress: data ?? { total: 0, inProgress: 0, waitingReview: 0, confirmed: 0 } };
+};
+
+// 볼 수 있는 Task 의 Todo 를 상태별로 센 값을 받는다
+export const useWorkspaceProgress = (workspaceId) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['workspace-progress', workspaceId],
+    queryFn: () => taskAPI.getWorkspaceProgress(workspaceId),
+    enabled: !!workspaceId,
+  });
+
+  return {
+    progress: data ?? { total: 0, inProgress: 0, waitingReview: 0, confirmed: 0 },
+    isLoading,
   };
 };
 

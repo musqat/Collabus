@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
@@ -14,6 +15,7 @@ import com.muscat.Collabus.WorkspaceUser.model.InviteResponseDto;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceInviteRepository;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserInviteService;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.common.exception.ResourceAlreadyExistsException;
 import com.muscat.Collabus.common.exception.ResourceNotFoundException;
 import com.muscat.Collabus.enums.NotificationType;
@@ -23,11 +25,10 @@ import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.enums.status.InviteStatus;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteService {
 
+    private final SortGuard sortGuard;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
     private final WorkspaceInviteRepository inviteRepository;
@@ -47,6 +49,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
 
     // MASTER 만 초대 가능. 자기 초대·이미 멤버·대기 중 초대 중복을 막고 알림을 보낸다
     @Override
+    @Transactional
     public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
         // MASTER 권한 확인
         checkPermission(workspaceId, inviterId, WorkspaceRole.MASTER);
@@ -83,10 +86,11 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
 
     // 대기 중(PENDING) 초대만 돌려준다
     @Override
-    public List<InviteResponseDto> getMyInvites(Long inviteeId) {
-        return inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING).stream()
-                .map(inviteMapper::mapToDto)
-                .collect(Collectors.toList());
+    public PageResponseDto<InviteResponseDto> getMyInvites(Long inviteeId, Pageable pageable) {
+        return PageResponseDto.of(
+                inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING,
+                        sortGuard.apply(pageable, WorkspaceInvite.class)),
+                inviteMapper::mapToDto);
     }
 
     // 수락 시 초대에 담긴 역할로 멤버가 된다. 이미 처리된 초대는 거부한다

@@ -9,6 +9,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.dto.PageResponseDto;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.entity.TodoFile;
@@ -53,6 +58,10 @@ class TodoFileServiceImplTest {
   private static final Long FILE_ID = 100L;
   private static final Long OWNER_ID = 1L;
   private static final Long OUTSIDER_ID = 99L;
+
+  @Mock
+  private SortGuard sortGuard;
+
 
   @Mock
   private TodoWorkRepository todoWorkRepository;
@@ -182,10 +191,11 @@ class TodoFileServiceImplTest {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
     denyParticipation(OUTSIDER_ID);
 
-    assertThatThrownBy(() -> todoFileService.getFilesByWorkId(WORK_ID, OUTSIDER_ID))
+    assertThatThrownBy(() ->
+        todoFileService.getFilesByWorkId(WORK_ID, OUTSIDER_ID, PageRequest.of(0, 20)))
         .isInstanceOf(AccessDeniedException.class);
 
-    verify(todoFileRepository, never()).findAllByWorkId(any());
+    verify(todoFileRepository, never()).findAllByWorkId(any(), any());
   }
 
   @Test
@@ -254,12 +264,16 @@ class TodoFileServiceImplTest {
   @DisplayName("목록 조회 성공 - 참여자")
   void getFilesByWorkId_Success() {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
-    when(todoFileRepository.findAllByWorkId(WORK_ID)).thenReturn(List.of(file));
+    Pageable pageable = PageRequest.of(0, 20);
+    when(sortGuard.apply(pageable, TodoFile.class)).thenReturn(pageable);
+    when(todoFileRepository.findAllByWorkId(WORK_ID, pageable))
+        .thenReturn(new PageImpl<>(List.of(file), pageable, 1));
     when(todoFileMapper.mapToDto(file)).thenReturn(TodoFileDto.builder().id(FILE_ID).build());
 
-    List<TodoFileDto> result = todoFileService.getFilesByWorkId(WORK_ID, OWNER_ID);
+    PageResponseDto<TodoFileDto> result =
+        todoFileService.getFilesByWorkId(WORK_ID, OWNER_ID, pageable);
 
-    assertThat(result).hasSize(1);
+    assertThat(result.getContent()).hasSize(1);
     verify(participantUtil, times(1)).validateTaskParticipant(TASK_ID, OWNER_ID);
   }
 }

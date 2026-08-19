@@ -2,7 +2,6 @@ package com.muscat.Collabus.WorkspaceUser.controller;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import com.muscat.Collabus.WorkspaceUser.model.WorkspaceUserResponseDto;
 import com.muscat.Collabus.WorkspaceUser.service.WorkspaceUserService;
 import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.security.CustomUserDetails;
@@ -13,8 +12,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
-import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -61,10 +58,10 @@ public class WorkspaceUserController {
             }
     )
     public ResponseEntity<ResponseDto> getMyWorkspaces(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<WorkspaceUserResponseDto> workspaces =
-                workspaceUserService.getMyJoinedWorkspaces(userDetails.getUserId());
-        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS, workspaces));
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
+                workspaceUserService.getMyJoinedWorkspaces(userDetails.getUserId(), pageable)));
     }
 
     @PutMapping("/{workspaceId}/users/{targetUserId}/role")

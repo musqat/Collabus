@@ -13,6 +13,13 @@ import com.muscat.Collabus.Task.model.TaskResponseDto;
 import com.muscat.Collabus.Task.model.TaskUpdateRequestDto;
 import com.muscat.Collabus.Task.model.TaskUserResponseDto;
 import com.muscat.Collabus.Task.repository.TaskRepository;
+import com.muscat.Collabus.common.util.SortGuard;
+import com.muscat.Collabus.common.util.TaskSpecifications;
+import com.muscat.Collabus.enums.status.TodoStatus;
+import com.muscat.Collabus.common.util.TodoSpecifications;
+import com.muscat.Collabus.Todo.entity.Todo;
+import com.muscat.Collabus.Todo.repository.TodoRepository;
+import com.muscat.Collabus.Task.model.TodoProgressDto;
 import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -33,6 +40,7 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,8 +48,11 @@ import org.springframework.stereotype.Service;
 @Transactional(readOnly = true)
 public class TaskServiceImpl implements TaskService {
 
+    private final SortGuard sortGuard;
+
     private final TaskRepository taskRepository;
     private final TodoFileRepository todoFileRepository;
+    private final TodoRepository todoRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TaskUserRepository taskUserRepository;
     private final TaskMapper taskMapper;
@@ -107,11 +118,39 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public TaskResponseDto getTask(Long taskId) {
-        return taskMapper.mapToDto(finder.findTaskById(taskId));
+    public TaskResponseDto getTask(Long taskId, Long requesterId) {
+        Task task = finder.findTaskById(taskId);
+        taskAuthorityUtil.validateCanViewTask(task, requesterId);
+        return taskMapper.mapToDto(task);
     }
 
     // WM 또는 TM 만 수정 가능
+    // 볼 수 있는 Task 의 Todo 를 상태별로 센다
+    @Override
+    public TodoProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId) {
+        taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
+
+        Specification<Todo> visible = TodoSpecifications.inWorkspace(workspaceId);
+        if (!taskAuthorityUtil.canViewAllTasks(workspaceId, requesterId)) {
+            visible = visible.and(TodoSpecifications.inTaskParticipatedBy(requesterId));
+        }
+
+        return countProgress(visible);
+    }
+
+    private TodoProgressDto countProgress(Specification<Todo> scope) {
+        return TodoProgressDto.builder()
+                .total(todoRepository.count(scope))
+                .inProgress(countByStatus(scope, TodoStatus.IN_PROGRESS))
+                .waitingReview(countByStatus(scope, TodoStatus.WAITING_REVIEW))
+                .confirmed(countByStatus(scope, TodoStatus.CONFIRMED))
+                .build();
+    }
+
+    private long countByStatus(Specification<Todo> scope, TodoStatus status) {
+        return todoRepository.count(scope.and(TodoSpecifications.hasStatus(status)));
+    }
+
     @Transactional
     @Override
     public TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId) {
@@ -129,7 +168,7 @@ public class TaskServiceImpl implements TaskService {
         // Workspace Master 또는 Task Manager 만 삭제할 수 있다
         taskAuthorityUtil.validateCanManageTask(task, userId);
 
-        // 레코드는 캐스케이드가 지우지만 디스크 파일은 남으므로 경로를 미리 모아둔다
+        // 삭제 전에 하위 첨부 파일 경로를 모아 이벤트로 넘긴다
         List<String> fileUrls = todoFileRepository.findAllByWork_Todo_Task_Id(taskId)
                 .stream().map(TodoFileRepository.FileLocation::getFileUrl).toList();
 
@@ -137,11 +176,26 @@ public class TaskServiceImpl implements TaskService {
         eventPublisher.publishEvent(new FilesDeletedEvent(fileUrls));
     }
 
+    // 참여자만 조회 가능. MEMBER 는 자신이 속한 Task 만, keyword 는 제목·설명에 걸린다
     @Override
-    public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId,
-                                                                Pageable pageable) {
+    public PageResponseDto<TaskResponseDto> getTasksByWorkspace(Long workspaceId, Long requesterId,
+                                                                String keyword, Pageable pageable) {
+        taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
+
+        Specification<Task> spec = TaskSpecifications.inWorkspace(workspaceId);
+
+        if (!taskAuthorityUtil.canViewAllTasks(workspaceId, requesterId)) {
+            spec = spec.and(TaskSpecifications.participatedBy(requesterId));
+        }
+
+        // 검색어가 있으면 조건을 더한다
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(TaskSpecifications.matches(keyword));
+        }
+
         return PageResponseDto.of(
-                taskRepository.findAllByWorkspace_Id(workspaceId, pageable), taskMapper::mapToDto);
+                taskRepository.findAll(spec, sortGuard.apply(pageable, Task.class)),
+                taskMapper::mapToDto);
     }
 
     // WM 만 추가 가능. 추가된 사용자에게 알림이 간다
@@ -212,8 +266,18 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskUserResponseDto> getTaskMembers(Long taskId) {
-        return taskUserRepository.findAllByTask(finder.findTaskById(taskId)).stream()
-                .map(taskUserMapper::mapToDto).toList();
+    public PageResponseDto<TaskUserResponseDto> getTaskMembers(Long taskId, Long requesterId,
+                                                               Pageable pageable) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        return PageResponseDto.of(
+                taskUserRepository.findAllByTask_Id(taskId, sortGuard.apply(pageable, TaskUser.class)),
+                taskUserMapper::mapToDto);
+    }
+
+    // Task 의 Todo 를 상태별로 센다
+    @Override
+    public TodoProgressDto getTaskProgress(Long taskId, Long requesterId) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        return countProgress(TodoSpecifications.inTask(taskId));
     }
 }
