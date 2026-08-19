@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
@@ -34,6 +35,11 @@ import org.springframework.data.domain.Pageable;
 class WorkspaceUserInviteServiceImplTest {
 
   @Mock
+
+  private SortGuard sortGuard;
+
+
+  @Mock
   private WorkspaceRepository workspaceRepository;
 
   @Mock
@@ -58,6 +64,8 @@ class WorkspaceUserInviteServiceImplTest {
   @DisplayName("받은 초대는 대기 중인 것만, 요청한 페이지 크기만큼 돌려준다")
   void getMyInvites_PendingOnly_Paged() {
     Pageable pageable = PageRequest.of(0, 20);
+    // 정렬 검증은 SortGuard 가 맡는다. 여기서는 그대로 통과시킨다
+    when(sortGuard.apply(pageable, WorkspaceInvite.class)).thenReturn(pageable);
     WorkspaceInvite invite = WorkspaceInvite.builder().build();
     InviteResponseDto dto = InviteResponseDto.builder().build();
 
@@ -78,6 +86,8 @@ class WorkspaceUserInviteServiceImplTest {
   @DisplayName("페이지 요청이 리포지토리까지 그대로 전달된다")
   void getMyInvites_PassesPageable() {
     Pageable pageable = PageRequest.of(2, 5);
+    // 정렬 검증은 SortGuard 가 맡는다. 여기서는 그대로 통과시킨다
+    when(sortGuard.apply(pageable, WorkspaceInvite.class)).thenReturn(pageable);
     when(inviteRepository.findAllByInviteeIdAndStatus(1L, InviteStatus.PENDING, pageable))
         .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 

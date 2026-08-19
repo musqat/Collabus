@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -36,6 +37,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class TodoServiceImpl implements TodoService {
 
+    private final SortGuard sortGuard;
     private final TodoRepository todoRepository;
     private final TodoFileRepository todoFileRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -103,9 +105,10 @@ public class TodoServiceImpl implements TodoService {
     @Override
     public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, String status,
             Pageable pageable) {
+        Pageable safePageable = sortGuard.apply(pageable, Todo.class);
         Page<Todo> todos = (status != null)
-                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), pageable)
-                : todoRepository.findAllByTaskId(taskId, pageable);
+                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), safePageable)
+                : todoRepository.findAllByTaskId(taskId, safePageable);
 
         return PageResponseDto.of(todos, todoMapper::mapToDto);
     }

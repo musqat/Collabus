@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
@@ -47,6 +49,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TodoService 단위 테스트")
 class TodoServiceImplTest {
+
+  @Mock
+
+  private SortGuard sortGuard;
+
 
   @Mock
   private TodoRepository todoRepository;
@@ -93,6 +100,10 @@ class TodoServiceImplTest {
 
   @BeforeEach
   void setUp() {
+
+        // 정렬 검증은 SortGuard 가 맡는다. 여기서는 그대로 통과시킨다
+        lenient().when(sortGuard.apply(any(Pageable.class), any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     user = User.builder()
         .id(1L)
         .email("user@example.com")

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Workspace.repository.WorkspaceRepository;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserServiceImpl implements WorkspaceUserService {
 
+    private final SortGuard sortGuard;
     private final WorkspaceUserRepository workspaceUserRepository;
     private final WorkspaceUserMapper workspaceUserMapper;
     private final ParticipantUtil participantUtil;
@@ -42,7 +44,8 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
                                                                          Long userId, Pageable pageable) {
         participantUtil.validateWorkspaceParticipant(workspaceId, userId);
         return PageResponseDto.of(
-                workspaceUserRepository.findAllById_WorkspaceId(workspaceId, pageable),
+                workspaceUserRepository.findAllById_WorkspaceId(workspaceId,
+                        sortGuard.apply(pageable, WorkspaceUser.class)),
                 workspaceUserMapper::mapToDto);
     }
 

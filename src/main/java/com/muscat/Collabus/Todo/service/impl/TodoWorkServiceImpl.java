@@ -1,5 +1,7 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Todo.entity.Todo;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TodoWorkServiceImpl implements TodoWorkService {
 
+    private final SortGuard sortGuard;
     private final TodoWorkMapper todoWorkMapper;
     private final TodoWorkRepository todoWorkRepository;
     private final ParticipantUtil participantUtil;
@@ -80,7 +83,8 @@ public class TodoWorkServiceImpl implements TodoWorkService {
     @Transactional(readOnly = true)
     public PageResponseDto<TodoWorkDto> getWorksByTodoId(Long todoId, Pageable pageable) {
         return PageResponseDto.of(
-                todoWorkRepository.findAllByTodoId(todoId, pageable), todoWorkMapper::mapToDto);
+                todoWorkRepository.findAllByTodoId(todoId, sortGuard.apply(pageable, TodoWork.class)),
+                todoWorkMapper::mapToDto);
     }
 
     // 작성자 본인만 삭제 가능

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteService {
 
+    private final SortGuard sortGuard;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
     private final WorkspaceInviteRepository inviteRepository;
@@ -86,7 +88,8 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
     @Override
     public PageResponseDto<InviteResponseDto> getMyInvites(Long inviteeId, Pageable pageable) {
         return PageResponseDto.of(
-                inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING, pageable),
+                inviteRepository.findAllByInviteeIdAndStatus(inviteeId, InviteStatus.PENDING,
+                        sortGuard.apply(pageable, WorkspaceInvite.class)),
                 inviteMapper::mapToDto);
     }
 
