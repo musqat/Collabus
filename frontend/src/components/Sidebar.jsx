@@ -1,108 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { workspaceAPI } from '../api/workspace';
 import { taskAPI } from '../api/task';
 
+const STALE_TIME = 30000;
+
 export default function Sidebar({ collapsed, onToggle }) {
-  const [workspaces, setWorkspaces] = useState([]);
   const [expandedWorkspaces, setExpandedWorkspaces] = useState(new Set());
   const [expandedTasks, setExpandedTasks] = useState(new Set());
-  const [workspaceTasks, setWorkspaceTasks] = useState({});
-  const [taskTodos, setTaskTodos] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 워크스페이스 목록 조회
-  useEffect(() => {
-    // 트리에는 페이지 버튼이 어울리지 않아 첫 100건만 보여준다
-    workspaceAPI.getJoinedWorkspaces({ size: 100 })
-      .then(data => {
-        setWorkspaces(data?.content ?? []);
-      })
-      .catch(err => {
-        console.error('Failed to fetch workspaces:', err);
-        setWorkspaces([]);
-      });
-  }, []);
+  // 트리에는 페이지 버튼이 어울리지 않아 첫 100건만 보여준다
+  const { data: workspacePage } = useQuery({
+    // ['workspaces'] 로 시작해야 워크스페이스 생성·삭제 때 함께 무효화된다
+    queryKey: ['workspaces', 'sidebar'],
+    queryFn: () => workspaceAPI.getJoinedWorkspaces({ size: 100 }),
+    staleTime: STALE_TIME,
+  });
+  const workspaces = workspacePage?.content ?? [];
 
-  // 페이지 이동 시 펼쳐진 워크스페이스/태스크 데이터 새로고침
-  useEffect(() => {
-    const refreshExpandedData = async () => {
-      // 펼쳐진 워크스페이스의 Task 목록 새로고침
-      for (const workspaceId of expandedWorkspaces) {
-        try {
-          const { content: tasks } = await taskAPI.getByWorkspace(workspaceId);
-          setWorkspaceTasks(prev => ({
-            ...prev,
-            [workspaceId]: Array.isArray(tasks) ? tasks : []
-          }));
-        } catch (error) {
-          console.error('Failed to refresh tasks:', error);
-        }
-      }
+  // 펼친 워크스페이스마다 Task 를 하나씩 조회한다. 접으면 쿼리가 사라진다
+  const taskQueries = useQueries({
+    queries: [...expandedWorkspaces].map((workspaceId) => ({
+      queryKey: ['tasks', workspaceId, 0, '', undefined],
+      queryFn: () => taskAPI.getByWorkspace(workspaceId),
+      staleTime: STALE_TIME,
+    })),
+  });
 
-      // 펼쳐진 Task의 Todo 목록 새로고침
-      for (const taskId of expandedTasks) {
-        try {
-          const todos = await taskAPI.getTodos(taskId);
-          setTaskTodos(prev => ({
-            ...prev,
-            [taskId]: Array.isArray(todos) ? todos : []
-          }));
-        } catch (error) {
-          console.error('Failed to refresh todos:', error);
-        }
-      }
-    };
+  const taskQueryList = [...expandedWorkspaces];
+  const workspaceTasks = Object.fromEntries(
+    taskQueryList.map((workspaceId, i) => [workspaceId, taskQueries[i]?.data?.content ?? []])
+  );
 
-    refreshExpandedData();
-  }, [location.pathname]);
+  // 펼친 Task 마다 Todo 를 하나씩 조회한다
+  const todoQueries = useQueries({
+    queries: [...expandedTasks].map((taskId) => ({
+      // ['todos', taskId] 로 시작해야 Todo 변경 때 함께 무효화된다
+      queryKey: ['todos', taskId, 'sidebar'],
+      queryFn: () => taskAPI.getTodos(taskId),
+      staleTime: STALE_TIME,
+    })),
+  });
+
+  const todoQueryList = [...expandedTasks];
+  const taskTodos = Object.fromEntries(
+    todoQueryList.map((taskId, i) => [taskId, todoQueries[i]?.data ?? []])
+  );
 
   // 워크스페이스 펼치기/접기
-  const toggleWorkspace = async (workspaceId) => {
+  const toggleWorkspace = (workspaceId) => {
     const newExpanded = new Set(expandedWorkspaces);
-
     if (newExpanded.has(workspaceId)) {
       newExpanded.delete(workspaceId);
     } else {
       newExpanded.add(workspaceId);
-
-      // Task 목록 로드 (항상 최신 데이터 로드)
-      try {
-        const { content: tasks } = await taskAPI.getByWorkspace(workspaceId);
-        setWorkspaceTasks(prev => ({
-          ...prev,
-          [workspaceId]: Array.isArray(tasks) ? tasks : []
-        }));
-      } catch (error) {
-        console.error('Failed to load tasks:', error);
-      }
     }
-
     setExpandedWorkspaces(newExpanded);
   };
 
   // Task 펼치기/접기
-  const toggleTask = async (taskId) => {
+  const toggleTask = (taskId) => {
     const newExpanded = new Set(expandedTasks);
-
     if (newExpanded.has(taskId)) {
       newExpanded.delete(taskId);
     } else {
       newExpanded.add(taskId);
-
-      // Todo 목록 로드 (항상 최신 데이터 로드)
-      try {
-        const todos = await taskAPI.getTodos(taskId);
-        setTaskTodos(prev => ({
-          ...prev,
-          [taskId]: Array.isArray(todos) ? todos : []
-        }));
-      } catch (error) {
-        console.error('Failed to load todos:', error);
-      }
     }
-
     setExpandedTasks(newExpanded);
   };
 
