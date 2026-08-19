@@ -1,21 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { calculateTodoStats, getTaskProgress } from '../../utils/taskUtils';
+import { useTaskProgress } from '../../hooks/useTask';
 import { getDueDateColor, formatDueDate } from '../../utils/dateUtils';
-import { taskAPI } from '../../api/task';
 
 export default function TaskCard({ task }) {
   const navigate = useNavigate();
 
-  // Task의 Todo 목록 가져오기
-  const { data: todos } = useQuery({
-    queryKey: ['todos', task.id],
-    queryFn: () => taskAPI.getTodos(task.id),
-    staleTime: 30000,
-  });
-
-  const stats = calculateTodoStats(todos);
-  const progress = getTaskProgress(todos);
+  const { progress: stats } = useTaskProgress(task.id);
+  const progress = stats.total === 0
+    ? 0
+    : Math.round((stats.confirmed / stats.total) * 100);
 
   return (
     <div

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.entity.User;
@@ -22,14 +23,11 @@ import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.InviteResponse;
 import com.muscat.Collabus.enums.response.WorkspaceUserResponse;
-import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.enums.status.InviteStatus;
 
-import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteService {
+
+    private final TaskAuthorityUtil taskAuthorityUtil;
 
     private final SortGuard sortGuard;
     private final WorkspaceRepository workspaceRepository;
@@ -52,7 +52,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
     @Transactional
     public void inviteUserToWorkspace(Long inviterId, Long workspaceId, InviteRequestDto dto) {
         // MASTER 권한 확인
-        checkPermission(workspaceId, inviterId, WorkspaceRole.MASTER);
+        taskAuthorityUtil.validateWorkspaceMaster(workspaceId, inviterId);
 
         if (inviterId.equals(dto.getUserId())) {
             throw new IllegalArgumentException(InviteResponse.INVITE_SELF.getMessage());
@@ -132,12 +132,4 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
                 .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
     }
 
-    // 워크스페이스 내 역할이 허용 목록에 있는지 확인
-    private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
-        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-        Set<WorkspaceRole> allowed = Set.of(allowedRoles);
-        if (!allowed.contains(user.getRole())) {
-            throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
-        }
-    }
 }

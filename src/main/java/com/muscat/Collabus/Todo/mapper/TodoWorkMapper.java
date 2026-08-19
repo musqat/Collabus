@@ -14,6 +14,7 @@ public class TodoWorkMapper {
         .content(todoWork.getContent())
         .authorId(todoWork.getAuthor().getId())
         .authorDisplayName(todoWork.getAuthor().getDisplayName())
+        .createdAt(todoWork.getCreatedAt())
         .updatedAt(todoWork.getUpdatedAt())
         .build();
   }

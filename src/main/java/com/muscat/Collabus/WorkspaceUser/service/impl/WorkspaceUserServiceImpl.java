@@ -1,5 +1,6 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
@@ -19,11 +20,9 @@ import com.muscat.Collabus.enums.role.WorkspaceRole;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class WorkspaceUserServiceImpl implements WorkspaceUserService {
+
+    private final TaskAuthorityUtil taskAuthorityUtil;
 
     private final SortGuard sortGuard;
     private final WorkspaceUserRepository workspaceUserRepository;
@@ -50,20 +51,10 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public PageResponseDto<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId,
-                                                                          Pageable pageable) {
-        return PageResponseDto.of(
-                workspaceUserRepository.findAllById_UserId(userId,
-                        sortGuard.apply(pageable, WorkspaceUser.class)),
-                workspaceUserMapper::mapToDto);
-    }
-
-    @Override
     @Transactional
     public void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId) {
         participantUtil.validateWorkspaceParticipant(workspaceId, actorId);
-        checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
+        taskAuthorityUtil.validateWorkspaceMaster(workspaceId, actorId);
 
         if (targetUserId.equals(actorId)) {
             throw new BusinessException(CommonResponse.CANNOT_CHANGE_SELF_ROLE);
@@ -84,7 +75,7 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
     @Override
     @Transactional
     public void removeUser(Long workspaceId, Long userId, Long actorId) {
-        checkPermission(workspaceId, actorId, WorkspaceRole.MASTER);
+        taskAuthorityUtil.validateWorkspaceMaster(workspaceId, actorId);
 
         if (userId.equals(actorId)) {
             throw new BusinessException(CommonResponse.CANNOT_REMOVE_SELF);
@@ -124,11 +115,4 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
                 .orElseThrow(() -> new ResourceNotFoundException(CommonResponse.USER_NOT_FOUND));
     }
 
-    private void checkPermission(Long workspaceId, Long userId, WorkspaceRole... allowedRoles) {
-        WorkspaceUser user = getWorkspaceUserOrThrow(workspaceId, userId);
-        Set<WorkspaceRole> allowed = Set.of(allowedRoles);
-        if (!allowed.contains(user.getRole())) {
-            throw new AccessDeniedException(CommonResponse.UNAUTHORIZED.getMessage());
-        }
-    }
 }

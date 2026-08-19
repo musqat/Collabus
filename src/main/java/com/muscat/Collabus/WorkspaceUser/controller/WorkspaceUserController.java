@@ -48,22 +48,6 @@ public class WorkspaceUserController {
                 workspaceUserService.getUsersInWorkspace(workspaceId, userDetails.getUserId(), pageable)));
     }
 
-    @GetMapping("/me")
-    @Operation(
-            summary = "내가 속한 워크스페이스 목록",
-            description = "현재 참여 중인 모든 워크스페이스 정보를 반환합니다.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "조회 성공",
-                            content = @Content(schema = @Schema(implementation = ResponseDto.class)))
-            }
-    )
-    public ResponseEntity<ResponseDto> getMyWorkspaces(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                workspaceUserService.getMyJoinedWorkspaces(userDetails.getUserId(), pageable)));
-    }
-
     @PutMapping("/{workspaceId}/users/{targetUserId}/role")
     @Operation(
             summary = "멤버 역할 변경",

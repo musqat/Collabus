@@ -7,17 +7,6 @@ export function formatDate(dateString) {
   });
 }
 
-export function formatDateTime(dateString) {
-  if (!dateString) return '';
-  return new Date(dateString).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 export function formatRelativeTime(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);

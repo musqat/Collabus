@@ -100,6 +100,14 @@ public class TaskAuthorityUtil {
         workspaceId, userId, List.of(WorkspaceRole.MASTER, WorkspaceRole.MANAGER));
   }
 
+  // 워크스페이스 MASTER 가 아니면 AccessDeniedException
+  public void validateWorkspaceMaster(Long workspaceId, Long userId) {
+    if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
+        workspaceId, userId, WorkspaceRole.MASTER)) {
+      throw new AccessDeniedException("Workspace Master 권한이 필요합니다.");
+    }
+  }
+
   // 워크스페이스 멤버가 아니면 AccessDeniedException
   public void validateWorkspaceMember(Long workspaceId, Long userId) {
     if (!workspaceUserRepository.existsById_WorkspaceIdAndId_UserId(workspaceId, userId)) {

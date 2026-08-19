@@ -22,5 +22,6 @@ public class TodoWorkDto {
   private String content;
   private Long authorId;
   private String authorDisplayName;
+  private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

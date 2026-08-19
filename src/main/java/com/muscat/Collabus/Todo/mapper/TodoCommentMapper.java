@@ -11,7 +11,8 @@ public class TodoCommentMapper {
     return TodoCommentDto.builder()
         .id(todoComment.getId())
         .content(todoComment.getContent())
-        .updatedAt(todoComment.getCreatedAt())
+        .createdAt(todoComment.getCreatedAt())
+        .updatedAt(todoComment.getUpdatedAt())
         .authorId(todoComment.getAuthor().getId())
         .authorDisplayName(todoComment.getAuthor().getDisplayName())
         .build();

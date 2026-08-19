@@ -29,10 +29,6 @@ public class PageResponseDto<T> {
     this.hasNext = source.hasNext();
   }
 
-  public static <T> PageResponseDto<T> from(Page<T> source) {
-    return new PageResponseDto<>(source);
-  }
-
   public static <E, T> PageResponseDto<T> of(Page<E> source, Function<E, T> mapper) {
     return new PageResponseDto<>(source.map(mapper));
   }

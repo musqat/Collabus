@@ -1,5 +1,7 @@
 package com.muscat.Collabus.common.exception;
 
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import com.muscat.Collabus.common.dto.ErrorResponseDto;
 import com.muscat.Collabus.enums.response.ErrorType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,6 +64,24 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponseDto> handleNotReadable(HttpMessageNotReadableException ex,
       HttpServletRequest request) {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, "요청 본문을 해석할 수 없습니다.",
+        ErrorType.VALIDATION, request);
+  }
+
+  // 필수 쿼리 파라미터가 빠지면 클라이언트 오류
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErrorResponseDto> handleMissingParameter(
+      MissingServletRequestParameterException ex, HttpServletRequest request) {
+    return buildErrorResponse(HttpStatus.BAD_REQUEST,
+        "필수 요청 파라미터가 없습니다: " + ex.getParameterName(),
+        ErrorType.VALIDATION, request);
+  }
+
+  // 파라미터 타입이 맞지 않으면 클라이언트 오류
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponseDto> handleTypeMismatch(
+      MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    return buildErrorResponse(HttpStatus.BAD_REQUEST,
+        "요청 파라미터 형식이 올바르지 않습니다: " + ex.getName(),
         ErrorType.VALIDATION, request);
   }
 
