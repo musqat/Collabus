@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
 import usePageParam from '../hooks/usePageParam';
+import useSortParam from '../hooks/useSortParam';
+import SortSelect from '../components/SortSelect';
 import Pagination from '../components/Pagination';
 import { useTodos } from '../hooks/useTodo';
 import { workspaceAPI } from '../api/workspace';
@@ -11,11 +13,20 @@ import { useAuthStore } from '../store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
+const TODO_SORT_OPTIONS = [
+  { value: 'dueDate,asc', label: '마감일 빠른 순' },
+  { value: 'dueDate,desc', label: '마감일 늦은 순' },
+  { value: 'status,asc', label: '상태순' },
+  { value: 'title,asc', label: '제목순' },
+  { value: 'assignee.displayName,asc', label: '담당자순' },
+];
+
 export default function TaskDetail() {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { task, isLoading: taskLoading } = useTask(taskId);
   const [todoPage, setTodoPage] = usePageParam();
+  const [todoSort, setTodoSort] = useSortParam(TODO_SORT_OPTIONS[0].value);
   const {
     todos,
     totalPages: todoTotalPages,
@@ -23,7 +34,7 @@ export default function TaskDetail() {
     createTodo,
     completeTodo,
     confirmTodo,
-  } = useTodos(taskId, { page: todoPage });
+  } = useTodos(taskId, { page: todoPage, sort: todoSort });
   const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -372,6 +383,8 @@ export default function TaskDetail() {
             {/* Todo List Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-gray-900">Todo</h2>
+              <div className="flex items-center gap-3">
+              <SortSelect value={todoSort} options={TODO_SORT_OPTIONS} onChange={setTodoSort} />
               {(isTaskManager || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
                 <button
                   onClick={() => setShowModal(true)}
@@ -381,6 +394,7 @@ export default function TaskDetail() {
                   <span>Todo 추가</span>
                 </button>
               )}
+              </div>
             </div>
 
             {/* Todo Table */}

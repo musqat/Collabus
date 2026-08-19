@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import java.util.Set;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.entity.Task;
@@ -36,6 +37,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TodoServiceImpl implements TodoService {
+
+    // 담당자 이름순 정렬을 위해 연관 경로를 하나 열어 둔다
+    private static final Set<String> SORT_PATHS = Set.of("assignee.displayName");
 
     private final SortGuard sortGuard;
     private final TodoRepository todoRepository;
@@ -109,7 +113,7 @@ public class TodoServiceImpl implements TodoService {
             String status, Pageable pageable) {
         taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
 
-        Pageable safePageable = sortGuard.apply(pageable, Todo.class);
+        Pageable safePageable = sortGuard.apply(pageable, Todo.class, SORT_PATHS);
         Page<Todo> todos = (status != null)
                 ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), safePageable)
                 : todoRepository.findAllByTaskId(taskId, safePageable);

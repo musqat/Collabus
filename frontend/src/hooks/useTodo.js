@@ -1,12 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { todoAPI } from '../api/todo';
 
-export const useTodos = (taskId, { status = null, page = 0 } = {}) => {
+export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
   const queryClient = useQueryClient();
 
   const { data: todoPage, isLoading } = useQuery({
-    queryKey: ['todos', taskId, status, page],
-    queryFn: () => todoAPI.getByTask(taskId, status, page),
+    queryKey: ['todos', taskId, status, page, sort],
+    queryFn: () => todoAPI.getByTask(taskId, status, page, 20, sort),
     enabled: !!taskId,
     // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
     placeholderData: keepPreviousData,

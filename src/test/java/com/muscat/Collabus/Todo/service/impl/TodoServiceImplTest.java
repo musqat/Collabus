@@ -105,7 +105,7 @@ class TodoServiceImplTest {
     void setUp() {
 
         // 정렬 검증은 SortGuard 가 맡는다. 여기서는 그대로 통과시킨다
-        lenient().when(sortGuard.apply(any(Pageable.class), any()))
+        lenient().when(sortGuard.apply(any(Pageable.class), any(), any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         user = User.builder()
                 .id(1L)

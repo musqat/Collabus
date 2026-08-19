@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useTasks, useWorkspaceProgress } from '../hooks/useTask';
 import usePageParam from '../hooks/usePageParam';
+import useSortParam from '../hooks/useSortParam';
+import SortSelect from '../components/SortSelect';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import Pagination from '../components/Pagination';
 import { workspaceAPI } from '../api/workspace';
@@ -13,11 +15,20 @@ import TaskCard from '../components/Task/TaskCard';
 import { EmptyState } from '../components/LoadingState';
 import { useQuery } from '@tanstack/react-query';
 
+const TASK_SORT_OPTIONS = [
+  { value: 'dueDate,asc', label: '마감일 빠른 순' },
+  { value: 'dueDate,desc', label: '마감일 늦은 순' },
+  { value: 'title,asc', label: '제목순' },
+  { value: 'taskManager.displayName,asc', label: '담당 매니저순' },
+  { value: 'createdAt,desc', label: '최근 생성순' },
+];
+
 export default function WorkspaceDetail() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const { workspace, isLoading: workspaceLoading } = useWorkspace(workspaceId);
   const [page, setPage] = usePageParam();
+  const [sort, setSort] = useSortParam(TASK_SORT_OPTIONS[0].value);
   const [taskSearchText, setTaskSearchText] = useState('');
   // 입력이 300ms 멈추면 그 값을 서버에 넘긴다
   const keyword = useDebouncedValue(taskSearchText, 300);
@@ -28,7 +39,7 @@ export default function WorkspaceDetail() {
     totalElements,
     isLoading: tasksLoading,
     createTask,
-  } = useTasks(workspaceId, { page, keyword });
+  } = useTasks(workspaceId, { page, keyword, sort });
   const { progress } = useWorkspaceProgress(workspaceId);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -387,6 +398,8 @@ export default function WorkspaceDetail() {
               </div>
 
               {/* 검색 결과 개수 */}
+              <SortSelect value={sort} options={TASK_SORT_OPTIONS} onChange={setSort} />
+
               {keyword && (
                 <div className="flex items-center text-sm text-gray-600 px-2">
                   {totalElements}개 결과

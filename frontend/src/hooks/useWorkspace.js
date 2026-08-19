@@ -1,12 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { workspaceAPI } from '../api/workspace';
 
-export const useWorkspaces = ({ page = 0 } = {}) => {
+export const useWorkspaces = ({ page = 0, sort } = {}) => {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['workspaces', page],
-    queryFn: () => workspaceAPI.getJoinedWorkspaces({ page }),
+    queryKey: ['workspaces', page, sort],
+    queryFn: () => workspaceAPI.getJoinedWorkspaces({ page, sort }),
     // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
     placeholderData: keepPreviousData,
     refetchInterval: 30000, // 30초마다 자동 새로고침

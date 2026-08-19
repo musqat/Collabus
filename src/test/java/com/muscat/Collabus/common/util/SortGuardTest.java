@@ -93,6 +93,26 @@ class SortGuardTest {
   }
 
   @Test
+  @DisplayName("따로 허용한 연관 경로는 남긴다")
+  void keepsAllowedPath() {
+    Pageable pageable = PageRequest.of(0, 20, Sort.by("taskManager.displayName"));
+
+    Pageable result = sortGuard.apply(pageable, Task.class, Set.of("taskManager.displayName"));
+
+    assertThat(result.getSort()).isEqualTo(pageable.getSort());
+  }
+
+  @Test
+  @DisplayName("허용 목록에 없는 연관 경로는 그대로 버린다")
+  void dropsOtherPathEvenWithAllowList() {
+    Pageable pageable = PageRequest.of(0, 20, Sort.by("taskManager.password"));
+
+    Pageable result = sortGuard.apply(pageable, Task.class, Set.of("taskManager.displayName"));
+
+    assertThat(result.getSort().isSorted()).isFalse();
+  }
+
+  @Test
   @DisplayName("정렬이 없으면 메타모델을 보지 않는다")
   void skipsUnsorted() {
     Pageable pageable = PageRequest.of(0, 20);

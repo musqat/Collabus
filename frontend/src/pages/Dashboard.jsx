@@ -2,11 +2,20 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspaces } from '../hooks/useWorkspace';
 import usePageParam from '../hooks/usePageParam';
+import useSortParam from '../hooks/useSortParam';
+import SortSelect from '../components/SortSelect';
 import Pagination from '../components/Pagination';
+
+const WORKSPACE_SORT_OPTIONS = [
+  { value: 'createdAt,desc', label: '최근 생성순' },
+  { value: 'createdAt,asc', label: '오래된 순' },
+  { value: 'workspaceName,asc', label: '이름순' },
+];
 
 export default function Dashboard() {
   const [page, setPage] = usePageParam();
-  const { workspaces, totalPages, isLoading, createWorkspace } = useWorkspaces({ page });
+  const [sort, setSort] = useSortParam(WORKSPACE_SORT_OPTIONS[0].value);
+  const { workspaces, totalPages, isLoading, createWorkspace } = useWorkspaces({ page, sort });
   const [showModal, setShowModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,7 +51,10 @@ export default function Dashboard() {
         </div>
 
         {/* 워크스페이스 목록 */}
-        <h3 className="text-2xl font-bold text-gray-800 mb-6">워크스페이스</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-800">워크스페이스</h3>
+          <SortSelect value={sort} options={WORKSPACE_SORT_OPTIONS} onChange={setSort} />
+        </div>
         {workspaces && workspaces.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
