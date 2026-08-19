@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspaces } from '../hooks/useWorkspace';
+import usePageParam from '../hooks/usePageParam';
+import Pagination from '../components/Pagination';
 
 export default function Dashboard() {
-  const { workspaces, isLoading, createWorkspace } = useWorkspaces();
+  const [page, setPage] = usePageParam();
+  const { workspaces, totalPages, isLoading, createWorkspace } = useWorkspaces({ page });
   const [showModal, setShowModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [description, setDescription] = useState('');
@@ -41,7 +44,8 @@ export default function Dashboard() {
         {/* 워크스페이스 목록 */}
         <h3 className="text-2xl font-bold text-gray-800 mb-6">워크스페이스</h3>
         {workspaces && workspaces.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {workspaces.map((workspace) => (
               <Link
                 key={workspace.id}
@@ -59,7 +63,10 @@ export default function Dashboard() {
                 </div>
               </Link>
             ))}
-          </div>
+            </div>
+
+            <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+          </>
         ) : (
           <div className="text-center py-16 border border-gray-200 rounded-lg bg-gray-50">
             <p className="text-gray-500 text-lg mb-4">

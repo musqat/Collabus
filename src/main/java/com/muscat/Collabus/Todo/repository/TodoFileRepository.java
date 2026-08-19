@@ -2,6 +2,8 @@ package com.muscat.Collabus.Todo.repository;
 
 import com.muscat.Collabus.Todo.entity.TodoFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,7 +13,7 @@ public interface TodoFileRepository extends JpaRepository<TodoFile, Long> {
 
     // 목록 응답에 업로더 정보가 필요하므로 함께 가져온다
     @EntityGraph(attributePaths = {"uploader"})
-    List<TodoFile> findAllByWorkId(Long workId);
+    Page<TodoFile> findAllByWorkId(Long workId, Pageable pageable);
 
     // 삭제 대상 파일의 저장 경로만 뽑는다
     interface FileLocation {

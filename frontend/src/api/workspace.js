@@ -10,16 +10,16 @@ export const workspaceAPI = {
     return data;
   },
 
-  // 내 워크스페이스 목록
-  getMyWorkspaces: async () => {
-    const { data } = await apiClient.get('/workspaces/my');
+  // 내가 만든 워크스페이스 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
+  getMyWorkspaces: async ({ page = 0, size = 20 } = {}) => {
+    const { data } = await apiClient.get('/workspaces/my', { params: { page, size } });
     return data;
   },
 
-  // 참여 중인 워크스페이스 목록
-  getJoinedWorkspaces: async () => {
-    const { data } = await apiClient.get('/workspaces/joined');
-    return data; // WorkspaceController는 ResponseDto 없이 직접 반환
+  // 참여 중인 워크스페이스 목록. WorkspaceController 는 ResponseDto 없이 직접 반환한다
+  getJoinedWorkspaces: async ({ page = 0, size = 20 } = {}) => {
+    const { data } = await apiClient.get('/workspaces/joined', { params: { page, size } });
+    return data;
   },
 
   // 워크스페이스 상세

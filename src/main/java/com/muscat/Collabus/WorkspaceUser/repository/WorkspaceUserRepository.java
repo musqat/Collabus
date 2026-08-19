@@ -24,7 +24,7 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, Wo
 
     // 내가 참여 중인 워크스페이스 목록. 워크스페이스와 생성자까지 함께 가져온다
     @EntityGraph(attributePaths = {"workspace", "workspace.founder"})
-    List<WorkspaceUser> findAllById_UserId(Long userId);
+    Page<WorkspaceUser> findAllById_UserId(Long userId, Pageable pageable);
 
     // 멤버 한 명의 참여 정보 (역할 변경·탈퇴에 사용)
     Optional<WorkspaceUser> findById_WorkspaceIdAndId_UserId(Long workspaceId, Long userId);

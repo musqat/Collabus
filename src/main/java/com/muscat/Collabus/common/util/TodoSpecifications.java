@@ -33,6 +33,10 @@ public final class TodoSpecifications {
     };
   }
 
+  public static Specification<Todo> inTask(Long taskId) {
+    return (root, query, cb) -> cb.equal(root.get("task").get("id"), taskId);
+  }
+
   public static Specification<Todo> hasStatus(TodoStatus status) {
     return (root, query, cb) -> cb.equal(root.get("status"), status);
   }

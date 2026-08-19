@@ -1,5 +1,7 @@
 package com.muscat.Collabus.Todo.controller;
 
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.Todo.model.TodoFileDto;
 import com.muscat.Collabus.Todo.service.TodoFileService;
 import com.muscat.Collabus.common.dto.ResponseDto;
@@ -65,10 +67,11 @@ public class TodoFileController {
     })
     public ResponseEntity<ResponseDto> getFilesByWork(
             @PathVariable Long workId,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-                todoFileService.getFilesByWorkId(workId, userDetails.getUserId())));
+                todoFileService.getFilesByWorkId(workId, userDetails.getUserId(), pageable)));
     }
 
     @GetMapping("/{fileId}/download")

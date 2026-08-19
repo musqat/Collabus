@@ -14,14 +14,10 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   // 워크스페이스 목록 조회
   useEffect(() => {
-    workspaceAPI.getJoinedWorkspaces()
+    // 트리에는 페이지 버튼이 어울리지 않아 첫 100건만 보여준다
+    workspaceAPI.getJoinedWorkspaces({ size: 100 })
       .then(data => {
-        if (Array.isArray(data)) {
-          setWorkspaces(data);
-        } else {
-          console.error('Workspaces data is not an array:', data);
-          setWorkspaces([]);
-        }
+        setWorkspaces(data?.content ?? []);
       })
       .catch(err => {
         console.error('Failed to fetch workspaces:', err);

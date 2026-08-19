@@ -19,7 +19,7 @@ import com.muscat.Collabus.enums.status.TodoStatus;
 import com.muscat.Collabus.common.util.TodoSpecifications;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
-import com.muscat.Collabus.Task.model.WorkspaceProgressDto;
+import com.muscat.Collabus.Task.model.TodoProgressDto;
 import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -118,14 +118,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public TaskResponseDto getTask(Long taskId) {
-        return taskMapper.mapToDto(finder.findTaskById(taskId));
+    public TaskResponseDto getTask(Long taskId, Long requesterId) {
+        Task task = finder.findTaskById(taskId);
+        taskAuthorityUtil.validateCanViewTask(task, requesterId);
+        return taskMapper.mapToDto(task);
     }
 
     // WM 또는 TM 만 수정 가능
     // 볼 수 있는 Task 의 Todo 를 상태별로 센다
     @Override
-    public WorkspaceProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId) {
+    public TodoProgressDto getWorkspaceProgress(Long workspaceId, Long requesterId) {
         taskAuthorityUtil.validateWorkspaceMember(workspaceId, requesterId);
 
         Specification<Todo> visible = TodoSpecifications.inWorkspace(workspaceId);
@@ -133,8 +135,11 @@ public class TaskServiceImpl implements TaskService {
             visible = visible.and(TodoSpecifications.inTaskParticipatedBy(requesterId));
         }
 
-        Specification<Todo> scope = visible;
-        return WorkspaceProgressDto.builder()
+        return countProgress(visible);
+    }
+
+    private TodoProgressDto countProgress(Specification<Todo> scope) {
+        return TodoProgressDto.builder()
                 .total(todoRepository.count(scope))
                 .inProgress(countByStatus(scope, TodoStatus.IN_PROGRESS))
                 .waitingReview(countByStatus(scope, TodoStatus.WAITING_REVIEW))
@@ -261,8 +266,18 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskUserResponseDto> getTaskMembers(Long taskId) {
-        return taskUserRepository.findAllByTask(finder.findTaskById(taskId)).stream()
-                .map(taskUserMapper::mapToDto).toList();
+    public PageResponseDto<TaskUserResponseDto> getTaskMembers(Long taskId, Long requesterId,
+                                                               Pageable pageable) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        return PageResponseDto.of(
+                taskUserRepository.findAllByTask_Id(taskId, sortGuard.apply(pageable, TaskUser.class)),
+                taskUserMapper::mapToDto);
+    }
+
+    // Task 의 Todo 를 상태별로 센다
+    @Override
+    public TodoProgressDto getTaskProgress(Long taskId, Long requesterId) {
+        taskAuthorityUtil.validateCanViewTask(finder.findTaskById(taskId), requesterId);
+        return countProgress(TodoSpecifications.inTask(taskId));
     }
 }

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { todoAPI } from '../api/todo';
 import apiClient from '../api/client';
+import usePageParam from '../hooks/usePageParam';
+import Pagination from '../components/Pagination';
 import { useAuthStore } from '../store/authStore';
 
 export default function TodoDetail() {
@@ -26,6 +28,11 @@ export default function TodoDetail() {
   // File 관련 상태 (workId별로 관리)
   const [workFiles, setWorkFiles] = useState({});
 
+  const [workPage, setWorkPage] = usePageParam();
+  const [commentPage, setCommentPage] = usePageParam('commentPage');
+  const [workTotalPages, setWorkTotalPages] = useState(0);
+  const [commentTotalPages, setCommentTotalPages] = useState(0);
+
   // Todo 정보 조회
   useEffect(() => {
     loadTodo();
@@ -35,7 +42,7 @@ export default function TodoDetail() {
   useEffect(() => {
     if (activeTab === 'work') loadWorks();
     else if (activeTab === 'comments') loadComments();
-  }, [activeTab, todoId]);
+  }, [activeTab, todoId, workPage, commentPage]);
 
   const loadTodo = async () => {
     try {
@@ -51,8 +58,11 @@ export default function TodoDetail() {
 
   const loadWorks = async () => {
     try {
-      const { data } = await apiClient.get('/todo/works', { params: { todoId, size: 20 } });
+      const { data } = await apiClient.get('/todo/works', {
+        params: { todoId, page: workPage, size: 20 }
+      });
       setWorks(data.data?.content ?? []);
+      setWorkTotalPages(data.data?.totalPages ?? 0);
     } catch (error) {
       console.error('Failed to load works:', error);
     }
@@ -60,8 +70,11 @@ export default function TodoDetail() {
 
   const loadComments = async () => {
     try {
-      const { data } = await apiClient.get('/todo/comments', { params: { todoId, size: 20 } });
+      const { data } = await apiClient.get('/todo/comments', {
+        params: { todoId, page: commentPage, size: 20 }
+      });
       setComments(data.data?.content ?? []);
+      setCommentTotalPages(data.data?.totalPages ?? 0);
     } catch (error) {
       console.error('Failed to load comments:', error);
     }
@@ -69,10 +82,12 @@ export default function TodoDetail() {
 
   const loadFilesForWork = async (workId) => {
     try {
-      const { data } = await apiClient.get(`/todo/files/work/${workId}`);
+      const { data } = await apiClient.get(`/todo/files/work/${workId}`, {
+        params: { size: 20 }
+      });
       setWorkFiles(prev => ({
         ...prev,
-        [workId]: Array.isArray(data.data) ? data.data : []
+        [workId]: data.data?.content ?? []
       }));
     } catch (error) {
       console.error('Failed to load files for work:', error);
@@ -459,6 +474,8 @@ export default function TodoDetail() {
                 </div>
               )}
             </div>
+
+            <Pagination page={workPage} totalPages={workTotalPages} onChange={setWorkPage} />
           </div>
         )}
 
@@ -544,6 +561,8 @@ export default function TodoDetail() {
                 </div>
               )}
             </div>
+
+            <Pagination page={commentPage} totalPages={commentTotalPages} onChange={setCommentPage} />
           </div>
         )}
       </div>

@@ -6,8 +6,8 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(description = "워크스페이스 진행률")
-public class WorkspaceProgressDto {
+@Schema(description = "할일 진행률")
+public class TodoProgressDto {
 
   @Schema(description = "전체 할일 수")
   private final long total;

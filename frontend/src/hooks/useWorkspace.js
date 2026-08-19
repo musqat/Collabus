@@ -1,12 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { workspaceAPI } from '../api/workspace';
 
-export const useWorkspaces = () => {
+export const useWorkspaces = ({ page = 0 } = {}) => {
   const queryClient = useQueryClient();
 
-  const { data: workspaces, isLoading } = useQuery({
-    queryKey: ['workspaces'],
-    queryFn: workspaceAPI.getJoinedWorkspaces,
+  const { data, isLoading } = useQuery({
+    queryKey: ['workspaces', page],
+    queryFn: () => workspaceAPI.getJoinedWorkspaces({ page }),
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
@@ -46,7 +48,9 @@ export const useWorkspaces = () => {
   });
 
   return {
-    workspaces,
+    workspaces: data?.content ?? [],
+    page: data?.page ?? 0,
+    totalPages: data?.totalPages ?? 0,
     isLoading,
     createWorkspace: createMutation.mutate,
     updateWorkspace: updateMutation.mutate,

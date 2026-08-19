@@ -51,10 +51,18 @@ export const taskAPI = {
     return data;
   },
 
-  // 멤버 목록
-  getMembers: async (taskId) => {
-    const { data } = await apiClient.get(`/tasks/${taskId}/members`);
-    return data.data; // ResponseDto unwrapping
+  // Task 참여자 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
+  getMembers: async (taskId, { page = 0, size = 20 } = {}) => {
+    const { data } = await apiClient.get(`/tasks/${taskId}/members`, {
+      params: { page, size }
+    });
+    return data.data;
+  },
+
+  // Task 진행률. total, inProgress, waitingReview, confirmed 를 받는다
+  getTaskProgress: async (taskId) => {
+    const { data } = await apiClient.get(`/tasks/${taskId}/progress`);
+    return data.data;
   },
 
   // 멤버 추가

@@ -2,13 +2,15 @@ package com.muscat.Collabus.Todo.service;
 
 import com.muscat.Collabus.Todo.model.TodoFileDto;
 import java.util.List;
+import com.muscat.Collabus.common.dto.PageResponseDto;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface TodoFileService {
 
   TodoFileDto createFile(Long workId, Long userId, MultipartFile file);
 
-  List<TodoFileDto> getFilesByWorkId(Long workId, Long userId);
+  PageResponseDto<TodoFileDto> getFilesByWorkId(Long workId, Long userId, Pageable pageable);
 
   TodoFileDto updateFile(Long fileId, Long userId, MultipartFile newFile);
 

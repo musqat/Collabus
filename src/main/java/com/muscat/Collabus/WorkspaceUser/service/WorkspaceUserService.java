@@ -5,15 +5,14 @@ import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.WorkspaceUser.model.WorkspaceUserResponseDto;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 
-import java.util.List;
-
 public interface WorkspaceUserService {
 
     // 워크스페이스에 속한 모든 사용자 조회
     PageResponseDto<WorkspaceUserResponseDto> getUsersInWorkspace(Long workspaceId, Long userId, Pageable pageable);
 
     // 내가 속한 모든 워크스페이스 조회
-    List<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId);
+    PageResponseDto<WorkspaceUserResponseDto> getMyJoinedWorkspaces(Long userId,
+        Pageable pageable);
 
     // 구성원 역할 변경
     void updateUserRole(Long workspaceId, Long targetUserId, WorkspaceRole newRole, Long actorId);

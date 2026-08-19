@@ -2,6 +2,7 @@ package com.muscat.Collabus.common.util;
 
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
+import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class TaskAuthorityUtil {
 
   private final WorkspaceUserRepository workspaceUserRepository;
+  private final TaskUserRepository taskUserRepository;
 
   // Task 기반 Workspace Master 권한 검증
   public void validateWorkspaceMaster(Task task, Long userId) {
@@ -76,6 +78,19 @@ public class TaskAuthorityUtil {
   public void validateCanCreateTask(Workspace workspace, Long userId) {
     if (!canCreateTask(workspace, userId)) {
       throw new AccessDeniedException("Task 생성 권한이 없습니다. (MASTER 또는 MANAGER만 가능)");
+    }
+  }
+
+  // 워크스페이스 MASTER·MANAGER 이거나 Task 참여자인지
+  public boolean canViewTask(Task task, Long userId) {
+    return canViewAllTasks(task.getWorkspace().getId(), userId)
+        || taskUserRepository.existsById_TaskIdAndId_UserId(task.getId(), userId);
+  }
+
+  // 볼 수 없으면 AccessDeniedException
+  public void validateCanViewTask(Task task, Long userId) {
+    if (!canViewTask(task, userId)) {
+      throw new AccessDeniedException("Task 를 볼 권한이 없습니다.");
     }
   }
 

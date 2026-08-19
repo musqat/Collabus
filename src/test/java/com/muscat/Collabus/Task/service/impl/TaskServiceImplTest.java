@@ -46,7 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
-import com.muscat.Collabus.Task.model.WorkspaceProgressDto;
+import com.muscat.Collabus.Task.model.TodoProgressDto;
 import com.muscat.Collabus.Todo.entity.Todo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -220,7 +220,7 @@ class TaskServiceImplTest {
         when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
 
         // When
-        TaskResponseDto result = taskService.getTask(taskId);
+        TaskResponseDto result = taskService.getTask(taskId, 1L);
 
         // Then
         assertThat(result).isNotNull();
@@ -236,7 +236,7 @@ class TaskServiceImplTest {
         when(finder.findTaskById(taskId)).thenThrow(new ResourceNotFoundException(CommonResponse.RESOURCE_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> taskService.getTask(taskId))
+        assertThatThrownBy(() -> taskService.getTask(taskId, 1L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -384,7 +384,7 @@ class TaskServiceImplTest {
         when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
                 .thenReturn(10L, 4L, 3L, 2L);
 
-        WorkspaceProgressDto result = taskService.getWorkspaceProgress(workspaceId, 1L);
+        TodoProgressDto result = taskService.getWorkspaceProgress(workspaceId, 1L);
 
         assertThat(result.getTotal()).isEqualTo(10);
         assertThat(result.getInProgress()).isEqualTo(4);
@@ -549,20 +549,50 @@ class TaskServiceImplTest {
     void getTaskMembers_Success() {
         // Given
         Long taskId = 1L;
+        Pageable pageable = PageRequest.of(0, 20);
         TaskUser taskUser1 = TaskUser.builder().build();
-        List<TaskUser> taskUsers = Arrays.asList(taskUser1);
         TaskUserResponseDto taskUserResponseDto = TaskUserResponseDto.builder().build();
 
         when(finder.findTaskById(taskId)).thenReturn(task);
-        when(taskUserRepository.findAllByTask(task)).thenReturn(taskUsers);
+        when(taskUserRepository.findAllByTask_Id(taskId, pageable))
+                .thenReturn(new PageImpl<>(List.of(taskUser1), pageable, 1));
         when(taskUserMapper.mapToDto(taskUser1)).thenReturn(taskUserResponseDto);
 
         // When
-        List<TaskUserResponseDto> result = taskService.getTaskMembers(taskId);
+        PageResponseDto<TaskUserResponseDto> result =
+                taskService.getTaskMembers(taskId, 1L, pageable);
 
         // Then
-        assertThat(result).hasSize(1);
-        verify(finder, times(1)).findTaskById(taskId);
-        verify(taskUserRepository, times(1)).findAllByTask(task);
+        assertThat(result.getContent()).hasSize(1);
+        verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, 1L);
+    }
+
+    @Test
+    @DisplayName("볼 수 없는 Task 는 참여자 목록도 막힌다")
+    void getTaskMembers_Fail_CannotView() {
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        doThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."))
+                .when(taskAuthorityUtil).validateCanViewTask(task, 99L);
+
+        assertThatThrownBy(() ->
+                taskService.getTaskMembers(taskId, 99L, PageRequest.of(0, 20)))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Task 진행률은 상태별로 집계된다")
+    void getTaskProgress_Counts() {
+        Long taskId = 1L;
+        when(finder.findTaskById(taskId)).thenReturn(task);
+        when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
+                .thenReturn(9L, 5L, 3L, 1L);
+
+        TodoProgressDto result = taskService.getTaskProgress(taskId, 1L);
+
+        assertThat(result.getTotal()).isEqualTo(9);
+        assertThat(result.getInProgress()).isEqualTo(5);
+        assertThat(result.getWaitingReview()).isEqualTo(3);
+        assertThat(result.getConfirmed()).isEqualTo(1);
     }
 }

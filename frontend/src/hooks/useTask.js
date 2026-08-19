@@ -61,6 +61,36 @@ export const useTasks = (workspaceId, { page = 0, keyword = '' } = {}) => {
   };
 };
 
+// Task 참여자 목록. page 로 페이지를 넘긴다
+export const useTaskMembers = (taskId, { page = 0, size = 20 } = {}) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['task-members', taskId, page, size],
+    queryFn: () => taskAPI.getMembers(taskId, { page, size }),
+    enabled: !!taskId,
+    // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
+    placeholderData: keepPreviousData,
+  });
+
+  return {
+    members: data?.content ?? [],
+    page: data?.page ?? 0,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
+    isLoading,
+  };
+};
+
+// Task 의 Todo 를 상태별로 센 값을 받는다
+export const useTaskProgress = (taskId) => {
+  const { data } = useQuery({
+    queryKey: ['task-progress', taskId],
+    queryFn: () => taskAPI.getTaskProgress(taskId),
+    enabled: !!taskId,
+  });
+
+  return { progress: data ?? { total: 0, inProgress: 0, waitingReview: 0, confirmed: 0 } };
+};
+
 // 볼 수 있는 Task 의 Todo 를 상태별로 센 값을 받는다
 export const useWorkspaceProgress = (workspaceId) => {
   const { data, isLoading } = useQuery({
