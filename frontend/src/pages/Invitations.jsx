@@ -78,7 +78,7 @@ export default function Invitations() {
             {pendingInvitations.map((invitation) => (
               <div
                 key={invitation.inviteId}
-                className="bg-white p-6 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition"
+                className="bg-white p-6 rounded-lg border border-gray-200 hover:border-brand-300 hover:shadow-md transition"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">

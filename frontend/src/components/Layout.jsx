@@ -41,7 +41,7 @@ export default function Layout({ children }) {
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
                 >
                   {/* User Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                     {currentUser?.nickname?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   {/* User Info */}

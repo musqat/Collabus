@@ -202,7 +202,7 @@ export default function TodoDetail() {
               onClick={() => setActiveTab('work')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'work'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-brand-600 text-brand-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -212,7 +212,7 @@ export default function TodoDetail() {
               onClick={() => setActiveTab('comments')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'comments'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-brand-600 text-brand-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -241,7 +241,7 @@ export default function TodoDetail() {
                         : setNewWork({ ...newWork, title: e.target.value })
                       }
                       placeholder="작업 제목"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                       required
                     />
                   </div>
@@ -253,14 +253,14 @@ export default function TodoDetail() {
                         : setNewWork({ ...newWork, content: e.target.value })
                       }
                       placeholder="작업 내용을 상세히 작성하세요..."
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-32"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-32"
                       rows="4"
                     />
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                      className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                     >
                       {editingWork ? '수정' : '등록'}
                     </button>
@@ -291,7 +291,7 @@ export default function TodoDetail() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setEditingWork(work)}
-                              className="text-sm px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                              className="text-sm px-3 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition"
                             >
                               수정
                             </button>
@@ -314,7 +314,7 @@ export default function TodoDetail() {
                         <div className="flex items-center justify-between mb-3">
                           <h5 className="text-sm font-semibold text-gray-700">첨부 파일</h5>
                           {work.authorId === currentUser?.id && (
-                            <label className="text-xs px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition cursor-pointer">
+                            <label className="text-xs px-3 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition cursor-pointer">
                               파일 추가
                               <input
                                 type="file"
@@ -353,7 +353,7 @@ export default function TodoDetail() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleDownloadFile(file)}
-                                    className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                                    className="text-xs px-2 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition"
                                   >
                                     다운로드
                                   </button>
@@ -397,12 +397,12 @@ export default function TodoDetail() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="댓글을 입력하세요..."
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                   rows="3"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                 >
                   댓글 작성
                 </button>
@@ -422,11 +422,11 @@ export default function TodoDetail() {
                         <textarea
                           value={editingComment.content}
                           onChange={(e) => setEditingComment({ ...editingComment, content: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                           rows="2"
                         />
                         <div className="flex gap-2">
-                          <button type="submit" className="text-sm px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                          <button type="submit" className="text-sm px-3 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition">
                             저장
                           </button>
                           <button type="button" onClick={() => setEditingComment(null)} className="text-sm px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
@@ -442,7 +442,7 @@ export default function TodoDetail() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => setEditingComment(comment)}
-                                className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                                className="text-xs px-2 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition"
                               >
                                 수정
                               </button>

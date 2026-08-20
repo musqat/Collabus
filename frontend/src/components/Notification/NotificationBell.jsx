@@ -99,8 +99,8 @@ export default function NotificationBell() {
     switch (type) {
       case 'TASK_ASSIGNED':
         return (
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+          <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
           </div>
@@ -175,7 +175,7 @@ export default function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllAsReadMutation.mutate()}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="text-xs text-brand-600 hover:text-brand-800 font-medium"
               >
                 모두 읽음
               </button>
@@ -194,7 +194,7 @@ export default function NotificationBell() {
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   className={`w-full px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left ${
-                    !notification.isRead ? 'bg-blue-50' : ''
+                    !notification.isRead ? 'bg-brand-50' : ''
                   }`}
                 >
                   {getNotificationIcon(notification.type)}
@@ -207,7 +207,7 @@ export default function NotificationBell() {
                     </p>
                   </div>
                   {!notification.isRead && (
-                    <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-brand-600 rounded-full mt-2 flex-shrink-0"></div>
                   )}
                 </button>
               ))
