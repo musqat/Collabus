@@ -14,7 +14,6 @@ import com.muscat.Collabus.Todo.service.TodoWorkService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
-import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.status.TodoStatus;
 
@@ -32,7 +31,6 @@ public class TodoWorkServiceImpl implements TodoWorkService {
     private final SortGuard sortGuard;
     private final TodoWorkMapper todoWorkMapper;
     private final TodoWorkRepository todoWorkRepository;
-    private final ParticipantUtil participantUtil;
     private final EntityFinderUtil finder;
 
     @Override
@@ -41,7 +39,7 @@ public class TodoWorkServiceImpl implements TodoWorkService {
         Todo todo = finder.findTodoById(todoId);
 
         // 참여자 확인
-        participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
+        taskAuthorityUtil.validateCanViewTask(todo.getTask(), userId);
 
         // 확정된 Todo에는 작업 내용 작성 불가
         if (todo.getStatus() == TodoStatus.CONFIRMED) {

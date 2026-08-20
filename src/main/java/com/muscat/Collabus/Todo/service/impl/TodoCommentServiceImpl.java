@@ -19,7 +19,6 @@ import com.muscat.Collabus.Todo.service.TodoCommentService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.exception.BusinessException;
-import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.TodoResponse;
@@ -44,7 +43,6 @@ public class TodoCommentServiceImpl implements TodoCommentService {
     private final UserRepository userRepository;
     private final TodoCommentRepository commentRepository;
     private final TodoCommentMapper commentMapper;
-    private final ParticipantUtil participantUtil;
     private final NotificationService notificationService;
     private final TaskUserRepository taskUserRepository;
 
@@ -54,7 +52,7 @@ public class TodoCommentServiceImpl implements TodoCommentService {
         Todo todo = todoRepository.findById(todoId)
                 .orElseThrow(() -> new BusinessException(CommonResponse.TODO_NOT_FOUND));
 
-        participantUtil.validateTaskParticipant(todo.getTask().getId(), userId);
+        taskAuthorityUtil.validateCanViewTask(todo.getTask(), userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));

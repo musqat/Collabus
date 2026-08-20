@@ -6,7 +6,7 @@ import com.muscat.Collabus.Todo.model.TodoCommentDto;
 
 public interface TodoCommentService {
 
-    // 댓글을 단다
+    // 댓글을 단다. 볼 수 있는 사람이면 쓸 수 있다
     TodoCommentDto addComment(Long todoId, String content, Long userId);
 
     // Todo 의 댓글 목록

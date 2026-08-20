@@ -523,4 +523,34 @@ class TodoServiceImplTest {
 
         verify(todoRepository, times(0)).save(any(Todo.class));
     }
+
+    @Test
+    @DisplayName("마감일이 Task 마감일보다 늦으면 만들 수 없다")
+    void createTodo_Fail_AfterTaskDueDate() {
+        TodoRequestDto dto = TodoRequestDto.builder()
+                .taskId(1L).title("t").dueDate(LocalDate.now().plusYears(10)).build();
+        when(finder.findTaskById(1L)).thenReturn(task);
+
+        assertThatThrownBy(() -> todoService.createTodo(dto, 1L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("마감일이 오늘보다 이르면 만들 수 없다")
+    void createTodo_Fail_BeforeToday() {
+        TodoRequestDto dto = TodoRequestDto.builder()
+                .taskId(1L).title("t").dueDate(LocalDate.now().minusDays(1)).build();
+        when(finder.findTaskById(1L)).thenReturn(task);
+
+        assertThatThrownBy(() -> todoService.createTodo(dto, 1L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("잘못된 상태 문자열은 거부한다")
+    void getTodosByTask_Fail_InvalidStatusValue() {
+        assertThatThrownBy(() ->
+                todoService.getTodosByTask(1L, 1L, "NOT_A_STATUS", PageRequest.of(0, 20)))
+                .isInstanceOf(BusinessException.class);
+    }
 }
