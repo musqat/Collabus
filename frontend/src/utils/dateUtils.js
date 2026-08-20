@@ -1,6 +1,8 @@
 export function formatDate(dateString) {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('ko-KR', {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -10,9 +12,12 @@ export function formatDate(dateString) {
 export function formatRelativeTime(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
 
+  // 시계 차이로 조금 앞선 값은 방금 전으로 두고, 그보다 멀면 날짜로 보여준다
+  if (seconds < -60) return formatDate(dateString);
   if (seconds < 60) return '방금 전';
   if (seconds < 3600) return `${Math.floor(seconds / 60)}분 전`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}시간 전`;
