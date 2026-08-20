@@ -11,6 +11,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.jwt.JwtUtil;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -61,7 +62,7 @@ public class UserController {
     )
     @GetMapping("/search")
     public ResponseEntity<ResponseDto> searchUsers(@RequestParam String keyword,
-                                                   @PageableDefault(size = 20) Pageable pageable) {
+                                                   @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(
                 new ResponseDto(SUCCESS, userService.searchByNickname(keyword, pageable)));
     }

@@ -9,6 +9,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -74,7 +75,7 @@ public class TodoCommentController {
     )
     public ResponseEntity<ResponseDto> getComments(@RequestParam Long todoId,
                                                    @AuthenticationPrincipal CustomUserDetails userDetails,
-                                                   @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+                                                   @ParameterObject @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
                 todoCommentService.getComments(todoId, userDetails.getUserId(), pageable)));
     }

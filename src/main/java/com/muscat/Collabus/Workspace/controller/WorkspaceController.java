@@ -11,6 +11,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.config.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -78,7 +79,7 @@ public class WorkspaceController {
     @GetMapping("/joined")
     public ResponseEntity<ResponseDto> getJoinedWorkspaces(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
                 workspaceService.getJoinedWorkspaces(userDetails.getUserId(), pageable)));
