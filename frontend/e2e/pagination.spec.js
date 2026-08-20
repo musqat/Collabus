@@ -1,14 +1,16 @@
-import { test, expect, seedWorkspace } from './fixtures';
+import { test, expect, seedManyWorkspaces, seedWorkspace } from './fixtures';
 
 test.describe('페이지네이션과 정렬', () => {
   test('페이지 버튼이 URL 을 바꾸고 새로고침해도 유지된다', async ({ loggedIn: page }) => {
-    // 목록이 그려진 뒤에 페이지네이션이 붙는다
+    // 한 페이지가 20개라 시드만으로는 페이지네이션이 붙지 않는다
+    await seedManyWorkspaces(20);
+    await page.goto('/dashboard');
+
     await expect(page.locator('a[href^="/workspace/"]').first()).toBeVisible();
 
     const pagination = page.locator('nav[aria-label="페이지"]');
-    if (!(await pagination.count())) {
-      test.skip(true, '워크스페이스가 한 페이지에 다 들어간다');
-    }
+    await expect(pagination).toBeVisible();
+
     const next = pagination.getByRole('button', { name: '2', exact: true });
 
     await next.click();

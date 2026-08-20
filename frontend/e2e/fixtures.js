@@ -226,4 +226,34 @@ export async function joinCommentAndWithdraw({ workspaceId, taskId, todoId }, ac
   await api.dispose();
 }
 
+/**
+ * 목록이 한 페이지를 넘도록 워크스페이스를 여러 개 만든다.
+ * 페이지네이션은 데이터가 충분해야만 화면에 붙는다.
+ * 만든 것은 autoCleanup 이 지운다.
+ */
+export async function seedManyWorkspaces(count, account = ACCOUNTS.master) {
+  const api = await request.newContext({ baseURL: API });
+
+  const auth = await api.post('/api/users/login', {
+    data: { email: account.email, password: account.password },
+  });
+  const token = (await auth.json()).data.accessToken;
+  const headers = { Authorization: `Bearer ${token}` };
+  const stamp = Date.now();
+
+  const ids = [];
+  for (let i = 0; i < count; i++) {
+    const res = await api.post('/api/workspaces', {
+      headers,
+      data: { workspaceName: `e2e-page-${stamp}-${i}`, description: 'e2e pagination' },
+    });
+    const id = (await res.json()).data.id;
+    ids.push(id);
+    created.workspaceIds.push(id);
+  }
+
+  await api.dispose();
+  return ids;
+}
+
 export { expect };
