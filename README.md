@@ -62,7 +62,9 @@ docker compose down
 | API | http://localhost:8080 |
 | Swagger | http://localhost:8080/swagger-ui/index.html |
 
-### 로컬 개발
+### 로컬
+
+> Node 22.22.2 이상이 필요합니다. 낮은 버전에서는 `npm ci` 가 `EBADENGINE` 으로 막힙니다.
 
 ```bash
 # 1. MySQL, Redis 컨테이너만 실행 (MySQL 은 호스트 3307 포트)
@@ -88,11 +90,22 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
+# 백엔드 — 단위 + 통합 301개
 ./gradlew build
+
+# 프론트엔드 — 단위 84개
+cd frontend && npm test
+
+# E2E — Playwright 18개 (스택이 떠 있어야 함)
+docker compose up -d --build
+cd frontend && npm run test:e2e
 ```
 
-> 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를 사용하고
-> MySQL 전용 시드(`data.sql`)는 비활성화
+> 백엔드 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를
+> 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증만
+> Testcontainers 로 실제 MySQL 을 띄우며, Docker 가 없으면 건너뜁니다.
+
+> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다.
 
 ---
 
