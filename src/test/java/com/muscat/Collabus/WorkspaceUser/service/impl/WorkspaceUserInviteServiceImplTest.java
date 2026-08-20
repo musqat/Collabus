@@ -1,10 +1,19 @@
 package com.muscat.Collabus.WorkspaceUser.service.impl;
 
+import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
+import java.util.Optional;
+import com.muscat.Collabus.enums.role.WorkspaceRole;
+import com.muscat.Collabus.common.exception.BusinessException;
+import com.muscat.Collabus.WorkspaceUser.model.InviteRequestDto;
+import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUserPk;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.User.repository.UserRepository;
@@ -33,6 +42,11 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WorkspaceUserInviteService 단위 테스트")
 class WorkspaceUserInviteServiceImplTest {
+
+  @Mock
+
+  private TaskAuthorityUtil taskAuthorityUtil;
+
 
   @Mock
 
@@ -98,5 +112,61 @@ class WorkspaceUserInviteServiceImplTest {
         .findAllByInviteeIdAndStatus(eq(1L), eq(InviteStatus.PENDING), captor.capture());
     assertThat(captor.getValue().getPageNumber()).isEqualTo(2);
     assertThat(captor.getValue().getPageSize()).isEqualTo(5);
+  }
+
+  @Test
+  @DisplayName("자기 자신은 초대할 수 없다")
+  void invite_Fail_Self() {
+    InviteRequestDto dto = new InviteRequestDto(1L, WorkspaceRole.MEMBER);
+
+    assertThatThrownBy(() -> inviteService.inviteUserToWorkspace(1L, 10L, dto))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    verify(inviteRepository, times(0)).save(any());
+  }
+
+  @Test
+  @DisplayName("이미 멤버면 초대할 수 없다")
+  void invite_Fail_AlreadyMember() {
+    InviteRequestDto dto = new InviteRequestDto(2L, WorkspaceRole.MEMBER);
+    when(workspaceUserRepository.existsById(new WorkspaceUserPk(10L, 2L))).thenReturn(true);
+
+    assertThatThrownBy(() -> inviteService.inviteUserToWorkspace(1L, 10L, dto))
+        .isInstanceOf(BusinessException.class);
+
+    verify(inviteRepository, times(0)).save(any());
+  }
+
+  @Test
+  @DisplayName("대기 중 초대가 있으면 다시 초대할 수 없다")
+  void invite_Fail_AlreadyPending() {
+    InviteRequestDto dto = new InviteRequestDto(2L, WorkspaceRole.MEMBER);
+    when(workspaceUserRepository.existsById(new WorkspaceUserPk(10L, 2L))).thenReturn(false);
+    when(inviteRepository.existsByWorkspaceIdAndInviteeIdAndStatus(10L, 2L, InviteStatus.PENDING))
+        .thenReturn(true);
+
+    assertThatThrownBy(() -> inviteService.inviteUserToWorkspace(1L, 10L, dto))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  @DisplayName("이미 처리된 초대는 다시 수락할 수 없다")
+  void acceptInvite_Fail_AlreadyProcessed() {
+    WorkspaceInvite invite = WorkspaceInvite.builder().status(InviteStatus.ACCEPTED).build();
+    when(inviteRepository.findByIdAndInviteeId(1L, 2L)).thenReturn(Optional.of(invite));
+
+    assertThatThrownBy(() -> inviteService.acceptInvite(1L, 2L))
+        .isInstanceOf(IllegalStateException.class);
+
+    verify(workspaceUserRepository, times(0)).save(any());
+  }
+
+  @Test
+  @DisplayName("본인에게 온 초대가 아니면 수락할 수 없다")
+  void acceptInvite_Fail_NotMine() {
+    when(inviteRepository.findByIdAndInviteeId(1L, 99L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> inviteService.acceptInvite(1L, 99L))
+        .isInstanceOf(BusinessException.class);
   }
 }

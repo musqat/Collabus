@@ -594,4 +594,153 @@ class TaskServiceImplTest {
         assertThat(result.getWaitingReview()).isEqualTo(3);
         assertThat(result.getConfirmed()).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("이미 참여한 사용자는 다시 추가할 수 없다")
+    void assignUserToTask_Fail_AlreadyMember() {
+        when(finder.findTaskById(1L)).thenReturn(task);
+        when(finder.findUserById(2L)).thenReturn(user);
+        when(taskUserRepository.existsByTaskAndUser(task, user)).thenReturn(true);
+
+        assertThatThrownBy(() -> taskService.assignUserToTask(1L, 2L, 1L))
+                .isInstanceOf(BusinessException.class);
+
+        verify(taskUserRepository, times(0)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("Task Manager 는 자기 자신을 뺄 수 없다")
+    void removeUserFromTask_Fail_ManagerSelf() {
+        when(finder.findTaskById(1L)).thenReturn(task);
+        when(taskAuthorityUtil.isTaskManager(task, 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> taskService.removeUserFromTask(1L, 1L, 1L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("검색어가 비어 있으면 조건을 더하지 않는다")
+    void getTasksByWorkspace_BlankKeyword() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(taskAuthorityUtil.canViewAllTasks(1L, 1L)).thenReturn(true);
+        when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        taskService.getTasksByWorkspace(1L, 1L, "   ", pageable);
+
+        verify(taskRepository, times(1))
+                .findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
+    }
+
+    @Test
+    @DisplayName("워크스페이스 진행률도 MEMBER 는 참여한 Task 만 센다")
+    void getWorkspaceProgress_MemberScope() {
+        when(taskAuthorityUtil.canViewAllTasks(1L, 2L)).thenReturn(false);
+        when(todoRepository.count(ArgumentMatchers.<Specification<Todo>>any()))
+                .thenReturn(3L, 1L, 1L, 1L);
+
+        TodoProgressDto result = taskService.getWorkspaceProgress(1L, 2L);
+
+        assertThat(result.getTotal()).isEqualTo(3);
+    }
+
+    private TaskRequestDto request(Long managerId, List<Long> memberIds) {
+        TaskRequestDto dto = new TaskRequestDto();
+        dto.setTitle("t");
+        dto.setWorkspaceId(1L);
+        dto.setManagerId(managerId);
+        dto.setMemberIds(memberIds);
+        return dto;
+    }
+
+    @Test
+    @DisplayName("managerId 를 주면 그 사람이 Task Manager 가 되고 알림을 받는다")
+    void createTask_WithExplicitManager() {
+        Long creatorId = 1L;
+        Long managerId = 7L;
+        User manager = User.builder().id(managerId).build();
+        TaskRequestDto dto = request(managerId, null);
+
+        when(finder.findUserById(creatorId)).thenReturn(user);
+        when(finder.findUserById(managerId)).thenReturn(manager);
+        when(finder.findWorkspaceById(1L)).thenReturn(workspace);
+        when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        taskService.createTask(dto, creatorId);
+
+        verify(notificationService, times(1)).createNotification(
+                eq(managerId), any(), ArgumentMatchers.anyString(), any());
+    }
+
+    @Test
+    @DisplayName("멤버 목록에 Task Manager 가 있으면 건너뛴다")
+    void createTask_SkipsManagerInMembers() {
+        Long creatorId = 1L;
+        TaskRequestDto dto = request(null, List.of(creatorId));
+
+        when(finder.findUserById(creatorId)).thenReturn(user);
+        when(finder.findWorkspaceById(1L)).thenReturn(workspace);
+        when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        taskService.createTask(dto, creatorId);
+
+        verify(taskUserRepository, times(1)).save(any(TaskUser.class));
+        verify(notificationService, times(0)).createNotification(
+                any(), any(), ArgumentMatchers.anyString(), any());
+    }
+
+    @Test
+    @DisplayName("추가한 멤버는 TaskUser 로 담기고 알림을 받는다")
+    void createTask_AddsMembers() {
+        Long creatorId = 1L;
+        Long memberId = 8L;
+        TaskRequestDto dto = request(null, List.of(memberId));
+
+        when(finder.findUserById(creatorId)).thenReturn(user);
+        when(finder.findUserById(memberId)).thenReturn(User.builder().id(memberId).build());
+        when(finder.findWorkspaceById(1L)).thenReturn(workspace);
+        when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        taskService.createTask(dto, creatorId);
+
+        verify(taskUserRepository, times(2)).save(any(TaskUser.class));
+        verify(notificationService, times(1)).createNotification(
+                eq(memberId), any(), ArgumentMatchers.anyString(), any());
+    }
+
+    @Test
+    @DisplayName("멤버 목록이 비어 있으면 추가로 담지 않는다")
+    void createTask_EmptyMembers() {
+        Long creatorId = 1L;
+        TaskRequestDto dto = request(null, List.of());
+
+        when(finder.findUserById(creatorId)).thenReturn(user);
+        when(finder.findWorkspaceById(1L)).thenReturn(workspace);
+        when(taskMapper.mapToEntity(any(), any(), any())).thenReturn(task);
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(taskMapper.mapToDto(task)).thenReturn(taskResponseDto);
+
+        taskService.createTask(dto, creatorId);
+
+        verify(taskUserRepository, times(1)).save(any(TaskUser.class));
+    }
+
+    @Test
+    @DisplayName("본인을 추가하면 알림을 보내지 않는다")
+    void assignUserToTask_SelfNoNotification() {
+        when(finder.findTaskById(1L)).thenReturn(task);
+        when(finder.findUserById(1L)).thenReturn(user);
+        when(taskUserRepository.existsByTaskAndUser(task, user)).thenReturn(false);
+
+        taskService.assignUserToTask(1L, 1L, 1L);
+
+        verify(notificationService, times(0)).createNotification(
+                any(), any(), ArgumentMatchers.anyString(), any());
+    }
 }
