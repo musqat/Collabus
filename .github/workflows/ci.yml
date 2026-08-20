@@ -40,7 +40,7 @@ jobs:
           path: build/reports/jacoco/test/html
 
   frontend:
-    name: Frontend build
+    name: Frontend build & test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,6 +57,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Unit test
+        run: npm test
 
       - name: Build
         run: npm run build
