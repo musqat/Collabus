@@ -42,3 +42,6 @@ backups/
 
 # 백업 스크립트와 결과물은 로컬에만 둔다
 scripts/
+
+# 데모 GIF 중간 산출물
+frontend/.demo-frames/

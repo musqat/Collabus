@@ -6,7 +6,7 @@
 
 ## Demo
 
-> 로그인 → 대시보드 → 워크스페이스 → Task → Todo 확인 → 검수 승인 → 담당자 변경 → 멤버 관리
+> 데모 로그인 → 대시보드 → 워크스페이스 → Task → Todo 확인 → 검수 승인 → 담당자 변경 → 멤버 관리
 
 <img src="docs/screenshots/Animation.gif" width="100%" alt="Collabus Demo"/>
 
@@ -28,16 +28,21 @@
 
 더미 데이터가 자동으로 삽입됩니다. 아래 계정으로 바로 로그인 가능합니다.
 
+로그인 화면의 **데모 계정으로 둘러보기** 를 누르면 `user1@test.com` 으로 바로 들어갑니다.
+
 | 이메일 | 비밀번호 | 소속 워크스페이스 |
 |--------|---------|-----------------|
-| `user1@test.com` | `password` | 마케팅팀 (MASTER) · 개발팀 (MASTER) · 디자인팀 (MASTER) |
-| `user2@test.com` | `password` | 마케팅팀 (MASTER) |
-| `user3@test.com` | `password` | 마케팅팀 (MANAGER) |
-| `user5@test.com` | `password` | 개발팀 (MASTER) |
-| `user8@test.com` | `password` | 디자인팀 (MASTER) |
-| `admin@collabus.com` | `password` | - |
+| `user1@test.com` | `password` | 마케팅팀 (MASTER) · 개발팀 (MANAGER) · 디자인팀 (MEMBER) |
+| `user2@test.com` | `password` | 마케팅팀 (MANAGER) |
+| `user3@test.com` | `password` | 마케팅팀 (MEMBER) |
+| `user4@test.com` | `password` | 개발팀 (MASTER) |
+| `user7@test.com` | `password` | 개발팀 (MEMBER) · 디자인팀 (MASTER) |
+| `admin@collabus.com` | `password` | 세 워크스페이스 모두 (MASTER) |
 
-> `user1` ~ `user10` 모두 비밀번호 `password` 동일
+> `user1` ~ `user9` 모두 비밀번호 `password` 동일
+>
+> `user1` 은 워크스페이스마다 권한이 달라 MASTER·MANAGER·MEMBER 가 각각 무엇을
+> 할 수 있는지 한 계정으로 확인할 수 있습니다.
 
 ---
 
