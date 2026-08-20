@@ -13,6 +13,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -90,7 +91,7 @@ public class TaskController {
     public ResponseEntity<ResponseDto> getTasksByWorkspace(@PathVariable Long workspaceId,
                                                            @RequestParam(required = false) String keyword,
                                                            @AuthenticationPrincipal CustomUserDetails userDetails,
-                                                           @PageableDefault(size = 20, sort = "dueDate") Pageable pageable) {
+                                                           @ParameterObject @PageableDefault(size = 20, sort = "dueDate") Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
                 taskService.getTasksByWorkspace(workspaceId, userDetails.getUserId(), keyword,
                         pageable)));
@@ -211,7 +212,7 @@ public class TaskController {
     )
     public ResponseEntity<ResponseDto> getMembers(@PathVariable Long taskId,
                                                   @AuthenticationPrincipal CustomUserDetails userDetails,
-                                                  @PageableDefault(size = 20) Pageable pageable) {
+                                                  @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
                 taskService.getTaskMembers(taskId, userDetails.getUserId(), pageable)));
     }

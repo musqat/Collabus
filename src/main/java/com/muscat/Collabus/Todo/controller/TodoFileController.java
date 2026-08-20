@@ -8,6 +8,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -68,7 +69,7 @@ public class TodoFileController {
     public ResponseEntity<ResponseDto> getFilesByWork(
             @PathVariable Long workId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
         return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
                 todoFileService.getFilesByWorkId(workId, userDetails.getUserId(), pageable)));

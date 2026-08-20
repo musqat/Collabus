@@ -7,6 +7,7 @@ import com.muscat.Collabus.common.dto.ResponseDto;
 import com.muscat.Collabus.config.security.CustomUserDetails;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,7 +43,7 @@ public class NotificationController {
   )
   public ResponseEntity<ResponseDto> getUserNotifications(
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      @PageableDefault(size = 20) Pageable pageable) {
+      @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
         notificationService.getUserNotifications(userDetails.getUserId(), pageable)));
   }
@@ -57,7 +58,7 @@ public class NotificationController {
   )
   public ResponseEntity<ResponseDto> getUnreadNotifications(
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      @PageableDefault(size = 20) Pageable pageable) {
+      @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
         notificationService.getUnreadNotifications(userDetails.getUserId(), pageable)));
   }
