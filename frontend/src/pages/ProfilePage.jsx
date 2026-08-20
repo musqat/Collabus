@@ -118,7 +118,7 @@ export default function ProfilePage() {
                 value={newNickname}
                 onChange={(e) => setNewNickname(e.target.value)}
                 placeholder="새로운 닉네임을 입력하세요"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
               <p className="text-sm text-gray-500 mt-2">
                 닉네임을 변경하면 자동으로 로그아웃됩니다.
@@ -127,7 +127,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={isNicknameLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition disabled:bg-gray-400"
             >
               {isNicknameLoading ? '변경 중...' : '닉네임 변경'}
             </button>
@@ -148,7 +148,7 @@ export default function ProfilePage() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="현재 비밀번호"
                 autoComplete="current-password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div className="mb-4">
@@ -160,7 +160,7 @@ export default function ProfilePage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="새 비밀번호"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div className="mb-4">
@@ -172,13 +172,13 @@ export default function ProfilePage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="비밀번호 확인"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <button
               type="submit"
               disabled={isPasswordLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition disabled:bg-gray-400"
             >
               {isPasswordLoading ? '변경 중...' : '비밀번호 변경'}
             </button>

@@ -245,7 +245,7 @@ export default function TaskDetail() {
             {(task?.managerId === currentUser?.id || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
               <button
                 onClick={handleEditTask}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition text-sm font-medium"
               >
                 작업 수정
               </button>
@@ -281,7 +281,7 @@ export default function TaskDetail() {
               onClick={() => setActiveTab('todos')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'todos'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-brand-600 text-brand-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -291,7 +291,7 @@ export default function TaskDetail() {
               onClick={() => setActiveTab('members')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'members'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-brand-600 text-brand-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -361,7 +361,7 @@ export default function TaskDetail() {
               {(isTaskManager || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
                 <button
                   onClick={() => setShowModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition text-sm font-medium"
                 >
                   <span>+</span>
                   <span>Todo 추가</span>
@@ -392,7 +392,7 @@ export default function TaskDetail() {
                             <div>
                               <button
                                 onClick={() => navigate(`/todo/${todo.id}`)}
-                                className="font-medium text-gray-900 hover:text-blue-600 text-left transition"
+                                className="font-medium text-gray-900 hover:text-brand-600 text-left transition"
                               >
                                 {todo.title}
                               </button>
@@ -406,7 +406,7 @@ export default function TaskDetail() {
                               <select
                                 value={todo.assigneeId}
                                 onChange={(e) => handleChangeAssignee(todo.id, parseInt(e.target.value))}
-                                className="text-sm px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="text-sm px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
                               >
                                 {Array.isArray(taskMembers) && taskMembers.map((member) => (
                                   <option key={member.userId} value={member.userId}>
@@ -450,7 +450,7 @@ export default function TaskDetail() {
                                 <>
                                   <button
                                     onClick={() => handleEditTodo(todo)}
-                                    className="text-xs px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                                    className="text-xs px-3 py-1 rounded bg-brand-100 text-brand-700 hover:bg-brand-200 transition"
                                   >
                                     수정
                                   </button>
@@ -479,7 +479,7 @@ export default function TaskDetail() {
                 {(isTaskManager || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
                   <button
                     onClick={() => setShowModal(true)}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
+                    className="text-brand-600 hover:text-brand-700 text-sm"
                   >
                     첫 Todo를 추가해보세요
                   </button>
@@ -497,7 +497,7 @@ export default function TaskDetail() {
                 {isTaskManager && (
                   <button
                     onClick={() => setShowAddMemberModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition text-sm font-medium"
                   >
                     <span>+</span>
                     <span>멤버 추가</span>
@@ -520,7 +520,7 @@ export default function TaskDetail() {
                     <tr key={member.userId} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                          <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-medium text-sm">
                             {member.displayName?.charAt(0).toUpperCase()}
                           </div>
                           <span className="text-gray-900">
@@ -586,7 +586,7 @@ export default function TaskDetail() {
                   type="text"
                   value={newTodo.title}
                   onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="제목을 입력하세요"
                   required
                 />
@@ -599,7 +599,7 @@ export default function TaskDetail() {
                 <textarea
                   value={newTodo.description}
                   onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="설명 (선택)"
                   rows="3"
                 />
@@ -612,7 +612,7 @@ export default function TaskDetail() {
                 <select
                   value={newTodo.assigneeId}
                   onChange={(e) => setNewTodo({ ...newTodo, assigneeId: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 >
                   <option value="">미정 (본인)</option>
                   {Array.isArray(taskMembers) && taskMembers.map((member) => (
@@ -631,7 +631,7 @@ export default function TaskDetail() {
                   type="date"
                   value={newTodo.dueDate}
                   onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -639,7 +639,7 @@ export default function TaskDetail() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                 >
                   생성
                 </button>
@@ -686,7 +686,7 @@ export default function TaskDetail() {
                           key={member.userId}
                           className={`flex items-center gap-3 py-2 px-3 rounded-lg cursor-pointer transition ${
                             selectedMember?.userId === member.userId
-                              ? 'bg-blue-50 border border-blue-300'
+                              ? 'bg-brand-50 border border-brand-300'
                               : 'hover:bg-gray-50'
                           }`}
                         >
@@ -695,10 +695,10 @@ export default function TaskDetail() {
                             name="member"
                             checked={selectedMember?.userId === member.userId}
                             onChange={() => setSelectedMember(member)}
-                            className="w-4 h-4 text-blue-600"
+                            className="w-4 h-4 text-brand-600"
                           />
                           <div className="flex items-center gap-3 flex-1">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                            <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-medium text-sm">
                               {member.displayName?.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -721,7 +721,7 @@ export default function TaskDetail() {
                 <button
                   onClick={handleAddMember}
                   disabled={!selectedMember}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   추가
                 </button>
@@ -766,7 +766,7 @@ export default function TaskDetail() {
                   type="text"
                   value={editingTodo.title}
                   onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="제목을 입력하세요"
                   required
                 />
@@ -779,7 +779,7 @@ export default function TaskDetail() {
                 <textarea
                   value={editingTodo.description}
                   onChange={(e) => setEditingTodo({ ...editingTodo, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="설명 (선택)"
                   rows="3"
                 />
@@ -793,7 +793,7 @@ export default function TaskDetail() {
                   type="date"
                   value={editingTodo.dueDate}
                   onChange={(e) => setEditingTodo({ ...editingTodo, dueDate: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -801,7 +801,7 @@ export default function TaskDetail() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                 >
                   수정
                 </button>
@@ -847,7 +847,7 @@ export default function TaskDetail() {
                   type="text"
                   value={editingTask.title}
                   onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="작업 제목"
                   required
                 />
@@ -860,7 +860,7 @@ export default function TaskDetail() {
                 <textarea
                   value={editingTask.description}
                   onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="설명 (선택)"
                   rows="3"
                 />
@@ -874,7 +874,7 @@ export default function TaskDetail() {
                   type="date"
                   value={editingTask.dueDate}
                   onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -882,7 +882,7 @@ export default function TaskDetail() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                 >
                   수정
                 </button>

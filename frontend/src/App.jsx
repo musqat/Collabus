@@ -44,6 +44,12 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function RootRedirect() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
+
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -130,7 +136,8 @@ function App() {
           />
 
           {/* Default Route */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* 로그인 여부에 따라 한 번만 보낸다. 대시보드를 거쳤다 튕기지 않는다 */}
+          <Route path="/" element={<RootRedirect />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <ToastContainer />

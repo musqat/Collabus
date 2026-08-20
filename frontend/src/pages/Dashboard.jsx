@@ -43,7 +43,7 @@ export default function Dashboard() {
           <h2 className="text-3xl font-bold text-gray-800">대시보드</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium"
+            className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-lg hover:bg-brand-700 transition font-medium"
           >
             <span>+</span>
             <span>새 워크스페이스</span>
@@ -62,7 +62,7 @@ export default function Dashboard() {
               <Link
                 key={workspace.id}
                 to={`/workspace/${workspace.id}`}
-                className="bg-white p-6 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-lg transition transform hover:-translate-y-1"
+                className="bg-white p-6 rounded-lg border border-gray-200 hover:border-brand-300 hover:shadow-lg transition transform hover:-translate-y-1"
               >
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {workspace.workspaceName}
@@ -86,7 +86,7 @@ export default function Dashboard() {
             </p>
             <button
               onClick={() => setShowModal(true)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-brand-600 hover:text-brand-700 font-medium"
             >
               첫 워크스페이스를 만들어보세요
             </button>
@@ -117,7 +117,7 @@ export default function Dashboard() {
                   type="text"
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="예: 마케팅팀"
                   required
                 />
@@ -130,7 +130,7 @@ export default function Dashboard() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="워크스페이스 설명"
                   rows="3"
                 />
@@ -139,7 +139,7 @@ export default function Dashboard() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition font-medium"
                 >
                   생성
                 </button>

@@ -17,7 +17,7 @@ export default function Pagination({ page, totalPages, onChange }) {
 
   const base = 'min-w-9 h-9 px-3 rounded-lg border text-sm font-medium transition';
   const idle = 'border-gray-300 text-gray-700 hover:bg-gray-50';
-  const active = 'border-blue-600 bg-blue-600 text-white';
+  const active = 'border-brand-600 bg-brand-600 text-white';
   const disabled = 'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white';
 
   return (
