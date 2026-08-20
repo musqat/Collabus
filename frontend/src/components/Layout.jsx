@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ErrorBoundary from './ErrorBoundary';
 import Sidebar from './Sidebar';
 import NotificationBell from './Notification/NotificationBell';
 import { useNavigate } from 'react-router-dom';
@@ -120,7 +121,8 @@ export default function Layout({ children }) {
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto">
-          {children}
+          {/* 본문이 터져도 사이드바와 헤더는 남는다 */}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
     </div>

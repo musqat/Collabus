@@ -1,4 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { showToast } from '../store/toastStore';
+import { errorMessage } from '../api/errorMessage';
 import { todoAPI } from '../api/todo';
 
 export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
@@ -21,10 +23,10 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
-      alert('Todo가 생성되었습니다.');
+      showToast.success('Todo가 생성되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Todo 생성 실패');
+      showToast.error(errorMessage(error, 'Todo 생성 실패'));
     }
   });
 
@@ -34,10 +36,10 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
-      alert('Todo가 수정되었습니다.');
+      showToast.success('Todo가 수정되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Todo 수정 실패');
+      showToast.error(errorMessage(error, 'Todo 수정 실패'));
     }
   });
 
@@ -46,10 +48,10 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
-      alert('Todo가 삭제되었습니다.');
+      showToast.success('Todo가 삭제되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Todo 삭제 실패');
+      showToast.error(errorMessage(error, 'Todo 삭제 실패'));
     }
   });
 
@@ -58,10 +60,10 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
-      alert('Todo가 완료 처리되었습니다.');
+      showToast.success('Todo가 완료 처리되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Todo 완료 처리 실패');
+      showToast.error(errorMessage(error, 'Todo 완료 처리 실패'));
     }
   });
 
@@ -70,10 +72,10 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
-      alert('Todo가 최종 승인되었습니다.');
+      showToast.success('Todo가 최종 승인되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Todo 승인 실패');
+      showToast.error(errorMessage(error, 'Todo 승인 실패'));
     }
   });
 

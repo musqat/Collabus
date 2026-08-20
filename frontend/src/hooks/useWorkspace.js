@@ -1,4 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { showToast } from '../store/toastStore';
+import { errorMessage } from '../api/errorMessage';
 import { workspaceAPI } from '../api/workspace';
 
 export const useWorkspaces = ({ page = 0, sort } = {}) => {
@@ -17,10 +19,10 @@ export const useWorkspaces = ({ page = 0, sort } = {}) => {
       workspaceAPI.create(workspaceName, description),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      alert('워크스페이스가 생성되었습니다.');
+      showToast.success('워크스페이스가 생성되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || '워크스페이스 생성 실패');
+      showToast.error(errorMessage(error, '워크스페이스 생성 실패'));
     }
   });
 
@@ -29,10 +31,10 @@ export const useWorkspaces = ({ page = 0, sort } = {}) => {
       workspaceAPI.update(id, workspaceName, description),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      alert('워크스페이스가 수정되었습니다.');
+      showToast.success('워크스페이스가 수정되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || '워크스페이스 수정 실패');
+      showToast.error(errorMessage(error, '워크스페이스 수정 실패'));
     }
   });
 
@@ -40,10 +42,10 @@ export const useWorkspaces = ({ page = 0, sort } = {}) => {
     mutationFn: (id) => workspaceAPI.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      alert('워크스페이스가 삭제되었습니다.');
+      showToast.success('워크스페이스가 삭제되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || '워크스페이스 삭제 실패');
+      showToast.error(errorMessage(error, '워크스페이스 삭제 실패'));
     }
   });
 

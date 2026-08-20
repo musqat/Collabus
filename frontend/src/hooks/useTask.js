@@ -1,4 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { showToast } from '../store/toastStore';
+import { errorMessage } from '../api/errorMessage';
 import { taskAPI } from '../api/task';
 
 export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => {
@@ -18,10 +20,10 @@ export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['workspace-progress', workspaceId] });
-      alert('Task가 생성되었습니다.');
+      showToast.success('Task가 생성되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Task 생성 실패');
+      showToast.error(errorMessage(error, 'Task 생성 실패'));
     }
   });
 
@@ -30,10 +32,10 @@ export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => 
       taskAPI.update(taskId, title, description, dueDate),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
-      alert('Task가 수정되었습니다.');
+      showToast.success('Task가 수정되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Task 수정 실패');
+      showToast.error(errorMessage(error, 'Task 수정 실패'));
     }
   });
 
@@ -42,10 +44,10 @@ export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['workspace-progress', workspaceId] });
-      alert('Task가 삭제되었습니다.');
+      showToast.success('Task가 삭제되었습니다.');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || 'Task 삭제 실패');
+      showToast.error(errorMessage(error, 'Task 삭제 실패'));
     }
   });
 

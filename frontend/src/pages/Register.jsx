@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { showToast } from '../store/toastStore';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -13,7 +14,7 @@ export default function Register() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      alert('비밀번호가 일치하지 않습니다.');
+      showToast.warning('비밀번호가 일치하지 않습니다.');
       return;
     }
 

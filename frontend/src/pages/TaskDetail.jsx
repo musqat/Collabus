@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { errorMessage } from '../api/errorMessage';
+import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
 import usePageParam from '../hooks/usePageParam';
@@ -99,7 +101,7 @@ export default function TaskDetail() {
     e.preventDefault();
 
     if (!newTodo.title || !newTodo.dueDate) {
-      alert('제목, 마감일은 필수입니다.');
+      showToast.warning('제목, 마감일은 필수입니다.');
       return;
     }
 
@@ -131,19 +133,19 @@ export default function TaskDetail() {
 
   const handleAddMember = async () => {
     if (!selectedMember) {
-      alert('추가할 멤버를 선택하세요.');
+      showToast.warning('추가할 멤버를 선택하세요.');
       return;
     }
 
     try {
       await taskAPI.addMember(taskId, selectedMember.userId);
-      alert('멤버가 추가되었습니다.');
+      showToast.success('멤버가 추가되었습니다.');
       setShowAddMemberModal(false);
       setSelectedMember(null);
 
       queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '멤버 추가 실패');
+      showToast.error(errorMessage(error, '멤버 추가 실패'));
     }
   };
 
@@ -159,11 +161,11 @@ export default function TaskDetail() {
 
     try {
       await taskAPI.removeMember(taskId, userId);
-      alert('멤버가 제거되었습니다.');
+      showToast.success('멤버가 제거되었습니다.');
 
       queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '멤버 제거 실패');
+      showToast.error(errorMessage(error, '멤버 제거 실패'));
     }
   };
 
@@ -173,12 +175,12 @@ export default function TaskDetail() {
   const handleChangeAssignee = async (todoId, newAssigneeId) => {
     try {
       await todoAPI.changeAssignee(todoId, newAssigneeId);
-      alert('담당자가 변경되었습니다.');
+      showToast.success('담당자가 변경되었습니다.');
 
       // Reload todos
       window.location.reload();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '담당자 변경 실패');
+      showToast.error(errorMessage(error, '담당자 변경 실패'));
     }
   };
 
@@ -197,14 +199,14 @@ export default function TaskDetail() {
 
     try {
       await todoAPI.update(editingTodo.id, editingTodo.title, editingTodo.description, editingTodo.dueDate);
-      alert('Todo가 수정되었습니다.');
+      showToast.success('Todo가 수정되었습니다.');
       setShowEditModal(false);
       setEditingTodo(null);
 
       // Reload todos
       window.location.reload();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || 'Todo 수정 실패');
+      showToast.error(errorMessage(error, 'Todo 수정 실패'));
     }
   };
 
@@ -215,12 +217,12 @@ export default function TaskDetail() {
 
     try {
       await todoAPI.delete(todoId);
-      alert('Todo가 삭제되었습니다.');
+      showToast.success('Todo가 삭제되었습니다.');
 
       // Reload todos
       window.location.reload();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || 'Todo 삭제 실패');
+      showToast.error(errorMessage(error, 'Todo 삭제 실패'));
     }
   };
 
@@ -238,12 +240,12 @@ export default function TaskDetail() {
     try {
       const dueDateOnly = editingTask.dueDate ? editingTask.dueDate.split('T')[0] : editingTask.dueDate;
       await taskAPI.update(taskId, editingTask.title, editingTask.description, dueDateOnly);
-      alert('Task가 수정되었습니다.');
+      showToast.success('Task가 수정되었습니다.');
       setShowTaskEditModal(false);
       setEditingTask(null);
       window.location.reload();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || 'Task 수정 실패');
+      showToast.error(errorMessage(error, 'Task 수정 실패'));
     }
   };
 

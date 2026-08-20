@@ -11,7 +11,6 @@ test.describe('생성과 상태 전이', () => {
     await page.getByPlaceholder('Task 제목을 입력하세요').fill(title);
     await page.locator('input[type="date"]').fill('2030-12-31');
 
-    page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: '생성', exact: true }).click();
 
     // 목록에 바로 붙는다
@@ -30,11 +29,9 @@ test.describe('생성과 상태 전이', () => {
     await page.goto(`/task/${taskId}`);
     await expect(page.getByRole('heading', { name: 'Todo', exact: true })).toBeVisible();
 
-    page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: '작업완료' }).click();
     await expect(page.getByRole('button', { name: '승인' })).toBeVisible();
 
-    page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: '승인' }).click();
 
     // 진행률 집계가 완료로 바뀐다
