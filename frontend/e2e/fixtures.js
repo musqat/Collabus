@@ -88,7 +88,7 @@ export async function seedWorkspace(account = ACCOUNTS.master) {
     headers,
     data: { workspaceName: `e2e-${stamp}`, description: 'e2e' },
   });
-  const workspaceId = (await ws.json()).id;
+  const workspaceId = (await ws.json()).data.id;
 
   const task = await api.post('/api/tasks', {
     headers,

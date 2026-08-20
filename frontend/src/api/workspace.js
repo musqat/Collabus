@@ -7,26 +7,20 @@ export const workspaceAPI = {
       workspaceName,
       description
     });
-    return data;
+    return data.data;
   },
 
-  // 내가 만든 워크스페이스 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
-  getMyWorkspaces: async ({ page = 0, size = 20 } = {}) => {
-    const { data } = await apiClient.get('/workspaces/my', { params: { page, size } });
-    return data;
-  },
-
-  // 참여 중인 워크스페이스 목록. WorkspaceController 는 ResponseDto 없이 직접 반환한다
+  // 참여 중인 워크스페이스 목록. content 와 함께 page, totalPages 를 넘긴다
   getJoinedWorkspaces: async ({ page = 0, size = 20, sort } = {}) => {
     const { data } = await apiClient.get('/workspaces/joined',
       { params: { page, size, sort: sort || undefined } });
-    return data;
+    return data.data;
   },
 
   // 워크스페이스 상세
   getById: async (id) => {
     const { data } = await apiClient.get(`/workspaces/${id}`);
-    return data;
+    return data.data;
   },
 
   // 워크스페이스 수정
@@ -35,13 +29,13 @@ export const workspaceAPI = {
       workspaceName,
       description
     });
-    return data;
+    return data.data;
   },
 
   // 워크스페이스 삭제
   delete: async (id) => {
     const { data } = await apiClient.delete(`/workspaces/${id}`);
-    return data;
+    return data.data;
   },
 
   // 멤버 목록
@@ -58,25 +52,13 @@ export const workspaceAPI = {
       userId,
       role
     });
-    return data;
-  },
-
-  // 초대 수락
-  acceptInvite: async (inviteId) => {
-    const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/accept`);
-    return data;
-  },
-
-  // 초대 거절
-  rejectInvite: async (inviteId) => {
-    const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/reject`);
-    return data;
+    return data.data;
   },
 
   // 멤버 제거
   removeMember: async (workspaceId, userId) => {
     const { data } = await apiClient.delete(`/workspaces/${workspaceId}/users/${userId}`);
-    return data;
+    return data.data;
   },
 
   // 멤버 역할 변경
@@ -84,7 +66,7 @@ export const workspaceAPI = {
     const { data } = await apiClient.put(`/workspaces/${workspaceId}/users/${userId}/role`, null, {
       params: { newRole: role }
     });
-    return data;
+    return data.data;
   },
 
   // 받은 초대 목록. content 와 함께 page, totalPages 를 그대로 넘긴다
@@ -95,15 +77,15 @@ export const workspaceAPI = {
     return data.data;
   },
 
-  // 초대 수락 (alias for acceptInvite)
+  // 초대 수락
   acceptInvitation: async (inviteId) => {
     const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/accept`);
-    return data;
+    return data.data;
   },
 
-  // 초대 거절 (alias for rejectInvite)
+  // 초대 거절
   rejectInvitation: async (inviteId) => {
     const { data } = await apiClient.post(`/workspaces/invites/${inviteId}/reject`);
-    return data;
+    return data.data;
   }
 };

@@ -91,7 +91,7 @@ class AuthenticationFlowIntegrationTest {
   @DisplayName("토큰 없이 보호 API 를 호출하면 401")
   void protectedApi_WithoutToken_Returns401() throws Exception {
     // 기본 구현은 403 을 주는데, 클라이언트가 401 에만 재발급을 시도하므로 401 이어야 한다
-    mockMvc.perform(get("/api/workspaces/my"))
+    mockMvc.perform(get("/api/workspaces/joined"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.errorType").value("UNAUTHORIZED"));
   }
@@ -99,7 +99,7 @@ class AuthenticationFlowIntegrationTest {
   @Test
   @DisplayName("위조된 토큰으로 호출하면 401")
   void protectedApi_WithTamperedToken_Returns401() throws Exception {
-    mockMvc.perform(get("/api/workspaces/my")
+    mockMvc.perform(get("/api/workspaces/joined")
             .header("Authorization", "Bearer not-a-real-token"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.errorType").value("UNAUTHORIZED"));
@@ -111,7 +111,7 @@ class AuthenticationFlowIntegrationTest {
     String accessToken = login();
     assertThat(accessToken).isNotBlank();
 
-    mockMvc.perform(get("/api/workspaces/my")
+    mockMvc.perform(get("/api/workspaces/joined")
             .header("Authorization", "Bearer " + accessToken))
         .andExpect(status().isOk());
   }
@@ -135,7 +135,7 @@ class AuthenticationFlowIntegrationTest {
     String accessToken = login();
     when(refreshTokenService.isBlacklisted(accessToken)).thenReturn(true);
 
-    mockMvc.perform(get("/api/workspaces/my")
+    mockMvc.perform(get("/api/workspaces/joined")
             .header("Authorization", "Bearer " + accessToken))
         .andExpect(status().isUnauthorized());
   }

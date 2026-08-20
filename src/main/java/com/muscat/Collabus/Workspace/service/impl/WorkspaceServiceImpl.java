@@ -69,13 +69,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   }
 
   @Override
-  public PageResponseDto<WorkspaceResponseDto> getMyWorkspaces(Long userId, Pageable pageable) {
-    return PageResponseDto.of(
-        workspaceRepository.findAllByFounderId(userId, sortGuard.apply(pageable, Workspace.class)),
-        workspaceMapper::mapToDto);
-  }
-
-  @Override
   public PageResponseDto<WorkspaceResponseDto> getJoinedWorkspaces(Long userId,
       Pageable pageable) {
     return PageResponseDto.of(

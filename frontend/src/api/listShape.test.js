@@ -60,15 +60,24 @@ describe('목록 응답 형태', () => {
     expect(result.confirmed).toBe(3);
   });
 
-  it('참여 워크스페이스 목록은 ResponseDto 로 감싸지 않는다', async () => {
-    // WorkspaceController 만 PageResponseDto 를 직접 반환한다.
-    // 다른 목록과 벗기는 깊이가 달라 헷갈리기 쉬운 자리다
-    mock.onGet('/workspaces/joined').reply(200, PAGE);
+  it('참여 워크스페이스 목록도 다른 목록과 같은 깊이로 벗긴다', async () => {
+    mock.onGet('/workspaces/joined').reply(200, { code: '200', data: PAGE });
 
     const result = await workspaceAPI.getJoinedWorkspaces({});
 
     expect(result.content).toHaveLength(1);
-    expect(result.data).toBeUndefined();
+    expect(result.totalPages).toBe(3);
+  });
+
+  it('워크스페이스 단건도 ResponseDto 를 한 겹 벗긴다', async () => {
+    mock.onGet('/workspaces/1').reply(200, {
+      code: '200',
+      data: { id: 1, workspaceName: '팀' },
+    });
+
+    const result = await workspaceAPI.getById(1);
+
+    expect(result.workspaceName).toBe('팀');
   });
 });
 

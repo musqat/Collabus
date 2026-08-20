@@ -12,9 +12,6 @@ public interface WorkspaceService {
   // 워크스페이스 단건 조회
   WorkspaceResponseDto getWorkspaceById(Long workspaceId, Long requesterId);
 
-  // 내가 만든 워크스페이스 목록
-  PageResponseDto<WorkspaceResponseDto> getMyWorkspaces(Long userId, Pageable pageable);
-
   // 참여 중인 워크스페이스 목록. 내가 만든 것도 포함된다
   PageResponseDto<WorkspaceResponseDto> getJoinedWorkspaces(Long userId, Pageable pageable);
 
