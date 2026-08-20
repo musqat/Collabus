@@ -1,6 +1,7 @@
 package com.muscat.Collabus.Todo.service;
 
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
+import com.muscat.Collabus.Todo.model.TodoUpdateRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
@@ -11,7 +12,7 @@ public interface TodoService {
   TodoResponseDto createTodo(TodoRequestDto dto, Long creatorId);
 
   // Todo 를 수정한다
-  TodoResponseDto updateTodo(Long todoId, TodoRequestDto dto, Long updaterId);
+  TodoResponseDto updateTodo(Long todoId, TodoUpdateRequestDto dto, Long updaterId);
 
   // Todo 를 삭제한다. 하위 작업 내용과 첨부 파일까지 지운다
   void deleteTodo(Long todoId, Long userId);

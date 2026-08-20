@@ -14,9 +14,6 @@ spring:
     defer-datasource-initialization: false
   flyway:
     enabled: false
-  sql:
-    init:
-      mode: never
   data:
     redis:
       host: localhost

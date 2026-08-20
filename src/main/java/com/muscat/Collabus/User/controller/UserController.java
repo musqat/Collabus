@@ -3,6 +3,7 @@ package com.muscat.Collabus.User.controller;
 import static com.muscat.Collabus.enums.response.CommonResponse.*;
 import static com.muscat.Collabus.enums.response.UserResponse.*;
 
+import com.muscat.Collabus.common.exception.BusinessException;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Pageable;
 import com.muscat.Collabus.User.model.*;
@@ -184,11 +185,14 @@ public class UserController {
                     .build();
 
             return ResponseEntity.ok(new ResponseDto(SUCCESS, loginResponse));
-        } catch (com.muscat.Collabus.common.exception.BusinessException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ResponseDto(EMAIL_NOT_FOUND));
-        } catch (IllegalArgumentException e) {
-            // 실패 횟수 증가
+        } catch (BusinessException e) {
+            // 비밀번호가 틀린 경우에만 실패 횟수를 올린다.
+            // 없는 이메일까지 세면 남의 계정을 잠글 수 있다
+            if (e.getResponse() != INVALID_PASSWORD) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ResponseDto(EMAIL_NOT_FOUND));
+            }
+
             int failures = refreshTokenService.incrementLoginFailure(email);
             int remaining = Math.max(0, 5 - failures);
             if (remaining == 0) {

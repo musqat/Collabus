@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { errorMessage } from '../api/errorMessage';
 import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
@@ -9,10 +8,7 @@ import SortSelect from '../components/SortSelect';
 import Pagination from '../components/Pagination';
 import { useTodos } from '../hooks/useTodo';
 import { workspaceAPI } from '../api/workspace';
-import { taskAPI } from '../api/task';
-import { todoAPI } from '../api/todo';
 import { useAuthStore } from '../store/authStore';
-import { useQueryClient } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const TODO_SORT_OPTIONS = [
@@ -26,7 +22,7 @@ const TODO_SORT_OPTIONS = [
 export default function TaskDetail() {
   const { taskId } = useParams();
   const navigate = useNavigate();
-  const { task, isLoading: taskLoading } = useTask(taskId);
+  const { task, isLoading: taskLoading, updateTask, addMember, removeMember } = useTask(taskId);
   const [todoPage, setTodoPage] = usePageParam();
   const [todoSort, setTodoSort] = useSortParam(TODO_SORT_OPTIONS[0].value);
   const {
@@ -34,11 +30,13 @@ export default function TaskDetail() {
     totalPages: todoTotalPages,
     isLoading: todosLoading,
     createTodo,
+    updateTodo,
+    deleteTodo,
     completeTodo,
     confirmTodo,
+    changeAssignee,
   } = useTodos(taskId, { page: todoPage, sort: todoSort });
   const currentUser = useAuthStore((state) => state.user);
-  const queryClient = useQueryClient();
 
   const [memberPage, setMemberPage] = usePageParam('memberPage');
   const { progress } = useTaskProgress(taskId);
@@ -110,7 +108,7 @@ export default function TaskDetail() {
       assigneeId: newTodo.assigneeId ? parseInt(newTodo.assigneeId) : null,
       title: newTodo.title,
       description: newTodo.description,
-      dueDate: newTodo.dueDate ? newTodo.dueDate.split('T')[0] : newTodo.dueDate
+      dueDate: newTodo.dueDate
     });
 
     setNewTodo({
@@ -137,16 +135,12 @@ export default function TaskDetail() {
       return;
     }
 
-    try {
-      await taskAPI.addMember(taskId, selectedMember.userId);
-      showToast.success('멤버가 추가되었습니다.');
-      setShowAddMemberModal(false);
-      setSelectedMember(null);
-
-      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
-    } catch (error) {
-      showToast.error(errorMessage(error, '멤버 추가 실패'));
-    }
+    addMember(selectedMember.userId, {
+      onSuccess: () => {
+        setShowAddMemberModal(false);
+        setSelectedMember(null);
+      },
+    });
   };
 
   // 워크스페이스 멤버 중 아직 Task에 추가되지 않은 멤버들
@@ -154,34 +148,18 @@ export default function TaskDetail() {
     wm => !taskMembers.some(tm => tm.userId === wm.userId)
   );
 
-  const handleRemoveTaskMember = async (userId) => {
+  const handleRemoveTaskMember = (userId) => {
     if (!confirm('정말 이 멤버를 제거하시겠습니까?')) {
       return;
     }
-
-    try {
-      await taskAPI.removeMember(taskId, userId);
-      showToast.success('멤버가 제거되었습니다.');
-
-      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
-    } catch (error) {
-      showToast.error(errorMessage(error, '멤버 제거 실패'));
-    }
+    removeMember(userId);
   };
 
   const currentUserTaskRole = taskMembers.find(m => m.userId === currentUser?.id)?.role;
   const isTaskManager = currentUserTaskRole === 'MANAGER';
 
-  const handleChangeAssignee = async (todoId, newAssigneeId) => {
-    try {
-      await todoAPI.changeAssignee(todoId, newAssigneeId);
-      showToast.success('담당자가 변경되었습니다.');
-
-      // Reload todos
-      window.location.reload();
-    } catch (error) {
-      showToast.error(errorMessage(error, '담당자 변경 실패'));
-    }
+  const handleChangeAssignee = (todoId, newAssigneeId) => {
+    changeAssignee({ todoId, userId: newAssigneeId });
   };
 
   const handleEditTodo = (todo) => {
@@ -189,41 +167,31 @@ export default function TaskDetail() {
       id: todo.id,
       title: todo.title,
       description: todo.description || '',
-      dueDate: todo.dueDate ? todo.dueDate.substring(0, 16) : ''
+      dueDate: todo.dueDate ?? ''
     });
     setShowEditModal(true);
   };
 
-  const handleUpdateTodo = async (e) => {
+  const handleUpdateTodo = (e) => {
     e.preventDefault();
-
-    try {
-      await todoAPI.update(editingTodo.id, editingTodo.title, editingTodo.description, editingTodo.dueDate);
-      showToast.success('Todo가 수정되었습니다.');
-      setShowEditModal(false);
-      setEditingTodo(null);
-
-      // Reload todos
-      window.location.reload();
-    } catch (error) {
-      showToast.error(errorMessage(error, 'Todo 수정 실패'));
-    }
+    updateTodo({
+      todoId: editingTodo.id,
+      title: editingTodo.title,
+      description: editingTodo.description,
+      dueDate: editingTodo.dueDate,
+    }, {
+      onSuccess: () => {
+        setShowEditModal(false);
+        setEditingTodo(null);
+      },
+    });
   };
 
-  const handleDeleteTodo = async (todoId) => {
+  const handleDeleteTodo = (todoId) => {
     if (!confirm('정말 이 Todo를 삭제하시겠습니까?')) {
       return;
     }
-
-    try {
-      await todoAPI.delete(todoId);
-      showToast.success('Todo가 삭제되었습니다.');
-
-      // Reload todos
-      window.location.reload();
-    } catch (error) {
-      showToast.error(errorMessage(error, 'Todo 삭제 실패'));
-    }
+    deleteTodo(todoId);
   };
 
   const handleEditTask = () => {
@@ -235,18 +203,21 @@ export default function TaskDetail() {
     setShowTaskEditModal(true);
   };
 
-  const handleUpdateTask = async (e) => {
+  const handleUpdateTask = (e) => {
     e.preventDefault();
-    try {
-      const dueDateOnly = editingTask.dueDate ? editingTask.dueDate.split('T')[0] : editingTask.dueDate;
-      await taskAPI.update(taskId, editingTask.title, editingTask.description, dueDateOnly);
-      showToast.success('Task가 수정되었습니다.');
-      setShowTaskEditModal(false);
-      setEditingTask(null);
-      window.location.reload();
-    } catch (error) {
-      showToast.error(errorMessage(error, 'Task 수정 실패'));
-    }
+    const dueDateOnly = editingTask.dueDate
+      ? editingTask.dueDate.split('T')[0]
+      : editingTask.dueDate;
+    updateTask({
+      title: editingTask.title,
+      description: editingTask.description,
+      dueDate: dueDateOnly,
+    }, {
+      onSuccess: () => {
+        setShowTaskEditModal(false);
+        setEditingTask(null);
+      },
+    });
   };
 
   if (taskLoading || todosLoading) {
@@ -657,7 +628,7 @@ export default function TaskDetail() {
                   마감일 <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   value={newTodo.dueDate}
                   onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -819,7 +790,7 @@ export default function TaskDetail() {
                   마감일 <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   value={editingTodo.dueDate}
                   onChange={(e) => setEditingTodo({ ...editingTodo, dueDate: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

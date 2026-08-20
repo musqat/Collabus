@@ -1,6 +1,7 @@
 package com.muscat.Collabus.config.token;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -10,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
-import com.muscat.Collabus.common.dto.ResponseDto;
+import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.config.jwt.JwtUtil;
 import com.muscat.Collabus.enums.role.SystemRole;
 
@@ -25,17 +26,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * 재발급 분기를 확인한다. Refresh Token Rotation 이라 저장된 토큰과 다르면 막아야 한다.
+ * 재발급 분기를 확인한다. Refresh Token Rotation 이라 저장된 토큰과 다르면 막음
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("토큰 재발급")
-class TokenControllerTest {
+class TokenReissueServiceImplTest {
 
   private static final String EMAIL = "user@test.com";
   private static final String SAVED_TOKEN = "saved-refresh";
@@ -50,7 +48,7 @@ class TokenControllerTest {
   private UserRepository userRepository;
 
   @InjectMocks
-  private TokenController tokenController;
+  private TokenReissueServiceImpl tokenReissueService;
 
   @BeforeEach
   void setUp() {
@@ -65,20 +63,14 @@ class TokenControllerTest {
     when(jwtUtil.getRefreshExpiration()).thenReturn(1000L);
   }
 
-  private RefreshRequestDto request(String token) {
-    RefreshRequestDto dto = new RefreshRequestDto();
-    ReflectionTestUtils.setField(dto, "refreshToken", token);
-    return dto;
-  }
-
   @Test
   @DisplayName("검증에 실패한 토큰은 401 이다")
   void invalidToken() {
     when(jwtUtil.validateToken("bad")).thenReturn(false);
 
-    ResponseEntity<ResponseDto> response = tokenController.refreshToken(request("bad"));
+    assertThatThrownBy(() -> tokenReissueService.reissue("bad"))
+        .isInstanceOf(BusinessException.class);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyLong());
   }
 
@@ -87,16 +79,16 @@ class TokenControllerTest {
   void noSavedToken() {
     when(refreshTokenService.getRefreshToken(EMAIL)).thenReturn(Optional.empty());
 
-    assertThat(tokenController.refreshToken(request(SAVED_TOKEN)).getStatusCode())
-        .isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThatThrownBy(() -> tokenReissueService.reissue(SAVED_TOKEN))
+        .isInstanceOf(BusinessException.class);
   }
 
   @Test
   @DisplayName("저장된 토큰과 다르면 401 이다")
   void rotatedAwayToken() {
-    ResponseEntity<ResponseDto> response = tokenController.refreshToken(request("older-refresh"));
+    assertThatThrownBy(() -> tokenReissueService.reissue("older-refresh"))
+        .isInstanceOf(BusinessException.class);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyLong());
   }
 
@@ -105,16 +97,17 @@ class TokenControllerTest {
   void userGone() {
     when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-    assertThat(tokenController.refreshToken(request(SAVED_TOKEN)).getStatusCode())
-        .isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThatThrownBy(() -> tokenReissueService.reissue(SAVED_TOKEN))
+        .isInstanceOf(BusinessException.class);
   }
 
   @Test
   @DisplayName("맞으면 새 토큰 쌍을 주고 저장된 것을 갈아끼운다")
   void success() {
-    ResponseEntity<ResponseDto> response = tokenController.refreshToken(request(SAVED_TOKEN));
+    TokenResponseDto result = tokenReissueService.reissue(SAVED_TOKEN);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getAccessToken()).isEqualTo("new-access");
+    assertThat(result.getRefreshToken()).isEqualTo("new-refresh");
     verify(refreshTokenService, times(1)).saveRefreshToken(EMAIL, "new-refresh", 1000L);
   }
 }

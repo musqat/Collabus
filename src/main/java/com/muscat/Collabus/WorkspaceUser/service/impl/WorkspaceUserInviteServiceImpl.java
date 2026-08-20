@@ -54,7 +54,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
         taskAuthorityUtil.validateWorkspaceMaster(workspaceId, inviterId);
 
         if (inviterId.equals(dto.getUserId())) {
-            throw new IllegalArgumentException(InviteResponse.INVITE_SELF.getMessage());
+            throw new BusinessException(InviteResponse.INVITE_SELF);
         }
 
         if (workspaceUserRepository.existsById(new WorkspaceUserPk(workspaceId, dto.getUserId()))) {
@@ -100,7 +100,7 @@ public class WorkspaceUserInviteServiceImpl implements WorkspaceUserInviteServic
                 .orElseThrow(() -> new BusinessException(InviteResponse.INVITE_NOT_FOUND));
 
         if (invite.getStatus() != InviteStatus.PENDING) {
-            throw new IllegalStateException(InviteResponse.INVITE_ALREADY_PROCESSED.getMessage());
+            throw new BusinessException(InviteResponse.INVITE_ALREADY_PROCESSED);
         }
 
         invite.accept();

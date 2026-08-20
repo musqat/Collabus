@@ -108,6 +108,8 @@ export const useWorkspaceProgress = (workspaceId) => {
 };
 
 export const useTask = (taskId) => {
+  const queryClient = useQueryClient();
+
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => taskAPI.getById(taskId),
@@ -115,5 +117,40 @@ export const useTask = (taskId) => {
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
-  return { task, isLoading };
+  const updateMutation = useMutation({
+    mutationFn: ({ title, description, dueDate }) =>
+      taskAPI.update(taskId, title, description, dueDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      showToast.success('Task가 수정되었습니다.');
+    },
+    onError: (error) => showToast.error(errorMessage(error, 'Task 수정 실패')),
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (userId) => taskAPI.addMember(taskId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
+      showToast.success('멤버가 추가되었습니다.');
+    },
+    onError: (error) => showToast.error(errorMessage(error, '멤버 추가 실패')),
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (userId) => taskAPI.removeMember(taskId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-members', taskId] });
+      showToast.success('멤버가 제거되었습니다.');
+    },
+    onError: (error) => showToast.error(errorMessage(error, '멤버 제거 실패')),
+  });
+
+  return {
+    task,
+    isLoading,
+    updateTask: updateMutation.mutate,
+    addMember: addMemberMutation.mutate,
+    removeMember: removeMemberMutation.mutate,
+  };
 };

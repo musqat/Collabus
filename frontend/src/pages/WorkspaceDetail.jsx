@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { errorMessage } from '../api/errorMessage';
 import { showToast } from '../store/toastStore';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../hooks/useWorkspace';
+import { useInviteeSearch, useWorkspaceMembers } from '../hooks/useWorkspaceMembers';
 import { useTasks, useWorkspaceProgress } from '../hooks/useTask';
 import usePageParam from '../hooks/usePageParam';
 import useSortParam from '../hooks/useSortParam';
 import SortSelect from '../components/SortSelect';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import Pagination from '../components/Pagination';
-import { workspaceAPI } from '../api/workspace';
-import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import TaskCard from '../components/Task/TaskCard';
@@ -28,7 +26,7 @@ const TASK_SORT_OPTIONS = [
 export default function WorkspaceDetail() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
-  const { workspace, isLoading: workspaceLoading } = useWorkspace(workspaceId);
+  const { workspace, isLoading: workspaceLoading, updateWorkspace } = useWorkspace(workspaceId);
   const [page, setPage] = usePageParam();
   const [sort, setSort] = useSortParam(TASK_SORT_OPTIONS[0].value);
   const [taskSearchText, setTaskSearchText] = useState('');
@@ -54,31 +52,16 @@ export default function WorkspaceDetail() {
   const [dueDate, setDueDate] = useState('');
   const [managerId, setManagerId] = useState('');
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
-  const [members, setMembers] = useState([]);
+
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedInvitee, setSelectedInvitee] = useState(null);
   const [showWorkspaceEditModal, setShowWorkspaceEditModal] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState(null);
 
-  // 워크스페이스 멤버 로드
-  useEffect(() => {
-    if (workspaceId) {
-      workspaceAPI.getMembers(workspaceId)
-        .then(data => {
-          if (Array.isArray(data)) {
-            setMembers(data);
-          } else {
-            console.error('Members data is not an array:', data);
-            setMembers([]);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch members:', err);
-          setMembers([]);
-        });
-    }
-  }, [workspaceId]);
+  const { members, invite, removeMember, changeRole } = useWorkspaceMembers(workspaceId);
+  const { search } = useInviteeSearch(members, currentUser?.id);
+
 
   // 검색어가 바뀌면 첫 페이지로 옮긴다. 첫 렌더는 건너뛰어 URL 의 page 를 살린다
   const previousKeyword = useRef(keyword);
@@ -128,25 +111,10 @@ export default function WorkspaceDetail() {
     });
   };
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     // 서버가 두 글자 미만을 거부한다
-    if (searchKeyword.trim().length >= 2) {
-      try {
-        const results = await authAPI.searchUsers(searchKeyword);
-        // 본인과 이미 멤버인 사용자 제외
-        const filteredResults = (results || []).filter(user => {
-          // 본인 제외
-          if (user.id === currentUser?.id) return false;
-          // 이미 워크스페이스 멤버인 사용자 제외
-          if (members.some(member => member.userId === user.id)) return false;
-          return true;
-        });
-        setSearchResults(filteredResults);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setSearchResults([]);
-      }
-    }
+    if (searchKeyword.trim().length < 2) return;
+    search(searchKeyword, setSearchResults);
   };
 
   const handleInvite = async () => {
@@ -155,48 +123,25 @@ export default function WorkspaceDetail() {
       return;
     }
 
-    try {
-      await workspaceAPI.invite(workspaceId, selectedInvitee.id, 'MEMBER');
-      showToast.success('초대가 완료되었습니다.');
-      setShowInviteModal(false);
-      setSearchKeyword('');
-      setSearchResults([]);
-      setSelectedInvitee(null);
-    } catch (error) {
-      showToast.error(errorMessage(error, '초대 실패'));
-    }
+    invite(selectedInvitee.id, {
+      onSuccess: () => {
+        setShowInviteModal(false);
+        setSearchKeyword('');
+        setSearchResults([]);
+        setSelectedInvitee(null);
+      },
+    });
   };
 
-  const handleRemoveMember = async (userId) => {
+  const handleRemoveMember = (userId) => {
     if (!confirm('정말 이 멤버를 제거하시겠습니까?')) {
       return;
     }
-
-    try {
-      await workspaceAPI.removeMember(workspaceId, userId);
-      showToast.success('멤버가 제거되었습니다.');
-      // Reload members
-      const data = await workspaceAPI.getMembers(workspaceId);
-      if (Array.isArray(data)) {
-        setMembers(data);
-      }
-    } catch (error) {
-      showToast.error(errorMessage(error, '멤버 제거 실패'));
-    }
+    removeMember(userId);
   };
 
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      await workspaceAPI.updateMemberRole(workspaceId, userId, newRole);
-      showToast.success('멤버 역할이 변경되었습니다.');
-      // Reload members
-      const data = await workspaceAPI.getMembers(workspaceId);
-      if (Array.isArray(data)) {
-        setMembers(data);
-      }
-    } catch (error) {
-      showToast.error(errorMessage(error, '역할 변경 실패'));
-    }
+  const handleRoleChange = (userId, newRole) => {
+    changeRole({ userId, role: newRole });
   };
 
   const currentUserRole = members.find(m => m.userId === currentUser?.id)?.role;
@@ -210,17 +155,14 @@ export default function WorkspaceDetail() {
     setShowWorkspaceEditModal(true);
   };
 
-  const handleUpdateWorkspace = async (e) => {
+  const handleUpdateWorkspace = (e) => {
     e.preventDefault();
-    try {
-      await workspaceAPI.update(workspaceId, editingWorkspace.workspaceName, editingWorkspace.description);
-      showToast.success('Workspace가 수정되었습니다.');
-      setShowWorkspaceEditModal(false);
-      setEditingWorkspace(null);
-      window.location.reload();
-    } catch (error) {
-      showToast.error(errorMessage(error, 'Workspace 수정 실패'));
-    }
+    updateWorkspace(editingWorkspace, {
+      onSuccess: () => {
+        setShowWorkspaceEditModal(false);
+        setEditingWorkspace(null);
+      },
+    });
   };
 
   if (workspaceLoading || tasksLoading) {

@@ -339,7 +339,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", blankPassword))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).findById(userId);
         verify(userRepository, never()).save(any(User.class));
@@ -353,7 +353,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updatePassword(userId, "currentPassword123", null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).findById(userId);
     }
@@ -503,7 +503,7 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.login(email, wrongPassword))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test

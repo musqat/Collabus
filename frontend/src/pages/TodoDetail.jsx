@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { errorMessage } from '../api/errorMessage';
 import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
-import { todoAPI } from '../api/todo';
-import apiClient from '../api/client';
+import {
+  useTodo,
+  useTodoComments,
+  useTodoWorks,
+  useWorkFiles,
+} from '../hooks/useTodoDetail';
 import usePageParam from '../hooks/usePageParam';
 import Pagination from '../components/Pagination';
 import { useAuthStore } from '../store/authStore';
@@ -13,216 +16,119 @@ export default function TodoDetail() {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
 
-  const [todo, setTodo] = useState(null);
   const [activeTab, setActiveTab] = useState('work'); // 'work', 'comments'
-  const [loading, setLoading] = useState(true);
 
-  // Work 관련 상태
-  const [works, setWorks] = useState([]);
   const [newWork, setNewWork] = useState({ title: '', content: '' });
   const [editingWork, setEditingWork] = useState(null);
-
-  // Comment 관련 상태
-  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState(null);
 
-  // File 관련 상태 (workId별로 관리)
+  // 펼친 작업의 파일 목록만 들고 있는다 (workId별)
   const [workFiles, setWorkFiles] = useState({});
 
   const [workPage, setWorkPage] = usePageParam();
   const [commentPage, setCommentPage] = usePageParam('commentPage');
-  const [workTotalPages, setWorkTotalPages] = useState(0);
-  const [commentTotalPages, setCommentTotalPages] = useState(0);
 
-  // Todo 정보 조회
+  const { todo, isLoading: loading } = useTodo(todoId);
+  const {
+    works, totalPages: workTotalPages, createWork, updateWork, deleteWork,
+  } = useTodoWorks(todoId, workPage, { enabled: activeTab === 'work' });
+  const {
+    comments, totalPages: commentTotalPages, createComment, updateComment, deleteComment,
+  } = useTodoComments(todoId, commentPage, { enabled: activeTab === 'comments' });
+  const { fetchFiles, uploadFile, deleteFile, downloadFile } = useWorkFiles();
+
+  // 조회에 실패하면 머무를 이유가 없다
   useEffect(() => {
-    loadTodo();
-  }, [todoId]);
-
-  // 탭별 데이터 로드
-  useEffect(() => {
-    if (activeTab === 'work') loadWorks();
-    else if (activeTab === 'comments') loadComments();
-  }, [activeTab, todoId, workPage, commentPage]);
-
-  const loadTodo = async () => {
-    try {
-      const data = await todoAPI.getById(todoId);
-      setTodo(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to load todo:', error);
+    if (!loading && todoId && todo === undefined) {
       showToast.error('Todo를 불러올 수 없습니다.');
       navigate(-1);
     }
-  };
-
-  const loadWorks = async () => {
-    try {
-      const { data } = await apiClient.get('/todo/works', {
-        params: { todoId, page: workPage, size: 20 }
-      });
-      setWorks(data?.content ?? []);
-      setWorkTotalPages(data?.totalPages ?? 0);
-    } catch (error) {
-      console.error('Failed to load works:', error);
-    }
-  };
-
-  const loadComments = async () => {
-    try {
-      const { data } = await apiClient.get('/todo/comments', {
-        params: { todoId, page: commentPage, size: 20 }
-      });
-      setComments(data?.content ?? []);
-      setCommentTotalPages(data?.totalPages ?? 0);
-    } catch (error) {
-      console.error('Failed to load comments:', error);
-    }
-  };
+  }, [loading, todo, todoId, navigate]);
 
   const loadFilesForWork = async (workId) => {
-    try {
-      const { data } = await apiClient.get(`/todo/files/work/${workId}`, {
-        params: { size: 20 }
-      });
-      setWorkFiles(prev => ({
-        ...prev,
-        [workId]: data?.content ?? []
-      }));
-    } catch (error) {
-      console.error('Failed to load files for work:', error);
-    }
+    const page = await fetchFiles(workId);
+    setWorkFiles((prev) => ({ ...prev, [workId]: page?.content ?? [] }));
   };
 
   // Work 관련 핸들러
-  const handleCreateWork = async (e) => {
+  const handleCreateWork = (e) => {
     e.preventDefault();
     if (!newWork.title.trim()) {
       showToast.warning('제목을 입력하세요.');
       return;
     }
-    try {
-      await apiClient.post('/todo/works', newWork, { params: { todoId } });
-      setNewWork({ title: '', content: '' });
-      loadWorks();
-      showToast.success('작업 내용이 등록되었습니다.');
-    } catch (error) {
-      showToast.error(errorMessage(error, '작업 내용 등록 실패'));
-    }
+    createWork(
+      { title: newWork.title, content: newWork.content },
+      { onSuccess: () => setNewWork({ title: '', content: '' }) }
+    );
   };
 
-  const handleUpdateWork = async (e) => {
+  const handleUpdateWork = (e) => {
     e.preventDefault();
-    try {
-      await apiClient.patch(`/todo/works/${editingWork.id}`, {
-        title: editingWork.title,
-        content: editingWork.content
-      });
-      setEditingWork(null);
-      loadWorks();
-      showToast.success('작업 내용이 수정되었습니다.');
-    } catch (error) {
-      showToast.error(errorMessage(error, '작업 내용 수정 실패'));
-    }
+    updateWork(
+      { workId: editingWork.id, title: editingWork.title, content: editingWork.content },
+      { onSuccess: () => setEditingWork(null) }
+    );
   };
 
-  const handleDeleteWork = async (workId) => {
+  const handleDeleteWork = (workId) => {
     if (!confirm('작업 내용을 삭제하시겠습니까?')) return;
-    try {
-      await apiClient.delete(`/todo/works/${workId}`);
-      loadWorks();
-      showToast.success('작업 내용이 삭제되었습니다.');
-    } catch (error) {
-      showToast.error(errorMessage(error, '작업 내용 삭제 실패'));
-    }
+    deleteWork(workId);
   };
 
   // Comment 관련 핸들러
-  const handleCreateComment = async (e) => {
+  const handleCreateComment = (e) => {
     e.preventDefault();
     if (!newComment.trim()) {
       showToast.warning('댓글을 입력하세요.');
       return;
     }
-    try {
-      await apiClient.post('/todo/comments', { content: newComment }, { params: { todoId } });
-      setNewComment('');
-      loadComments();
-    } catch (error) {
-      showToast.error(errorMessage(error, '댓글 작성 실패'));
-    }
+    createComment(newComment, { onSuccess: () => setNewComment('') });
   };
 
-  const handleUpdateComment = async (commentId, content) => {
-    try {
-      await apiClient.patch(`/todo/comments/${commentId}`, { content });
-      setEditingComment(null);
-      loadComments();
-    } catch (error) {
-      showToast.error(errorMessage(error, '댓글 수정 실패'));
-    }
+  const handleUpdateComment = (commentId, content) => {
+    updateComment({ commentId, content }, { onSuccess: () => setEditingComment(null) });
   };
 
-  const handleDeleteComment = async (commentId) => {
+  const handleDeleteComment = (commentId) => {
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
-    try {
-      await apiClient.delete(`/todo/comments/${commentId}`);
-      loadComments();
-    } catch (error) {
-      showToast.error(errorMessage(error, '댓글 삭제 실패'));
-    }
+    deleteComment(commentId);
   };
 
   // File 관련 핸들러
-  const handleFileUpload = async (workId, e) => {
+  const handleFileUpload = (workId, e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      await apiClient.post('/todo/files', formData, {
-        params: { workId },
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      loadFilesForWork(workId);
-      showToast.success('파일이 업로드되었습니다.');
-      e.target.value = '';
-    } catch (error) {
-      showToast.error(errorMessage(error, '파일 업로드 실패'));
-    }
+    const input = e.target;
+    uploadFile({ workId, file }, {
+      onSuccess: () => {
+        loadFilesForWork(workId);
+        input.value = '';
+      },
+    });
   };
 
   // 다운로드 API는 인증이 필요하므로 <a download> 대신 blob 으로 받아 저장한다
-  const handleDownloadFile = async (file) => {
-    try {
-      const response = await apiClient.get(`/todo/files/${file.id}/download`, {
-        responseType: 'blob'
-      });
-      const url = URL.createObjectURL(response.data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.originalFileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      showToast.error('파일 다운로드 실패');
-    }
+  const handleDownloadFile = (file) => {
+    downloadFile(file.id, {
+      onSuccess: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.originalFileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      },
+    });
   };
 
-  const handleDeleteFile = async (workId, fileId) => {
+  const handleDeleteFile = (workId, fileId) => {
     if (!confirm('파일을 삭제하시겠습니까?')) return;
-    try {
-      await apiClient.delete(`/todo/files/${fileId}`);
-      loadFilesForWork(workId);
-    } catch (error) {
-      showToast.error(errorMessage(error, '파일 삭제 실패'));
-    }
+    deleteFile({ workId, fileId }, { onSuccess: () => loadFilesForWork(workId) });
   };
 
   const getStatusConfig = (status) => {
