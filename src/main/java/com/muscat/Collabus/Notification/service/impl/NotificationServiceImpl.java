@@ -67,7 +67,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (boundary.isEmpty()) {
             return;
         }
-        notificationRepository.deleteByUser_IdAndIdLessThanEqual(userId, boundary.get(0).getId());
+        notificationRepository.deleteByUser_IdAndIdLessThanEqual(userId, boundary.getFirst().getId());
     }
 
     @Override

@@ -9,8 +9,6 @@ import lombok.Getter;
 @Schema(description = "Todo 응답 코드")
 public enum TodoResponse implements BaseResponseEnum {
   ONLY_MANAGER_AUTHORIZED("403", "Todo에 대한 권한이 없습니다."),
-  TODO_CREATED("201", "Todo 생성이 완료되었습니다."),
-  TODO_ALREADY_ASSIGNED("409", "이미 참여 중인 Todo입니다."),
   TODO_WORK_NOT_FOUND("404", "해당 작업 기록을 찾을 수 없습니다."),
   UNAUTHORIZED_TODO_WORK("403", "작성자만 수정 또는 삭제할 수 있습니다."),
   FILE_NOT_FOUND("404", "해당 파일을 찾을 수 없습니다."),

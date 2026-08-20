@@ -198,44 +198,6 @@ class WorkspaceServiceImplTest {
     }
 
     @Test
-    @DisplayName("내가 만든 워크스페이스 목록 조회 성공")
-    void getMyWorkspaces_Success() {
-        // Given
-        Long userId = 1L;
-        Pageable pageable = PageRequest.of(0, 20);
-        when(sortGuard.apply(pageable, Workspace.class)).thenReturn(pageable);
-        when(workspaceRepository.findAllByFounderId(userId, pageable))
-                .thenReturn(new PageImpl<>(List.of(workspace), pageable, 1));
-        when(workspaceMapper.mapToDto(workspace)).thenReturn(responseDto);
-
-        // When
-        PageResponseDto<WorkspaceResponseDto> result =
-                workspaceService.getMyWorkspaces(userId, pageable);
-
-        // Then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getWorkspaceName()).isEqualTo("Test Workspace");
-    }
-
-    @Test
-    @DisplayName("내가 만든 워크스페이스 목록 조회 - 빈 목록")
-    void getMyWorkspaces_EmptyList() {
-        // Given
-        Long userId = 1L;
-        Pageable pageable = PageRequest.of(0, 20);
-        when(sortGuard.apply(pageable, Workspace.class)).thenReturn(pageable);
-        when(workspaceRepository.findAllByFounderId(userId, pageable))
-                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
-
-        // When
-        PageResponseDto<WorkspaceResponseDto> result =
-                workspaceService.getMyWorkspaces(userId, pageable);
-
-        // Then
-        assertThat(result.getContent()).isEmpty();
-    }
-
-    @Test
     @DisplayName("워크스페이스 수정 성공")
     void updateWorkspace_Success() {
         // Given

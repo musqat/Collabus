@@ -8,6 +8,7 @@ import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
+import com.muscat.Collabus.WorkspaceUser.entity.WorkspaceUser;
 import com.muscat.Collabus.WorkspaceUser.repository.WorkspaceUserRepository;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import java.util.List;
@@ -54,7 +55,7 @@ public class TaskAuthorityUtil {
   // Workspace 역할 조회 (WorkspaceUser.role 기준 — founder 필드 아님)
   private WorkspaceRole getWorkspaceRole(Long workspaceId, Long userId) {
     return workspaceUserRepository.findById_WorkspaceIdAndId_UserId(workspaceId, userId)
-        .map(wu -> wu.getRole())
+        .map(WorkspaceUser::getRole)
         .orElse(null);
   }
 
