@@ -6,7 +6,7 @@ import { todoAPI } from './todo';
 import { workspaceAPI } from './workspace';
 
 /**
- * 목록 API 가 ResponseDto 를 벗겨 페이지 객체를 그대로 돌려주는지 본다.
+ * 목록 API 가 ResponseDto 를 unwrap 해 페이지 객체를 그대로 돌려주는지 본다.
  * 응답을 배열로 다루면 조용히 빈 값이 되고 에러가 나지 않는다.
  */
 
@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('목록 응답 형태', () => {
   it('Todo 목록은 페이지 객체를 그대로 돌려준다', async () => {
-    mock.onGet('/todo').reply(200, { code: '200', data: PAGE });
+    mock.onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     const result = await todoAPI.getByTask(1);
 
@@ -40,7 +40,7 @@ describe('목록 응답 형태', () => {
   });
 
   it('Task 목록도 페이지 객체를 그대로 돌려준다', async () => {
-    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { code: '200', data: PAGE });
+    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     const result = await taskAPI.getByWorkspace(1);
 
@@ -50,7 +50,8 @@ describe('목록 응답 형태', () => {
 
   it('워크스페이스 진행률은 집계 객체를 돌려준다', async () => {
     mock.onGet('/tasks/workspaces/1/progress').reply(200, {
-      code: '200',
+      statusCode: '200',
+      statusMsg: 'ok',
       data: { total: 10, inProgress: 4, waitingReview: 3, confirmed: 3 },
     });
 
@@ -60,8 +61,8 @@ describe('목록 응답 형태', () => {
     expect(result.confirmed).toBe(3);
   });
 
-  it('참여 워크스페이스 목록도 다른 목록과 같은 깊이로 벗긴다', async () => {
-    mock.onGet('/workspaces/joined').reply(200, { code: '200', data: PAGE });
+  it('참여 워크스페이스 목록도 다른 목록과 같은 깊이로 읽는다', async () => {
+    mock.onGet('/workspaces/joined').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     const result = await workspaceAPI.getJoinedWorkspaces({});
 
@@ -69,9 +70,10 @@ describe('목록 응답 형태', () => {
     expect(result.totalPages).toBe(3);
   });
 
-  it('워크스페이스 단건도 ResponseDto 를 한 겹 벗긴다', async () => {
+  it('워크스페이스 단건도 ResponseDto 를 unwrap 해 돌려준다', async () => {
     mock.onGet('/workspaces/1').reply(200, {
-      code: '200',
+      statusCode: '200',
+      statusMsg: 'ok',
       data: { id: 1, workspaceName: '팀' },
     });
 
@@ -83,7 +85,7 @@ describe('목록 응답 형태', () => {
 
 describe('목록 파라미터', () => {
   it('Todo 목록은 taskId 와 페이지를 함께 보낸다', async () => {
-    mock.onGet('/todo').reply(200, { data: PAGE });
+    mock.onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     await todoAPI.getByTask(7, 'IN_PROGRESS', 2, 20, 'dueDate,asc');
 
@@ -97,7 +99,7 @@ describe('목록 파라미터', () => {
   });
 
   it('정렬을 주지 않으면 sort 를 빼고 보낸다', async () => {
-    mock.onGet('/todo').reply(200, { data: PAGE });
+    mock.onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     await todoAPI.getByTask(7);
 
@@ -105,7 +107,7 @@ describe('목록 파라미터', () => {
   });
 
   it('Task 검색어가 비면 keyword 를 빼고 보낸다', async () => {
-    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { data: PAGE });
+    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     await taskAPI.getByWorkspace(1, { keyword: '' });
 
@@ -113,7 +115,7 @@ describe('목록 파라미터', () => {
   });
 
   it('Task 검색어가 있으면 그대로 보낸다', async () => {
-    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { data: PAGE });
+    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     await taskAPI.getByWorkspace(1, { keyword: '검토', page: 1 });
 
@@ -121,7 +123,7 @@ describe('목록 파라미터', () => {
   });
 
   it('기본 페이지와 크기가 들어간다', async () => {
-    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { data: PAGE });
+    mock.onGet('/tasks/workspaces/1/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 
     await taskAPI.getByWorkspace(1);
 

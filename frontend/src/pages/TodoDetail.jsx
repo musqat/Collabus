@@ -61,8 +61,8 @@ export default function TodoDetail() {
       const { data } = await apiClient.get('/todo/works', {
         params: { todoId, page: workPage, size: 20 }
       });
-      setWorks(data.data?.content ?? []);
-      setWorkTotalPages(data.data?.totalPages ?? 0);
+      setWorks(data?.content ?? []);
+      setWorkTotalPages(data?.totalPages ?? 0);
     } catch (error) {
       console.error('Failed to load works:', error);
     }
@@ -73,8 +73,8 @@ export default function TodoDetail() {
       const { data } = await apiClient.get('/todo/comments', {
         params: { todoId, page: commentPage, size: 20 }
       });
-      setComments(data.data?.content ?? []);
-      setCommentTotalPages(data.data?.totalPages ?? 0);
+      setComments(data?.content ?? []);
+      setCommentTotalPages(data?.totalPages ?? 0);
     } catch (error) {
       console.error('Failed to load comments:', error);
     }
@@ -87,7 +87,7 @@ export default function TodoDetail() {
       });
       setWorkFiles(prev => ({
         ...prev,
-        [workId]: data.data?.content ?? []
+        [workId]: data?.content ?? []
       }));
     } catch (error) {
       console.error('Failed to load files for work:', error);

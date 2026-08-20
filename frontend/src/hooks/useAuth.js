@@ -10,9 +10,8 @@ export const useAuth = () => {
 
   const loginMutation = useMutation({
     mutationFn: ({ email, password }) => authAPI.login(email, password),
-    onSuccess: (data) => {
-      const userData = data.data || data;
-      setAuth(userData, userData.accessToken, userData.refreshToken);
+    onSuccess: (user) => {
+      setAuth(user, user.accessToken, user.refreshToken);
       navigate('/dashboard');
     },
     onError: (error) => {
