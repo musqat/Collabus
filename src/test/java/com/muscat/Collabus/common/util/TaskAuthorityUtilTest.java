@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.muscat.Collabus.Task.entity.Task;
@@ -66,9 +67,14 @@ class TaskAuthorityUtilTest {
     todo = Todo.builder().id(TODO_ID).task(task).build();
   }
 
+  /** 역할 판정이 모두 exists 로 통일되어 있어 두 조회를 함께 세운다 */
   private void asRole(Long userId, WorkspaceRole role) {
-    when(workspaceUserRepository.findById_WorkspaceIdAndId_UserId(WORKSPACE_ID, userId))
-        .thenReturn(Optional.of(WorkspaceUser.builder().role(role).build()));
+    lenient().when(workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
+        WORKSPACE_ID, userId, WorkspaceRole.MASTER))
+        .thenReturn(role == WorkspaceRole.MASTER);
+    lenient().when(workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRoleIn(
+        eq(WORKSPACE_ID), eq(userId), any()))
+        .thenReturn(role == WorkspaceRole.MASTER || role == WorkspaceRole.MANAGER);
   }
 
   private void seesAllTasks(Long userId, boolean allowed) {
@@ -93,8 +99,8 @@ class TaskAuthorityUtilTest {
   @Test
   @DisplayName("참여자가 아니면 워크스페이스 MASTER 가 아니다")
   void isWorkspaceMaster_NotMember() {
-    when(workspaceUserRepository.findById_WorkspaceIdAndId_UserId(WORKSPACE_ID, OUTSIDER_ID))
-        .thenReturn(Optional.empty());
+    when(workspaceUserRepository.existsById_WorkspaceIdAndId_UserIdAndRole(
+        WORKSPACE_ID, OUTSIDER_ID, WorkspaceRole.MASTER)).thenReturn(false);
     assertThat(taskAuthorityUtil.isWorkspaceMaster(task, OUTSIDER_ID)).isFalse();
   }
 

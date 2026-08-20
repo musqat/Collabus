@@ -33,6 +33,11 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins:http://localhost:3000,http://localhost}")
   private List<String> allowedOrigins;
 
+  @Value("${springdoc.api-docs.enabled:true}")
+  private boolean apiDocsEnabled;
+
+  private static final String[] API_DOCS_PATHS = {"/swagger-ui/**", "/v3/api-docs/**"};
+
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
@@ -48,20 +53,22 @@ public class SecurityConfig {
 
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/swagger-ui/**",
-                "/v3/api-docs/**",
-                "/ws/**",
-                "/actuator/health"
-            ).permitAll()
-            .requestMatchers(
-                "/api/users/login",
-                "/api/users/register",
-                "/api/token/**"
-            ).permitAll()
-            .anyRequest().authenticated()
-        )
+        .authorizeHttpRequests(auth -> {
+          // API 문서는 켜져 있을 때만 연다
+          if (apiDocsEnabled) {
+            auth.requestMatchers(API_DOCS_PATHS).permitAll();
+          }
+          auth.requestMatchers(
+                  "/ws/**",
+                  "/actuator/health"
+              ).permitAll()
+              .requestMatchers(
+                  "/api/users/login",
+                  "/api/users/register",
+                  "/api/token/**"
+              ).permitAll()
+              .anyRequest().authenticated();
+        })
         // 기본값은 익명 요청에도 403 을 줌 -> 401/403 을 명시적으로 구분한다
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint(authenticationEntryPoint)
