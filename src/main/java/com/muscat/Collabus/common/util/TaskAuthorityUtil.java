@@ -52,16 +52,9 @@ public class TaskAuthorityUtil {
     }
   }
 
-  // Workspace 역할 조회 (WorkspaceUser.role 기준 — founder 필드 아님)
-  private WorkspaceRole getWorkspaceRole(Long workspaceId, Long userId) {
-    return workspaceUserRepository.findById_WorkspaceIdAndId_UserId(workspaceId, userId)
-        .map(WorkspaceUser::getRole)
-        .orElse(null);
-  }
-
   // Task 기준 Workspace Master 여부
   public boolean isWorkspaceMaster(Task task, Long userId) {
-    return getWorkspaceRole(task.getWorkspace().getId(), userId) == WorkspaceRole.MASTER;
+    return isWorkspaceMaster(task.getWorkspace(), userId);
   }
 
   // Workspace 기준 Workspace Master 여부
@@ -138,7 +131,6 @@ public class TaskAuthorityUtil {
 
   // Task 생성 가능 여부 (Workspace MASTER 또는 MANAGER)
   public boolean canCreateTask(Workspace workspace, Long userId) {
-    WorkspaceRole role = getWorkspaceRole(workspace.getId(), userId);
-    return role == WorkspaceRole.MASTER || role == WorkspaceRole.MANAGER;
+    return canViewAllTasks(workspace.getId(), userId);
   }
 }
