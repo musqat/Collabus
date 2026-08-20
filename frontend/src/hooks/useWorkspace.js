@@ -61,6 +61,8 @@ export const useWorkspaces = ({ page = 0, sort } = {}) => {
 };
 
 export const useWorkspace = (workspaceId) => {
+  const queryClient = useQueryClient();
+
   const { data: workspace, isLoading } = useQuery({
     queryKey: ['workspace', workspaceId],
     queryFn: () => workspaceAPI.getById(workspaceId),
@@ -68,5 +70,16 @@ export const useWorkspace = (workspaceId) => {
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
-  return { workspace, isLoading };
+  const updateMutation = useMutation({
+    mutationFn: ({ workspaceName, description }) =>
+      workspaceAPI.update(workspaceId, workspaceName, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      showToast.success('Workspace가 수정되었습니다.');
+    },
+    onError: (error) => showToast.error(errorMessage(error, 'Workspace 수정 실패')),
+  });
+
+  return { workspace, isLoading, updateWorkspace: updateMutation.mutate };
 };

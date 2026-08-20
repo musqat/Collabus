@@ -3,6 +3,7 @@ package com.muscat.Collabus.Todo.mapper;
 import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
+import com.muscat.Collabus.Todo.model.TodoUpdateRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.enums.status.TodoStatus;
@@ -42,7 +43,7 @@ public class TodoMapper {
                 .build();
     }
 
-    public void updateFromDto(TodoRequestDto dto, Todo todo) {
+    public void updateFromDto(TodoUpdateRequestDto dto, Todo todo) {
         todo.updateContent(dto.getTitle(), dto.getDescription(), dto.getDueDate());
     }
 }

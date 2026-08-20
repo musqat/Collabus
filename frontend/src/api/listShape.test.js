@@ -70,6 +70,40 @@ describe('목록 응답 형태', () => {
     expect(result.totalPages).toBe(3);
   });
 
+  it('작업 내용 목록은 페이지 객체를 그대로 돌려준다', async () => {
+    mock.onGet('/todo/works').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
+
+    const result = await todoAPI.getWorks(1);
+
+    expect(result.content).toHaveLength(1);
+    expect(result.totalPages).toBe(3);
+  });
+
+  it('댓글 목록도 페이지 객체를 그대로 돌려준다', async () => {
+    mock.onGet('/todo/comments').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
+
+    const result = await todoAPI.getComments(1);
+
+    expect(result.content).toHaveLength(1);
+    expect(result.totalPages).toBe(3);
+  });
+
+  it('작업 내용의 파일 목록도 페이지 객체를 돌려준다', async () => {
+    mock.onGet('/todo/files/work/7').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
+
+    const result = await todoAPI.getFilesByWork(7);
+
+    expect(result.content).toHaveLength(1);
+  });
+
+  it('파일 내려받기는 unwrap 하지 않고 blob 을 그대로 준다', async () => {
+    mock.onGet('/todo/files/9/download').reply(200, 'binary-content');
+
+    const result = await todoAPI.downloadFile(9);
+
+    expect(result).toBe('binary-content');
+  });
+
   it('워크스페이스 단건도 ResponseDto 를 unwrap 해 돌려준다', async () => {
     mock.onGet('/workspaces/1').reply(200, {
       statusCode: '200',

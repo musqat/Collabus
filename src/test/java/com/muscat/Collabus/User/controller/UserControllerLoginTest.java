@@ -16,6 +16,7 @@ import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.config.jwt.JwtUtil;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import com.muscat.Collabus.enums.response.CommonResponse;
+import com.muscat.Collabus.enums.response.UserResponse;
 import com.muscat.Collabus.enums.role.SystemRole;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +119,7 @@ class UserControllerLoginTest {
   @Test
   @DisplayName("비밀번호가 틀리면 401 을 주고 실패 횟수를 올린다")
   void wrongPassword() {
-    when(userService.login(EMAIL, PASSWORD)).thenThrow(new IllegalArgumentException());
+    when(userService.login(EMAIL, PASSWORD)).thenThrow(new BusinessException(UserResponse.INVALID_PASSWORD));
     when(refreshTokenService.incrementLoginFailure(EMAIL)).thenReturn(1);
 
     ResponseEntity<ResponseDto> response = userController.login(request);
@@ -130,7 +131,7 @@ class UserControllerLoginTest {
   @Test
   @DisplayName("네 번째 실패까지는 401 이다")
   void fourthFailure() {
-    when(userService.login(EMAIL, PASSWORD)).thenThrow(new IllegalArgumentException());
+    when(userService.login(EMAIL, PASSWORD)).thenThrow(new BusinessException(UserResponse.INVALID_PASSWORD));
     when(refreshTokenService.incrementLoginFailure(EMAIL)).thenReturn(4);
 
     assertThat(userController.login(request).getStatusCode())
@@ -140,7 +141,7 @@ class UserControllerLoginTest {
   @Test
   @DisplayName("다섯 번째 실패에서 429 로 바뀐다")
   void fifthFailure() {
-    when(userService.login(EMAIL, PASSWORD)).thenThrow(new IllegalArgumentException());
+    when(userService.login(EMAIL, PASSWORD)).thenThrow(new BusinessException(UserResponse.INVALID_PASSWORD));
     when(refreshTokenService.incrementLoginFailure(EMAIL)).thenReturn(5);
 
     assertThat(userController.login(request).getStatusCode())
@@ -150,7 +151,7 @@ class UserControllerLoginTest {
   @Test
   @DisplayName("다섯 번을 넘겨도 429 를 유지한다")
   void beyondLimit() {
-    when(userService.login(EMAIL, PASSWORD)).thenThrow(new IllegalArgumentException());
+    when(userService.login(EMAIL, PASSWORD)).thenThrow(new BusinessException(UserResponse.INVALID_PASSWORD));
     when(refreshTokenService.incrementLoginFailure(EMAIL)).thenReturn(9);
 
     assertThat(userController.login(request).getStatusCode())

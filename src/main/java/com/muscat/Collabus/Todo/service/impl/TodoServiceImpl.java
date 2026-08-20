@@ -8,6 +8,7 @@ import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
+import com.muscat.Collabus.Todo.model.TodoUpdateRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.Todo.event.FilesDeletedEvent;
 import com.muscat.Collabus.Todo.repository.TodoFileRepository;
@@ -79,7 +80,7 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     @Transactional
-    public TodoResponseDto updateTodo(Long todoId, TodoRequestDto dto, Long updaterId) {
+    public TodoResponseDto updateTodo(Long todoId, TodoUpdateRequestDto dto, Long updaterId) {
         Todo todo = finder.findTodoById(todoId);
         validateManagerAuthority(todo.getTask(), updaterId);
 

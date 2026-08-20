@@ -1,52 +1,39 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { userAPI } from '../api/user';
+import { useProfile } from '../hooks/useProfile';
 import { showToast } from '../store/toastStore';
-import { useNavigate } from 'react-router-dom';
 
 export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const navigate = useNavigate();
 
   // 닉네임 변경
   const [newNickname, setNewNickname] = useState('');
-  const [isNicknameLoading, setIsNicknameLoading] = useState(false);
 
   // 비밀번호 변경
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   // 계정 삭제
   const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const handleNicknameChange = async (e) => {
+  const {
+    changeNickname, isNicknameLoading,
+    changePassword, isPasswordLoading,
+    deleteAccount, isDeleteLoading,
+  } = useProfile(user);
+
+  const handleNicknameChange = (e) => {
     e.preventDefault();
     if (!newNickname.trim()) {
       showToast.error('닉네임을 입력해주세요');
       return;
     }
-
-    setIsNicknameLoading(true);
-    try {
-      await userAPI.updateNickname(user.id, newNickname);
-      showToast.success('닉네임이 변경되었습니다. 다시 로그인해주세요.');
-      setTimeout(() => {
-        logout();
-        navigate('/login');
-      }, 1500);
-    } catch (error) {
-      showToast.error(error.response?.data?.statusMsg || '닉네임 변경에 실패했습니다');
-    } finally {
-      setIsNicknameLoading(false);
-    }
+    changeNickname(newNickname);
   };
 
-  const handlePasswordChange = async (e) => {
+  const handlePasswordChange = (e) => {
     e.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -65,40 +52,21 @@ export default function ProfilePage() {
       return;
     }
 
-    setIsPasswordLoading(true);
-    try {
-      await userAPI.updatePassword(user.id, currentPassword, newPassword);
-      showToast.success('비밀번호가 변경되었습니다');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error) {
-      showToast.error(error.response?.data?.statusMsg || '비밀번호 변경에 실패했습니다');
-    } finally {
-      setIsPasswordLoading(false);
-    }
+    changePassword({ currentPassword, newPassword }, {
+      onSuccess: () => {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      },
+    });
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     if (deleteConfirm !== user.email) {
       showToast.error('이메일이 일치하지 않습니다');
       return;
     }
-
-    setIsDeleteLoading(true);
-    try {
-      await userAPI.deleteAccount(user.email);
-      showToast.success('계정이 삭제되었습니다');
-      setTimeout(() => {
-        logout();
-        navigate('/login');
-      }, 1500);
-    } catch (error) {
-      showToast.error(error.response?.data?.statusMsg || '계정 삭제에 실패했습니다');
-    } finally {
-      setIsDeleteLoading(false);
-      setShowDeleteModal(false);
-    }
+    deleteAccount(undefined, { onSettled: () => setShowDeleteModal(false) });
   };
 
   if (!user) {

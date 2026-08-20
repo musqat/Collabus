@@ -120,7 +120,7 @@ class WorkspaceUserInviteServiceImplTest {
     InviteRequestDto dto = new InviteRequestDto(1L, WorkspaceRole.MEMBER);
 
     assertThatThrownBy(() -> inviteService.inviteUserToWorkspace(1L, 10L, dto))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(BusinessException.class);
 
     verify(inviteRepository, times(0)).save(any());
   }
@@ -156,7 +156,7 @@ class WorkspaceUserInviteServiceImplTest {
     when(inviteRepository.findByIdAndInviteeId(1L, 2L)).thenReturn(Optional.of(invite));
 
     assertThatThrownBy(() -> inviteService.acceptInvite(1L, 2L))
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(BusinessException.class);
 
     verify(workspaceUserRepository, times(0)).save(any());
   }

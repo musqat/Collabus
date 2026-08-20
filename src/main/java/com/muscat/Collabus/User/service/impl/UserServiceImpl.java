@@ -111,7 +111,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updatePassword(Long userId, String currentPassword, String newPassword) {
         if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException(UserResponse.PASSWORD_BLANK.getMessage());
+            throw new BusinessException(UserResponse.PASSWORD_BLANK);
         }
 
         User user = userRepository.findById(userId)
@@ -180,7 +180,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException(UserResponse.EMAIL_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException(UserResponse.INVALID_PASSWORD.getMessage());
+            throw new BusinessException(UserResponse.INVALID_PASSWORD);
         }
 
         return userMapper.mapToDto(user);

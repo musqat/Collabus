@@ -17,6 +17,7 @@ import com.muscat.Collabus.Task.entity.Task;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.mapper.TodoMapper;
 import com.muscat.Collabus.Todo.model.TodoRequestDto;
+import com.muscat.Collabus.Todo.model.TodoUpdateRequestDto;
 import com.muscat.Collabus.Todo.model.TodoResponseDto;
 import com.muscat.Collabus.Notification.service.NotificationService;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
@@ -100,6 +101,7 @@ class TodoServiceImplTest {
     private Task task;
     private Todo todo;
     private TodoRequestDto todoRequestDto;
+    private TodoUpdateRequestDto todoUpdateRequestDto;
     private TodoResponseDto todoResponseDto;
 
     @BeforeEach
@@ -151,6 +153,12 @@ class TodoServiceImplTest {
                 .description("Test Description")
                 .dueDate(LocalDate.now().plusDays(7))
                 .build();
+        todoUpdateRequestDto = TodoUpdateRequestDto.builder()
+                .title("Test Todo")
+                .description("Test Description")
+                .dueDate(LocalDate.now().plusDays(7))
+                .build();
+
 
         todoResponseDto = TodoResponseDto.builder()
                 .id(1L)
@@ -240,12 +248,12 @@ class TodoServiceImplTest {
         when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
         // When
-        TodoResponseDto result = todoService.updateTodo(todoId, todoRequestDto, updaterId);
+        TodoResponseDto result = todoService.updateTodo(todoId, todoUpdateRequestDto, updaterId);
 
         // Then
         assertThat(result).isNotNull();
         verify(finder, times(1)).findTodoById(todoId);
-        verify(todoMapper, times(1)).updateFromDto(todoRequestDto, todo);
+        verify(todoMapper, times(1)).updateFromDto(todoUpdateRequestDto, todo);
     }
 
     @Test
@@ -258,7 +266,7 @@ class TodoServiceImplTest {
         when(taskAuthorityUtil.canManageTask(task, updaterId)).thenReturn(false);
 
         // When & Then
-        assertThatThrownBy(() -> todoService.updateTodo(todoId, todoRequestDto, updaterId))
+        assertThatThrownBy(() -> todoService.updateTodo(todoId, todoUpdateRequestDto, updaterId))
                 .isInstanceOf(BusinessException.class);
 
         verify(todoRepository, times(0)).save(any(Todo.class));

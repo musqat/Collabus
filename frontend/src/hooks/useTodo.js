@@ -79,8 +79,18 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
     }
   });
 
+  const assigneeMutation = useMutation({
+    mutationFn: ({ todoId, userId }) => todoAPI.changeAssignee(todoId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      showToast.success('담당자가 변경되었습니다.');
+    },
+    onError: (error) => showToast.error(errorMessage(error, '담당자 변경 실패')),
+  });
+
   return {
     todos,
+    changeAssignee: assigneeMutation.mutate,
     page: todoPage?.page ?? 0,
     totalPages: todoPage?.totalPages ?? 0,
     totalElements: todoPage?.totalElements ?? 0,

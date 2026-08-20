@@ -1,4 +1,11 @@
+server:
+  # 종료 신호를 받으면 처리 중인 요청을 마칠 때까지 기다린다
+  shutdown: graceful
+
 spring:
+  lifecycle:
+    # 대기 시간의 상한
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:collabus}?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver

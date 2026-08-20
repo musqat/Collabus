@@ -38,3 +38,7 @@ out/
 
 ### Environment Variables ###
 .env
+backups/
+
+# 백업 스크립트와 결과물은 로컬에만 둔다
+scripts/
