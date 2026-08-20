@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { errorMessage } from '../api/errorMessage';
+import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { todoAPI } from '../api/todo';
 import apiClient from '../api/client';
@@ -51,7 +53,7 @@ export default function TodoDetail() {
       setLoading(false);
     } catch (error) {
       console.error('Failed to load todo:', error);
-      alert('Todo를 불러올 수 없습니다.');
+      showToast.error('Todo를 불러올 수 없습니다.');
       navigate(-1);
     }
   };
@@ -98,16 +100,16 @@ export default function TodoDetail() {
   const handleCreateWork = async (e) => {
     e.preventDefault();
     if (!newWork.title.trim()) {
-      alert('제목을 입력하세요.');
+      showToast.warning('제목을 입력하세요.');
       return;
     }
     try {
       await apiClient.post('/todo/works', newWork, { params: { todoId } });
       setNewWork({ title: '', content: '' });
       loadWorks();
-      alert('작업 내용이 등록되었습니다.');
+      showToast.success('작업 내용이 등록되었습니다.');
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '작업 내용 등록 실패');
+      showToast.error(errorMessage(error, '작업 내용 등록 실패'));
     }
   };
 
@@ -120,9 +122,9 @@ export default function TodoDetail() {
       });
       setEditingWork(null);
       loadWorks();
-      alert('작업 내용이 수정되었습니다.');
+      showToast.success('작업 내용이 수정되었습니다.');
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '작업 내용 수정 실패');
+      showToast.error(errorMessage(error, '작업 내용 수정 실패'));
     }
   };
 
@@ -131,9 +133,9 @@ export default function TodoDetail() {
     try {
       await apiClient.delete(`/todo/works/${workId}`);
       loadWorks();
-      alert('작업 내용이 삭제되었습니다.');
+      showToast.success('작업 내용이 삭제되었습니다.');
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '작업 내용 삭제 실패');
+      showToast.error(errorMessage(error, '작업 내용 삭제 실패'));
     }
   };
 
@@ -141,7 +143,7 @@ export default function TodoDetail() {
   const handleCreateComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) {
-      alert('댓글을 입력하세요.');
+      showToast.warning('댓글을 입력하세요.');
       return;
     }
     try {
@@ -149,7 +151,7 @@ export default function TodoDetail() {
       setNewComment('');
       loadComments();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '댓글 작성 실패');
+      showToast.error(errorMessage(error, '댓글 작성 실패'));
     }
   };
 
@@ -159,7 +161,7 @@ export default function TodoDetail() {
       setEditingComment(null);
       loadComments();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '댓글 수정 실패');
+      showToast.error(errorMessage(error, '댓글 수정 실패'));
     }
   };
 
@@ -169,7 +171,7 @@ export default function TodoDetail() {
       await apiClient.delete(`/todo/comments/${commentId}`);
       loadComments();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '댓글 삭제 실패');
+      showToast.error(errorMessage(error, '댓글 삭제 실패'));
     }
   };
 
@@ -187,10 +189,10 @@ export default function TodoDetail() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       loadFilesForWork(workId);
-      alert('파일이 업로드되었습니다.');
+      showToast.success('파일이 업로드되었습니다.');
       e.target.value = '';
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '파일 업로드 실패');
+      showToast.error(errorMessage(error, '파일 업로드 실패'));
     }
   };
 
@@ -209,7 +211,7 @@ export default function TodoDetail() {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (error) {
-      alert('파일 다운로드 실패');
+      showToast.error('파일 다운로드 실패');
     }
   };
 
@@ -219,7 +221,7 @@ export default function TodoDetail() {
       await apiClient.delete(`/todo/files/${fileId}`);
       loadFilesForWork(workId);
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '파일 삭제 실패');
+      showToast.error(errorMessage(error, '파일 삭제 실패'));
     }
   };
 

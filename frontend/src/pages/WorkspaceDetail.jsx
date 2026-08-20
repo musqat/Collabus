@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { errorMessage } from '../api/errorMessage';
+import { showToast } from '../store/toastStore';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useTasks, useWorkspaceProgress } from '../hooks/useTask';
@@ -149,19 +151,19 @@ export default function WorkspaceDetail() {
 
   const handleInvite = async () => {
     if (!selectedInvitee) {
-      alert('초대할 사용자를 선택하세요.');
+      showToast.warning('초대할 사용자를 선택하세요.');
       return;
     }
 
     try {
       await workspaceAPI.invite(workspaceId, selectedInvitee.id, 'MEMBER');
-      alert('초대가 완료되었습니다.');
+      showToast.success('초대가 완료되었습니다.');
       setShowInviteModal(false);
       setSearchKeyword('');
       setSearchResults([]);
       setSelectedInvitee(null);
     } catch (error) {
-      alert(error.response?.data?.message || error.response?.data?.statusMsg || '초대 실패');
+      showToast.error(errorMessage(error, '초대 실패'));
     }
   };
 
@@ -172,28 +174,28 @@ export default function WorkspaceDetail() {
 
     try {
       await workspaceAPI.removeMember(workspaceId, userId);
-      alert('멤버가 제거되었습니다.');
+      showToast.success('멤버가 제거되었습니다.');
       // Reload members
       const data = await workspaceAPI.getMembers(workspaceId);
       if (Array.isArray(data)) {
         setMembers(data);
       }
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '멤버 제거 실패');
+      showToast.error(errorMessage(error, '멤버 제거 실패'));
     }
   };
 
   const handleRoleChange = async (userId, newRole) => {
     try {
       await workspaceAPI.updateMemberRole(workspaceId, userId, newRole);
-      alert('멤버 역할이 변경되었습니다.');
+      showToast.success('멤버 역할이 변경되었습니다.');
       // Reload members
       const data = await workspaceAPI.getMembers(workspaceId);
       if (Array.isArray(data)) {
         setMembers(data);
       }
     } catch (error) {
-      alert(error.response?.data?.statusMsg || '역할 변경 실패');
+      showToast.error(errorMessage(error, '역할 변경 실패'));
     }
   };
 
@@ -212,12 +214,12 @@ export default function WorkspaceDetail() {
     e.preventDefault();
     try {
       await workspaceAPI.update(workspaceId, editingWorkspace.workspaceName, editingWorkspace.description);
-      alert('Workspace가 수정되었습니다.');
+      showToast.success('Workspace가 수정되었습니다.');
       setShowWorkspaceEditModal(false);
       setEditingWorkspace(null);
       window.location.reload();
     } catch (error) {
-      alert(error.response?.data?.statusMsg || 'Workspace 수정 실패');
+      showToast.error(errorMessage(error, 'Workspace 수정 실패'));
     }
   };
 

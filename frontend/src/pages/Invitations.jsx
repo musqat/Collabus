@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { errorMessage } from '../api/errorMessage';
+import { showToast } from '../store/toastStore';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import usePageParam from '../hooks/usePageParam';
@@ -20,10 +22,10 @@ export default function Invitations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      alert('초대를 수락했습니다');
+      showToast.success('초대를 수락했습니다');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || '초대 수락에 실패했습니다');
+      showToast.error(errorMessage(error, '초대 수락에 실패했습니다'));
     },
   });
 
@@ -31,10 +33,10 @@ export default function Invitations() {
     mutationFn: workspaceAPI.rejectInvitation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
-      alert('초대를 거절했습니다');
+      showToast.success('초대를 거절했습니다');
     },
     onError: (error) => {
-      alert(error.response?.data?.message || '초대 거절에 실패했습니다');
+      showToast.error(errorMessage(error, '초대 거절에 실패했습니다'));
     },
   });
 

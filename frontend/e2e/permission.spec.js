@@ -36,7 +36,6 @@ test.describe('초대', () => {
     await page.goto('/invitations');
     await expect(page.getByRole('heading', { name })).toBeVisible();
 
-    page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: '수락' }).click();
 
     await page.goto('/dashboard');
