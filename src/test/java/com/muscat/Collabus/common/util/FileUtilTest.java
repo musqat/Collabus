@@ -1,6 +1,7 @@
 package com.muscat.Collabus.common.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.muscat.Collabus.common.exception.BusinessException;
@@ -118,5 +119,64 @@ class FileUtilTest {
 
     fileUtil.deleteFile(saved);
     assertThat(Files.exists(Path.of(saved))).isFalse();
+  }
+
+  @Test
+  @DisplayName("null 파일은 저장할 수 없다")
+  void saveFile_Fail_Null() {
+    assertThatThrownBy(() -> fileUtil.saveFile(null))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  @DisplayName("원본 이름이 없으면 unknown 으로 다룬다")
+  void saveFile_Fail_NullOriginalName() {
+    MockMultipartFile file = new MockMultipartFile("file", null, "text/plain", "a".getBytes());
+
+    // unknown 에는 확장자가 없어 허용 목록 검사에서 막힌다
+    assertThatThrownBy(() -> fileUtil.saveFile(file))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  @DisplayName("빈 경로는 읽을 수 없다")
+  void loadFile_Fail_BlankPath() {
+    assertThatThrownBy(() -> fileUtil.loadFile("   "))
+        .isInstanceOf(BusinessException.class);
+    assertThatThrownBy(() -> fileUtil.loadFile(null))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  @DisplayName("루트 안이라도 없는 파일은 읽을 수 없다")
+  void loadFile_Fail_Missing() {
+    String missing = uploadRoot.resolve("none.txt").toString();
+
+    assertThatThrownBy(() -> fileUtil.loadFile(missing))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  @DisplayName("빈 경로를 지워도 조용히 넘어간다")
+  void deleteFile_BlankPath() {
+    assertThatCode(() -> fileUtil.deleteFile(null)).doesNotThrowAnyException();
+    assertThatCode(() -> fileUtil.deleteFile("")).doesNotThrowAnyException();
+  }
+
+  @Test
+  @DisplayName("없는 파일을 지워도 조용히 넘어간다")
+  void deleteFile_Missing() {
+    String missing = uploadRoot.resolve("none.txt").toString();
+
+    assertThatCode(() -> fileUtil.deleteFile(missing)).doesNotThrowAnyException();
+  }
+
+  @Test
+  @DisplayName("대문자 확장자도 허용한다")
+  void saveFile_UppercaseExtension() {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "보고서.PNG", "image/png", "a".getBytes());
+
+    assertThatCode(() -> fileUtil.saveFile(file)).doesNotThrowAnyException();
   }
 }

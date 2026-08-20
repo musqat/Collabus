@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -551,6 +553,121 @@ class TodoServiceImplTest {
     void getTodosByTask_Fail_InvalidStatusValue() {
         assertThatThrownBy(() ->
                 todoService.getTodosByTask(1L, 1L, "NOT_A_STATUS", PageRequest.of(0, 20)))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("담당자를 지정하지 않으면 생성자가 담당자가 되고 알림을 보내지 않는다")
+    void createTodo_NoAssignee_DefaultsToCreator() {
+        TodoRequestDto dto = TodoRequestDto.builder()
+                .taskId(1L).title("t").dueDate(LocalDate.now().plusDays(1)).build();
+        when(finder.findTaskById(1L)).thenReturn(task);
+        when(finder.findUserById(1L)).thenReturn(user);
+        when(todoMapper.mapToEntity(any(), any(), any())).thenReturn(todo);
+        when(todoRepository.save(any(Todo.class))).thenReturn(todo);
+        when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
+
+        todoService.createTodo(dto, 1L);
+
+        verify(notificationService, times(0))
+                .createNotification(any(), any(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("담당자가 생성자와 다르면 담당자에게 알림을 보낸다")
+    void createTodo_OtherAssignee_Notifies() {
+        User other = User.builder().id(9L).build();
+        TodoRequestDto dto = TodoRequestDto.builder()
+                .taskId(1L).title("t").assigneeId(9L).dueDate(LocalDate.now().plusDays(1)).build();
+        when(finder.findTaskById(1L)).thenReturn(task);
+        when(finder.findUserById(9L)).thenReturn(other);
+        when(todoMapper.mapToEntity(any(), any(), any())).thenReturn(todo);
+        when(todoRepository.save(any(Todo.class))).thenReturn(todo);
+        when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
+
+        todoService.createTodo(dto, 1L);
+
+        verify(notificationService, times(1))
+                .createNotification(eq(9L), any(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("검수 완료는 담당자에게 알림을 보낸다")
+    void confirmTodoCompletion_NotifiesAssignee() {
+        Todo waiting = Todo.builder().id(1L).task(task)
+                .assignee(User.builder().id(9L).build())
+                .title("t").status(TodoStatus.WAITING_REVIEW).build();
+        when(finder.findTodoById(1L)).thenReturn(waiting);
+        when(todoMapper.mapToDto(waiting)).thenReturn(todoResponseDto);
+
+        todoService.confirmTodoCompletion(1L, 1L);
+
+        verify(notificationService, times(1))
+                .createNotification(eq(9L), any(), anyString(), eq(1L));
+    }
+
+    @Test
+    @DisplayName("검수자가 담당자 본인이면 알림을 보내지 않는다")
+    void confirmTodoCompletion_SelfNoNotification() {
+        Todo waiting = Todo.builder().id(1L).task(task).assignee(user)
+                .title("t").status(TodoStatus.WAITING_REVIEW).build();
+        when(finder.findTodoById(1L)).thenReturn(waiting);
+        when(todoMapper.mapToDto(waiting)).thenReturn(todoResponseDto);
+
+        todoService.confirmTodoCompletion(1L, 1L);
+
+        verify(notificationService, times(0))
+                .createNotification(any(), any(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("담당자가 없는 Todo 를 검수해도 알림 없이 넘어간다")
+    void confirmTodoCompletion_NoAssignee() {
+        Todo waiting = Todo.builder().id(1L).task(task).assignee(null)
+                .title("t").status(TodoStatus.WAITING_REVIEW).build();
+        when(finder.findTodoById(1L)).thenReturn(waiting);
+        when(todoMapper.mapToDto(waiting)).thenReturn(todoResponseDto);
+
+        todoService.confirmTodoCompletion(1L, 1L);
+
+        verify(notificationService, times(0))
+                .createNotification(any(), any(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("담당자를 자기 자신으로 바꾸면 알림을 보내지 않는다")
+    void changeAssignee_ToSelf_NoNotification() {
+        Todo owned = Todo.builder().id(1L).task(task)
+                .assignee(User.builder().id(9L).build()).title("t").build();
+        when(finder.findTodoById(1L)).thenReturn(owned);
+        when(finder.findUserById(1L)).thenReturn(user);
+
+        todoService.changeAssignee(1L, 1L, 1L);
+
+        verify(notificationService, times(0))
+                .createNotification(any(), any(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("담당자가 없던 Todo 에도 담당자를 지정할 수 있다")
+    void changeAssignee_FromNull() {
+        Todo unassigned = Todo.builder().id(1L).task(task).assignee(null).title("t").build();
+        when(finder.findTodoById(1L)).thenReturn(unassigned);
+        when(finder.findUserById(9L)).thenReturn(User.builder().id(9L).build());
+
+        todoService.changeAssignee(1L, 9L, 1L);
+
+        verify(notificationService, times(1))
+                .createNotification(eq(9L), any(), anyString(), eq(1L));
+    }
+
+    @Test
+    @DisplayName("담당자가 없으면 완료 요청을 할 수 없다")
+    void completeOwnTodo_NoAssignee() {
+        Todo unassigned = Todo.builder().id(1L).task(task).assignee(null).title("t").build();
+        when(finder.findTodoById(1L)).thenReturn(unassigned);
+
+        assertThatThrownBy(() -> todoService.completeOwnTodo(1L, 1L))
                 .isInstanceOf(BusinessException.class);
     }
 }
