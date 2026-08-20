@@ -10,7 +10,7 @@ export const todoAPI = {
       description,
       dueDate
     });
-    return data.data;
+    return data;
   },
 
   // Task의 Todo 목록 (페이지 응답)
@@ -18,13 +18,13 @@ export const todoAPI = {
     const { data } = await apiClient.get('/todo', {
       params: { taskId, status, page, size, sort: sort || undefined }
     });
-    return data.data;
+    return data;
   },
 
   // Todo 상세
   getById: async (todoId) => {
     const { data } = await apiClient.get(`/todo/${todoId}`);
-    return data.data;
+    return data;
   },
 
   // Todo 수정
@@ -34,7 +34,7 @@ export const todoAPI = {
       description,
       dueDate
     });
-    return data.data;
+    return data;
   },
 
   // Todo 삭제
@@ -52,7 +52,7 @@ export const todoAPI = {
   // 최종 확인
   confirm: async (todoId) => {
     const { data } = await apiClient.patch(`/todo/${todoId}/confirm`);
-    return data.data;
+    return data;
   },
 
   // 담당자 변경
@@ -66,19 +66,19 @@ export const todoAPI = {
     const { data } = await apiClient.get('/todo/comments', {
       params: { todoId, page, size }
     });
-    return data.data.content;
+    return data.content;
   },
 
   createComment: async (todoId, content) => {
     const { data } = await apiClient.post('/todo/comments', { content }, {
       params: { todoId }
     });
-    return data.data;
+    return data;
   },
 
   updateComment: async (commentId, content) => {
     const { data } = await apiClient.patch(`/todo/comments/${commentId}`, { content });
-    return data.data;
+    return data;
   },
 
   deleteComment: async (commentId) => {

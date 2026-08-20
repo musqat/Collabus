@@ -28,6 +28,6 @@ export const userAPI = {
   // 닉네임으로 유저 검색
   searchByNickname: async (keyword) => {
     const response = await client.get(`/users/search?keyword=${encodeURIComponent(keyword)}`);
-    return response.data.data;
+    return response.data;
   },
 };

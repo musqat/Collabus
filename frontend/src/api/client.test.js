@@ -40,7 +40,8 @@ afterEach(() => {
 describe('요청 인터셉터', () => {
   it('저장된 토큰을 Authorization 에 붙인다', async () => {
     localStorage.setItem('accessToken', 'access-1');
-    clientMock.onGet('/workspaces/joined').reply(200, { data: [] });
+    clientMock.onGet('/workspaces/joined')
+      .reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
 
     await apiClient.get('/workspaces/joined');
 
@@ -48,7 +49,8 @@ describe('요청 인터셉터', () => {
   });
 
   it('토큰이 없으면 헤더를 붙이지 않는다', async () => {
-    clientMock.onGet('/workspaces/joined').reply(200, { data: [] });
+    clientMock.onGet('/workspaces/joined')
+      .reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
 
     await apiClient.get('/workspaces/joined');
 
@@ -70,11 +72,11 @@ describe('401 재발급', () => {
       .onGet('/workspaces/joined')
       .replyOnce(401)
       .onGet('/workspaces/joined')
-      .reply(200, { data: ['ok'] });
+      .reply(200, { statusCode: '200', statusMsg: 'ok', data: ['ok'] });
 
     const { data } = await apiClient.get('/workspaces/joined');
 
-    expect(data.data).toEqual(['ok']);
+    expect(data).toEqual(['ok']);
     expect(localStorage.getItem('accessToken')).toBe('access-2');
     expect(localStorage.getItem('refreshToken')).toBe('refresh-2');
     expect(clientMock.history.get[1].headers.Authorization).toBe('Bearer access-2');
@@ -84,8 +86,8 @@ describe('401 재발급', () => {
     axiosMock.onPost(`${BASE_URL}/token/refresh`).reply(200, {
       data: { accessToken: 'access-2', refreshToken: 'refresh-2' },
     });
-    clientMock.onGet('/tasks').replyOnce(401).onGet('/tasks').reply(200, { data: [] });
-    clientMock.onGet('/todo').replyOnce(401).onGet('/todo').reply(200, { data: [] });
+    clientMock.onGet('/tasks').replyOnce(401).onGet('/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
+    clientMock.onGet('/todo').replyOnce(401).onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
 
     await Promise.all([apiClient.get('/tasks'), apiClient.get('/todo')]);
 
@@ -96,8 +98,8 @@ describe('401 재발급', () => {
     axiosMock.onPost(`${BASE_URL}/token/refresh`).reply(200, {
       data: { accessToken: 'access-2', refreshToken: 'refresh-2' },
     });
-    clientMock.onGet('/tasks').replyOnce(401).onGet('/tasks').reply(200, { data: [] });
-    clientMock.onGet('/todo').replyOnce(401).onGet('/todo').reply(200, { data: [] });
+    clientMock.onGet('/tasks').replyOnce(401).onGet('/tasks').reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
+    clientMock.onGet('/todo').replyOnce(401).onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: [] });
 
     await Promise.all([apiClient.get('/tasks'), apiClient.get('/todo')]);
 
@@ -192,5 +194,52 @@ describe('재발급 실패', () => {
 
     expect(results.every((r) => r.status === 'rejected')).toBe(true);
     expect(axiosMock.history.post).toHaveLength(1);
+  });
+});
+
+describe('ResponseDto unwrap', () => {
+  it('ResponseDto 를 unwrap 한다', async () => {
+    clientMock.onGet('/tasks/1').reply(200, {
+      statusCode: '200',
+      statusMsg: 'ok',
+      data: { id: 1, title: '할 일' },
+    });
+
+    const { data } = await apiClient.get('/tasks/1');
+
+    expect(data).toEqual({ id: 1, title: '할 일' });
+  });
+
+  it('ResponseDto 가 아닌 응답은 건드리지 않는다', async () => {
+    clientMock.onGet('/todo/files/1').reply(200, { id: 1, fileName: 'a.png' });
+
+    const { data } = await apiClient.get('/todo/files/1');
+
+    expect(data).toEqual({ id: 1, fileName: 'a.png' });
+  });
+
+  it('본문이 없어도 넘어간다', async () => {
+    clientMock.onDelete('/tasks/1').reply(204);
+
+    const { data } = await apiClient.delete('/tasks/1');
+
+    expect(data).toBeFalsy();
+  });
+
+  it('재발급 후 재시도된 응답도 한 번만 unwrap 한다', async () => {
+    localStorage.setItem('accessToken', 'expired');
+    localStorage.setItem('refreshToken', 'refresh-1');
+    axiosMock.onPost(`${BASE_URL}/token/refresh`).reply(200, {
+      data: { accessToken: 'access-2', refreshToken: 'refresh-2' },
+    });
+    clientMock
+      .onGet('/tasks/1')
+      .replyOnce(401)
+      .onGet('/tasks/1')
+      .reply(200, { statusCode: '200', statusMsg: 'ok', data: { id: 1 } });
+
+    const { data } = await apiClient.get('/tasks/1');
+
+    expect(data).toEqual({ id: 1 });
   });
 });

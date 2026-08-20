@@ -29,6 +29,6 @@ export const authAPI = {
     const { data } = await apiClient.get('/users/search', {
       params: { keyword, page, size }
     });
-    return data.data.content;
+    return data.content;
   }
 };

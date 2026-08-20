@@ -12,19 +12,19 @@ export const taskAPI = {
     const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/tasks`, {
       params: { page, size, keyword: keyword || undefined, sort: sort || undefined }
     });
-    return data.data;
+    return data;
   },
 
   // 워크스페이스 진행률. total, inProgress, waitingReview, confirmed 를 받는다
   getWorkspaceProgress: async (workspaceId) => {
     const { data } = await apiClient.get(`/tasks/workspaces/${workspaceId}/progress`);
-    return data.data;
+    return data;
   },
 
   // Task 상세
   getById: async (taskId) => {
     const { data } = await apiClient.get(`/tasks/${taskId}`);
-    return data.data; // ResponseDto unwrapping
+    return data; // ResponseDto unwrapping
   },
 
   // Task의 Todo 목록
@@ -33,7 +33,7 @@ export const taskAPI = {
     const { data } = await apiClient.get('/todo', {
       params: { taskId, size }
     });
-    return data.data.content;
+    return data.content;
   },
 
   // Task 수정
@@ -57,13 +57,13 @@ export const taskAPI = {
     const { data } = await apiClient.get(`/tasks/${taskId}/members`, {
       params: { page, size }
     });
-    return data.data;
+    return data;
   },
 
   // Task 진행률. total, inProgress, waitingReview, confirmed 를 받는다
   getTaskProgress: async (taskId) => {
     const { data } = await apiClient.get(`/tasks/${taskId}/progress`);
-    return data.data;
+    return data;
   },
 
   // 멤버 추가

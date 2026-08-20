@@ -107,4 +107,15 @@ apiClient.interceptors.response.use(
   }
 );
 
+// ResponseDto 를 unwrap 한다.
+// axios 의 응답 본문과 ResponseDto 의 payload 가 둘 다 data 라 호출부가 data.data 를 써야 했다.
+// 재발급 후 재시도된 응답이 이 체인을 다시 타므로, ResponseDto 일 때만 unwrap 해 두 번 하지 않는다.
+apiClient.interceptors.response.use((response) => {
+  const body = response.data;
+  if (body && typeof body === 'object' && 'statusCode' in body) {
+    response.data = body.data;
+  }
+  return response;
+});
+
 export default apiClient;
