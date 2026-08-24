@@ -2,6 +2,18 @@
 
 > 팀 협업 작업 관리 플랫폼. Workspace · Task · Todo 계층 구조 기반
 
+[![CI](https://github.com/musqat/Collabus/actions/workflows/ci.yml/badge.svg)](https://github.com/musqat/Collabus/actions/workflows/ci.yml)
+![Java](https://img.shields.io/badge/Java-21-007396)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.5-6DB33F)
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D)
+![tests](https://img.shields.io/badge/tests-backend_301_%C2%B7_frontend_88_%C2%B7_e2e_18-success)
+
+워크스페이스에서 Task 를 나누고, Task 안의 Todo 를 담당자에게 맡겨
+`IN_PROGRESS → WAITING_REVIEW → CONFIRMED` 로 검수까지 끌고 갑니다.
+권한은 MASTER · MANAGER · MEMBER 세 단계이며, 상태가 바뀌면 WebSocket 으로 알림이 갑니다.
+
 ---
 
 ## Demo
@@ -16,7 +28,7 @@
 
 | Layer | Stack |
 |-------|-------|
-| Backend | Java 21 · Spring Boot 3 · Spring Security · JWT · WebSocket (STOMP) |
+| Backend | Java 21 · Spring Boot 3 · Spring Security · JWT · WebSocket (STOMP, 알림 푸시) |
 | Frontend | React 18 · Vite · React Router v6 · TanStack Query · Zustand · Tailwind CSS |
 | Database | MySQL 8.0 |
 | Cache | Redis 7 — Refresh Token · 로그인 실패 횟수 · 블랙리스트 |
@@ -24,7 +36,8 @@
 
 ---
 
-## Test Accounts
+<details>
+<summary><b>Test Accounts</b> — 데모 계정과 워크스페이스별 권한</summary>
 
 더미 데이터가 자동으로 삽입됩니다. 아래 계정으로 바로 로그인 가능합니다.
 
@@ -44,9 +57,12 @@
 > `user1` 은 워크스페이스마다 권한이 달라 MASTER·MANAGER·MEMBER 가 각각 무엇을
 > 할 수 있는지 한 계정으로 확인할 수 있습니다.
 
+</details>
+
 ---
 
-## Quick Start
+<details>
+<summary><b>Quick Start</b> — Docker 실행, 로컬 개발, 테스트</summary>
 
 ### Docker (권장)
 
@@ -98,7 +114,7 @@ npm install && npm run dev
 # 백엔드 — 단위 + 통합 301개
 ./gradlew build
 
-# 프론트엔드 — 단위 84개
+# 프론트엔드 — 단위 88개
 cd frontend && npm test
 
 # E2E — Playwright 18개 (스택이 떠 있어야 함)
@@ -112,9 +128,12 @@ cd frontend && npm run test:e2e
 
 > CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다.
 
+</details>
+
 ---
 
-## Environment Variables
+<details>
+<summary><b>Environment Variables</b> — .env 와 frontend/.env</summary>
 
 **`.env` (루트)**: `.env.example` 복사 후 바로 사용 가능
 
@@ -143,12 +162,21 @@ VITE_API_BASE_URL=/api
 VITE_WS_BASE_URL=/ws
 ```
 
+</details>
+
 ---
 
 ## 핵심 구현
 
-**WebSocket 인증**
-- STOMP CONNECT 프레임에서 JWT 검증. HTTP 인증과 별도로 처리해야 해서 `ChannelInterceptor` 직접 구현.
+**WebSocket 인증** — 서버 → 클라이언트 알림 푸시 전용 단방향 채널입니다. 동시 편집은 다루지 않습니다.
+- SockJS 핸드셰이크는 `Authorization` 헤더를 싣지 못합니다. `/ws/**` 를 HTTP 체인에서 열어두는 대신
+  STOMP `CONNECT` 프레임에서 인증하는 `ChannelInterceptor` 를 직접 구현했습니다.
+- 로그아웃 블랙리스트를 이 경로에서도 봅니다. HTTP 로는 끊긴 토큰으로 WebSocket 만 살아 있는 상태를 막습니다.
+- 인증에 성공하면 `accessor.setUser` 로 principal 을 심어 `/user/{id}/queue/notifications` 라우팅이 동작합니다.
+- 검증 갈래는 `WebSocketAuthInterceptorTest` 8개가 고정합니다.
+
+**알림 발행은 커밋 이후**
+- `@TransactionalEventListener(AFTER_COMMIT)` 으로 발행합니다. 롤백된 작업의 알림이 나가지 않습니다.
 
 **Refresh Token Rotation**
 - 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
@@ -171,21 +199,20 @@ VITE_WS_BASE_URL=/ws
 | Brute Force 방어 | 5회 실패 시 10분 계정 잠금 (Redis) |
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
 | 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
-| WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 |
+| WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 + 로그아웃 블랙리스트 대조 |
 | 파일 접근 제어 | 업로드 · 목록 · 다운로드 모두 해당 Task 참여자만 허용 |
 | 업로드 제한 | 확장자 허용 목록 + 파일당 10MB, 경로 탈출 차단 |
 
-### 트레이드오프
+---
 
-**토큰을 localStorage 에 저장**
-- XSS 가 발생하면 토큰이 그대로 노출됩니다. HttpOnly 쿠키가 더 안전하지만,
-  현재는 CSRF 대응과 쿠키 기반 재발급 흐름을 추가로 구현해야 해서 localStorage 를 사용합니다.
-- Access Token TTL 을 15분으로 짧게 잡고, 로그아웃 시 블랙리스트에 등록해 노출 창을 줄였습니다.
+## 만들며 겪은 것
 
-**비밀번호 변경 후 기존 Access Token**
-- Refresh Token 은 즉시 삭제되지만, 이미 발급된 Access Token 은 만료(최대 15분)까지 유효합니다.
-- 발급된 모든 AT 를 즉시 차단하려면 사용자별 토큰 버전 관리가 필요합니다.
+동작하는 데까지 만들어놓고, 테스트를 71개에서 301개로 늘리며 코드를 처음부터 다시 읽었다.
+그 과정에서 Todo 수정이 아예 안 되고 있었다는 것, 로그인이 실패 사유를 전부 "없는 이메일"
+로 뭉개고 있었다는 것, 계정 잠금이 남의 계정을 잠그는 데 쓰일 수 있다는 것을 찾았다.
+통과하고 있던 E2E 하나는 사실 조용히 건너뛰는 중이었다.
 
-**파일은 로컬 디스크에 저장**
-- `uploads` 디렉터리(도커에서는 named volume)에 저장합니다. 단일 인스턴스 전제이며,
-  다중 인스턴스로 확장하려면 오브젝트 스토리지로 옮겨야 합니다.
+이 프로젝트에서 가장 값이 컸던 부분이다.
+
+- [시행착오](docs/trial-and-error.md) — 짐작으로 시작한 것이 여러 번 틀렸다. 무엇을 믿었고 무엇으로 갈렸는지
+- [문제 해결](docs/problem-solving.md) — 겪은 장애와 버그를 문제 → 원인 → 해결. 감수하기로 한 한계도 함께
