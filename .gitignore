@@ -46,3 +46,8 @@ scripts/
 # 데모 GIF 캡처 도구와 중간 산출물. 로컬에만 둔다
 frontend/.demo-frames/
 frontend/e2e/capture-demo.mjs
+
+# 계획·점검 문서는 로컬에만 둔다.
+docs/*.md
+!docs/trial-and-error.md
+!docs/problem-solving.md

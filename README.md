@@ -168,15 +168,20 @@ VITE_WS_BASE_URL=/ws
 
 ## 핵심 구현
 
-**WebSocket 인증** — 서버 → 클라이언트 알림 푸시 전용 단방향 채널입니다. 동시 편집은 다루지 않습니다.
-- SockJS 핸드셰이크는 `Authorization` 헤더를 싣지 못합니다. `/ws/**` 를 HTTP 체인에서 열어두는 대신
-  STOMP `CONNECT` 프레임에서 인증하는 `ChannelInterceptor` 를 직접 구현했습니다.
-- 로그아웃 블랙리스트를 이 경로에서도 봅니다. HTTP 로는 끊긴 토큰으로 WebSocket 만 살아 있는 상태를 막습니다.
-- 인증에 성공하면 `accessor.setUser` 로 principal 을 심어 `/user/{id}/queue/notifications` 라우팅이 동작합니다.
-- 검증 갈래는 `WebSocketAuthInterceptorTest` 8개가 고정합니다.
+**권한 검사**
+- 값만 비교하면 되는 본인 확인은 `@PreAuthorize` 로 처리. 도메인 권한은 DB 조회가 필요해
+  SpEL 로 안 되므로 `TaskAuthorityUtil` 에 모으고 서비스가 직접 호출.
+- 대가는 호출을 빠뜨리면 뚫린다는 것. 서비스 7개에서 30곳을 부르는데 컴파일이 안 잡아준다.
+- 그래서 `TaskPermissionIntegrationTest` 29개가 역할 × 동작 조합을 표로 돌린다.
+
+**WebSocket 인증** — 알림 푸시 전용 단방향 채널. 동시 편집은 다루지 않는다.
+- SockJS 핸드셰이크가 `Authorization` 헤더를 못 실어서, STOMP CONNECT 프레임에서
+  인증하는 `ChannelInterceptor` 직접 구현.
+- 로그아웃 블랙리스트를 여기서도 대조. HTTP 로 끊긴 토큰으로 WebSocket 만 사는 상태를 막는다.
+- `WebSocketAuthInterceptorTest` 8개가 검증 갈래를 고정.
 
 **알림 발행은 커밋 이후**
-- `@TransactionalEventListener(AFTER_COMMIT)` 으로 발행합니다. 롤백된 작업의 알림이 나가지 않습니다.
+- `@TransactionalEventListener(AFTER_COMMIT)` 으로 발행. 롤백된 작업의 알림은 안 나간다.
 
 **Refresh Token Rotation**
 - 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
