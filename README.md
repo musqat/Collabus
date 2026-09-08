@@ -111,8 +111,10 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
-# 백엔드 — 단위 + 통합 301개
+# 백엔드 — 단위 + 통합 301개, 라인 커버리지 72.6%
 ./gradlew build
+
+# 커버리지 리포트: build/reports/jacoco/test/html/index.html
 
 # 프론트엔드 — 단위 88개
 cd frontend && npm test
@@ -125,6 +127,8 @@ cd frontend && npm run test:e2e
 > 백엔드 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를
 > 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증만
 > Testcontainers 로 실제 MySQL 을 띄우며, Docker 가 없으면 건너뜁니다.
+>
+> `./gradlew build` 가 JaCoCo 리포트를 함께 만듭니다. CI 도 같은 리포트를 아티팩트로 올립니다.
 
 > CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다.
 
