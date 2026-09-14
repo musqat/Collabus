@@ -18,7 +18,7 @@
 
 ## Demo
 
-> 데모 로그인 → 대시보드 → 워크스페이스 → Task → Todo 확인 → 검수 승인 → 담당자 변경 → 멤버 관리
+> 데모 로그인 → 대시보드 → 워크스페이스 → Task → 멤버 → Todo → 댓글
 
 <img src="docs/screenshots/Animation.gif" width="100%" alt="Collabus Demo"/>
 
@@ -191,7 +191,7 @@ VITE_WS_BASE_URL=/ws
 - 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
 
 **Brute Force 방어**
-- 로그인 5회 실패 시 Redis에 잠금 플래그 설정, 10분 TTL. DB 조회 없이 처리.
+- 첫 실패부터 10분 동안 실패 횟수를 Redis 카운터로 센다. 5회가 되면 그 10분이 끝날 때까지 로그인 차단. DB 조회 없이 처리.
 
 **비밀번호 변경 시 세션 강제 종료**
 - 변경 즉시 해당 유저의 모든 RT Redis에서 삭제 → 타 기기 자동 로그아웃.
@@ -205,7 +205,7 @@ VITE_WS_BASE_URL=/ws
 | 인증 | JWT Access Token (15분) + Refresh Token (7일) |
 | Refresh Token Rotation | 재발급 시마다 새 RT 발급, 기존 RT 무효화 |
 | 로그아웃 | Access Token 블랙리스트 등록 (Redis) |
-| Brute Force 방어 | 5회 실패 시 10분 계정 잠금 (Redis) |
+| Brute Force 방어 | 첫 실패부터 10분 안에 5회 실패 시 그 10분이 끝날 때까지 잠금 (Redis) |
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
 | 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
 | WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 + 로그아웃 블랙리스트 대조 |
@@ -224,4 +224,4 @@ VITE_WS_BASE_URL=/ws
 이 프로젝트에서 가장 값이 컸던 부분이다.
 
 - [시행착오](docs/trial-and-error.md) — 짐작으로 시작한 것이 여러 번 틀렸다. 무엇을 믿었고 무엇으로 갈렸는지
-- [문제 해결](docs/problem-solving.md) — 겪은 장애와 버그를 문제 → 원인 → 해결. 감수하기로 한 한계도 함께
+- [문제 해결](docs/problem-solving.md) — 겪은 버그를 원인 → 해결
