@@ -18,6 +18,10 @@
 
 ## Demo
 
+**[collabus-chi.vercel.app](https://collabus-chi.vercel.app)** — 로그인 화면의 **데모 계정으로 둘러보기** 로 바로 들어갈 수 있습니다.
+
+> 요청이 없으면 서버가 일시 정지합니다. 첫 요청은 1초 안팎, 오래 쉰 뒤라면 더 걸립니다.
+
 > 데모 로그인 → 대시보드 → 워크스페이스 → Task → 멤버 → Todo → 댓글
 
 <img src="docs/screenshots/Animation.gif" width="100%" alt="Collabus Demo"/>
@@ -164,6 +168,19 @@ DB_PORT=3307
 ```env
 VITE_API_BASE_URL=/api
 VITE_WS_BASE_URL=/ws
+```
+
+**배포 환경에서 더 넣는 값**: 관리형 DB·Redis 에 붙을 때만 필요하고, 로컬은 기본값으로 돕니다.
+
+```env
+DB_SSL_MODE=REQUIRED           # 로컬 기본값 DISABLED
+DB_POOL_MAX=10                 # 커넥션 풀 크기
+DB_POOL_MIN_IDLE=2             # 유휴 연결 수
+REDIS_PASSWORD=                # 외부 Redis 비밀번호
+REDIS_SSL=true                 # 로컬 기본값 false
+CORS_ALLOWED_ORIGINS=https://example.vercel.app
+SWAGGER_ENABLED=true
+FILE_UPLOAD_DIR=/data/uploads
 ```
 
 </details>
