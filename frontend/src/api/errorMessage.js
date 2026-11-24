@@ -7,3 +7,8 @@ export function errorMessage(error, fallback) {
   const body = error?.response?.data;
   return body?.message || body?.statusMsg || fallback;
 }
+
+// 다른 사람이 먼저 고쳐 저장이 거절된 응답인지
+export function isEditConflict(error) {
+  return error?.response?.status === 409;
+}

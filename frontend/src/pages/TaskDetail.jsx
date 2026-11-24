@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { isEditConflict } from '../api/errorMessage';
 import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
@@ -167,7 +168,8 @@ export default function TaskDetail() {
       id: todo.id,
       title: todo.title,
       description: todo.description || '',
-      dueDate: todo.dueDate ?? ''
+      dueDate: todo.dueDate ?? '',
+      version: todo.version
     });
     setShowEditModal(true);
   };
@@ -179,10 +181,18 @@ export default function TaskDetail() {
       title: editingTodo.title,
       description: editingTodo.description,
       dueDate: editingTodo.dueDate,
+      version: editingTodo.version,
     }, {
       onSuccess: () => {
         setShowEditModal(false);
         setEditingTodo(null);
+      },
+      // 충돌이면 다시 불러온 내용을 보도록 닫음
+      onError: (error) => {
+        if (isEditConflict(error)) {
+          setShowEditModal(false);
+          setEditingTodo(null);
+        }
       },
     });
   };
@@ -198,7 +208,8 @@ export default function TaskDetail() {
     setEditingTask({
       title: task.title,
       description: task.description || '',
-      dueDate: task.dueDate || ''
+      dueDate: task.dueDate || '',
+      version: task.version
     });
     setShowTaskEditModal(true);
   };
@@ -212,10 +223,18 @@ export default function TaskDetail() {
       title: editingTask.title,
       description: editingTask.description,
       dueDate: dueDateOnly,
+      version: editingTask.version,
     }, {
       onSuccess: () => {
         setShowTaskEditModal(false);
         setEditingTask(null);
+      },
+      // 충돌이면 다시 불러온 내용을 보도록 닫음
+      onError: (error) => {
+        if (isEditConflict(error)) {
+          setShowTaskEditModal(false);
+          setEditingTask(null);
+        }
       },
     });
   };

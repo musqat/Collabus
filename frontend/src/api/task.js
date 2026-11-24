@@ -37,11 +37,12 @@ export const taskAPI = {
   },
 
   // Task 수정
-  update: async (taskId, title, description, dueDate) => {
+  update: async (taskId, title, description, dueDate, version) => {
     const { data } = await apiClient.patch(`/tasks/${taskId}`, {
       title,
       description,
-      dueDate
+      dueDate,
+      version
     });
     return data;
   },

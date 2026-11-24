@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { errorMessage } from './errorMessage';
+import { errorMessage, isEditConflict } from './errorMessage';
 
 const FALLBACK = '요청에 실패했습니다';
 
@@ -37,5 +37,14 @@ describe('errorMessage', () => {
     const error = { response: { data: { message: '', statusMsg: '' } } };
 
     expect(errorMessage(error, FALLBACK)).toBe(FALLBACK);
+  });
+});
+
+describe('isEditConflict', () => {
+  it('409 만 수정 충돌로 본다', () => {
+    expect(isEditConflict({ response: { status: 409 } })).toBe(true);
+    expect(isEditConflict({ response: { status: 400 } })).toBe(false);
+    expect(isEditConflict(new Error('Network Error'))).toBe(false);
+    expect(isEditConflict(undefined)).toBe(false);
   });
 });
