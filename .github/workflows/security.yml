@@ -15,7 +15,7 @@ jobs:
     env:
       TRIVY_IMAGE: aquasec/trivy:0.58.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build images
         run: |
