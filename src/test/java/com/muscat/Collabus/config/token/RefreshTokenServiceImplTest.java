@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.muscat.Collabus.config.ratelimit.RedisWindowCounter;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,12 +31,16 @@ class RefreshTokenServiceImplTest {
 
   private static final String EMAIL = "a@b.com";
   private static final String TOKEN = "token-value";
+  private static final long LOCK_MILLIS = 10 * 60 * 1000L;
 
   @Mock
   private StringRedisTemplate redisTemplate;
 
   @Mock
   private ValueOperations<String, String> valueOperations;
+
+  @Mock
+  private RedisWindowCounter windowCounter;
 
   @InjectMocks
   private RefreshTokenServiceImpl refreshTokenService;
@@ -104,20 +109,20 @@ class RefreshTokenServiceImplTest {
   }
 
   @Test
-  @DisplayName("첫 실패에는 TTL 을 건다")
+  @DisplayName("실패는 10분 창으로 센다")
   void incrementLoginFailure_First() {
-    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(1L);
+    when(windowCounter.increment("LF:" + EMAIL, LOCK_MILLIS)).thenReturn(1L);
 
     assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(1);
 
-    verify(redisTemplate, times(1))
-        .expire("LF:" + EMAIL, 10 * 60 * 1000L, TimeUnit.MILLISECONDS);
+    verify(windowCounter, times(1)).increment("LF:" + EMAIL, LOCK_MILLIS);
+    verify(redisTemplate, never()).expire(anyString(), anyLong(), any(TimeUnit.class));
   }
 
   @Test
   @DisplayName("잠기기 전 실패에는 TTL 을 다시 걸지 않는다")
   void incrementLoginFailure_Middle() {
-    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(2L);
+    when(windowCounter.increment("LF:" + EMAIL, LOCK_MILLIS)).thenReturn(2L);
 
     assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(2);
 
@@ -127,30 +132,21 @@ class RefreshTokenServiceImplTest {
   @Test
   @DisplayName("잠기는 다섯 번째 실패에는 TTL 을 다시 건다")
   void incrementLoginFailure_Lock() {
-    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(5L);
+    when(windowCounter.increment("LF:" + EMAIL, LOCK_MILLIS)).thenReturn(5L);
 
     assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(5);
 
-    verify(redisTemplate, times(1))
-        .expire("LF:" + EMAIL, 10 * 60 * 1000L, TimeUnit.MILLISECONDS);
+    verify(redisTemplate, times(1)).expire("LF:" + EMAIL, LOCK_MILLIS, TimeUnit.MILLISECONDS);
   }
 
   @Test
   @DisplayName("다섯 번을 넘긴 실패에는 TTL 을 다시 걸지 않는다")
   void incrementLoginFailure_AfterLock() {
-    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(6L);
+    when(windowCounter.increment("LF:" + EMAIL, LOCK_MILLIS)).thenReturn(6L);
 
     assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(6);
 
     verify(redisTemplate, never()).expire(anyString(), anyLong(), any(TimeUnit.class));
-  }
-
-  @Test
-  @DisplayName("증가 결과가 null 이면 1 로 본다")
-  void incrementLoginFailure_Null() {
-    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(null);
-
-    assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(1);
   }
 
   @Test
