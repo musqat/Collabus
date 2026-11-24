@@ -54,8 +54,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
   public int incrementLoginFailure(String email) {
     String key = LOGIN_FAIL_PREFIX + email;
     Long count = redisTemplate.opsForValue().increment(key);
-    if (count != null && count == 1) {
-      // 첫 실패 시 TTL 설정 (잠금 시간만큼)
+    // 첫 실패와 잠기는 실패에 잠금 시간 설정
+    if (count != null && (count == 1 || count == MAX_LOGIN_ATTEMPTS)) {
       redisTemplate.expire(key, LOCK_DURATION_MILLIS, TimeUnit.MILLISECONDS);
     }
     return count != null ? count.intValue() : 1;

@@ -115,11 +115,32 @@ class RefreshTokenServiceImplTest {
   }
 
   @Test
-  @DisplayName("두 번째 실패부터는 TTL 을 다시 걸지 않는다")
-  void incrementLoginFailure_Second() {
+  @DisplayName("잠기기 전 실패에는 TTL 을 다시 걸지 않는다")
+  void incrementLoginFailure_Middle() {
     when(valueOperations.increment("LF:" + EMAIL)).thenReturn(2L);
 
     assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(2);
+
+    verify(redisTemplate, never()).expire(anyString(), anyLong(), any(TimeUnit.class));
+  }
+
+  @Test
+  @DisplayName("잠기는 다섯 번째 실패에는 TTL 을 다시 건다")
+  void incrementLoginFailure_Lock() {
+    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(5L);
+
+    assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(5);
+
+    verify(redisTemplate, times(1))
+        .expire("LF:" + EMAIL, 10 * 60 * 1000L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  @DisplayName("다섯 번을 넘긴 실패에는 TTL 을 다시 걸지 않는다")
+  void incrementLoginFailure_AfterLock() {
+    when(valueOperations.increment("LF:" + EMAIL)).thenReturn(6L);
+
+    assertThat(refreshTokenService.incrementLoginFailure(EMAIL)).isEqualTo(6);
 
     verify(redisTemplate, never()).expire(anyString(), anyLong(), any(TimeUnit.class));
   }
