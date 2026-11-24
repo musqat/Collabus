@@ -137,6 +137,7 @@ class TodoServiceImplTest {
                 .build();
 
         todo = Todo.builder()
+                .version(3L)
                 .id(1L)
                 .task(task)
                 .assignee(user)
@@ -157,6 +158,7 @@ class TodoServiceImplTest {
                 .title("Test Todo")
                 .description("Test Description")
                 .dueDate(LocalDate.now().plusDays(7))
+                .version(3L)
                 .build();
 
 
@@ -254,6 +256,26 @@ class TodoServiceImplTest {
         assertThat(result).isNotNull();
         verify(finder, times(1)).findTodoById(todoId);
         verify(todoMapper, times(1)).updateFromDto(todoUpdateRequestDto, todo);
+        verify(todoRepository, times(1)).flush();
+    }
+
+    @Test
+    @DisplayName("Todo 수정 실패 - 화면이 본 버전이 지금과 다르면 409")
+    void updateTodo_Fail_StaleVersion() {
+        Long updaterId = 1L;
+        when(finder.findTodoById(1L)).thenReturn(todo);
+        when(taskAuthorityUtil.canManageTask(task, updaterId)).thenReturn(true);
+        TodoUpdateRequestDto stale = TodoUpdateRequestDto.builder()
+                .title("늦게 고친 제목")
+                .dueDate(LocalDate.now().plusDays(7))
+                .version(2L)
+                .build();
+
+        assertThatThrownBy(() -> todoService.updateTodo(1L, stale, updaterId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("response").isEqualTo(CommonResponse.EDIT_CONFLICT);
+
+        verify(todoMapper, times(0)).updateFromDto(any(), any());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import com.muscat.Collabus.common.util.VersionGuard;
 import java.util.Set;
 import com.muscat.Collabus.common.util.SortGuard;
 import com.muscat.Collabus.Notification.service.NotificationService;
@@ -83,8 +84,11 @@ public class TodoServiceImpl implements TodoService {
     public TodoResponseDto updateTodo(Long todoId, TodoUpdateRequestDto dto, Long updaterId) {
         Todo todo = finder.findTodoById(todoId);
         validateManagerAuthority(todo.getTask(), updaterId);
+        VersionGuard.requireSame(todo.getVersion(), dto.getVersion());
 
         todoMapper.updateFromDto(dto, todo);
+        // 올라간 버전을 응답에 담기 위한 반영
+        todoRepository.flush();
         return todoMapper.mapToDto(todo);
     }
 
