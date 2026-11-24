@@ -3,6 +3,11 @@ package com.muscat.Collabus.config.security;
 
 import com.muscat.Collabus.config.jwt.JwtAuthenticationFilter;
 import com.muscat.Collabus.config.jwt.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.muscat.Collabus.config.ratelimit.ClientIpResolver;
+import com.muscat.Collabus.config.ratelimit.RateLimitFilter;
+import com.muscat.Collabus.config.ratelimit.RateLimitPolicy;
+import com.muscat.Collabus.config.ratelimit.RedisWindowCounter;
 import com.muscat.Collabus.config.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +54,11 @@ public class SecurityConfig {
       RefreshTokenService refreshTokenService,
       SecurityErrorResponder errorResponder,
       RestAuthenticationEntryPoint authenticationEntryPoint,
-      RestAccessDeniedHandler accessDeniedHandler) throws Exception {
+      RestAccessDeniedHandler accessDeniedHandler,
+      RateLimitPolicy rateLimitPolicy,
+      ClientIpResolver clientIpResolver,
+      RedisWindowCounter windowCounter,
+      ObjectMapper objectMapper) throws Exception {
 
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -76,6 +85,10 @@ public class SecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+        // CORS 처리 뒤에 두어 429 응답에도 CORS 헤더 포함
+        .addFilterBefore(
+            new RateLimitFilter(rateLimitPolicy, clientIpResolver, windowCounter, objectMapper),
+            UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, refreshTokenService, errorResponder),
             UsernamePasswordAuthenticationFilter.class);
 

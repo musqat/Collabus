@@ -53,6 +53,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Testcontainers 가 Docker 29 와 통신할 수 있는 최소 API 버전으로 고정
+	systemProperty "api.version", "1.44"
 }
 
 jacoco {

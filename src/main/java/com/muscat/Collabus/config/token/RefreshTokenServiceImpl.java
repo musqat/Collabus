@@ -1,5 +1,6 @@
 package com.muscat.Collabus.config.token;
 
+import com.muscat.Collabus.config.ratelimit.RedisWindowCounter;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
   private final StringRedisTemplate redisTemplate;
+  private final RedisWindowCounter windowCounter;
   private static final String KEY_PREFIX = "RT:";
   private static final String BLACKLIST_PREFIX = "BL:";
   private static final String LOGIN_FAIL_PREFIX = "LF:";
@@ -53,12 +55,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
   @Override
   public int incrementLoginFailure(String email) {
     String key = LOGIN_FAIL_PREFIX + email;
-    Long count = redisTemplate.opsForValue().increment(key);
-    // 첫 실패와 잠기는 실패에 잠금 시간 설정
-    if (count != null && (count == 1 || count == MAX_LOGIN_ATTEMPTS)) {
+    long count = windowCounter.increment(key, LOCK_DURATION_MILLIS);
+    // 잠기는 실패에 잠금 시간 재설정
+    if (count == MAX_LOGIN_ATTEMPTS) {
       redisTemplate.expire(key, LOCK_DURATION_MILLIS, TimeUnit.MILLISECONDS);
     }
-    return count != null ? count.intValue() : 1;
+    return (int) count;
   }
 
   @Override

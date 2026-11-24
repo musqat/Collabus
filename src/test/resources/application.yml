@@ -26,3 +26,7 @@ jwt:
   secret: test-only-secret-key-must-be-at-least-32-bytes-long
   expiration: 900000
   refresh-expiration: 604800000
+
+# Redis 가 없는 테스트 환경에서는 끔
+rate-limit:
+  enabled: false

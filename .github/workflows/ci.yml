@@ -88,6 +88,7 @@ jobs:
           DB_PASSWORD=collabus
           DB_ROOT_PASSWORD=rootpassword
           JWT_SECRET=ci-secret-key-for-e2e-tests-only-32bytes-min
+          RATE_LIMIT_ENABLED=false
           ENV
 
       - name: Start stack
