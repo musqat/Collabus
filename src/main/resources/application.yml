@@ -59,6 +59,14 @@ jwt:
   expiration: ${JWT_EXPIRATION:900000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
+# 로그인 · 회원가입 IP 단위 제한
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  # 앞단 프록시가 덮어쓰는 헤더 이름, 비우면 접속 주소
+  client-ip-header: ${CLIENT_IP_HEADER:}
+  login-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:20}
+  register-per-hour: ${RATE_LIMIT_REGISTER_PER_HOUR:5}
+
 logging:
   level:
     org.springframework.security: INFO
