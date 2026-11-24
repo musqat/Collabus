@@ -1,16 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
-import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import WorkspaceDetail from './pages/WorkspaceDetail';
-import TaskDetail from './pages/TaskDetail';
-import TodoDetail from './pages/TodoDetail';
-import ProfilePage from './pages/ProfilePage';
-import Invitations from './pages/Invitations';
 import ToastContainer from './components/Toast/ToastContainer';
+import { PageLoading } from './components/LoadingState';
+
+// 로그인 뒤 화면은 처음 들어갈 때 로드
+const Layout = lazy(() => import('./components/Layout'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const WorkspaceDetail = lazy(() => import('./pages/WorkspaceDetail'));
+const TaskDetail = lazy(() => import('./pages/TaskDetail'));
+const TodoDetail = lazy(() => import('./pages/TodoDetail'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const Invitations = lazy(() => import('./pages/Invitations'));
 
 // React Query Client 생성
 const queryClient = new QueryClient({
@@ -42,6 +46,19 @@ function PublicRoute({ children }) {
   }
 
   return children;
+}
+
+// 레이아웃과 화면을 따로 기다려 화면을 옮길 때 레이아웃은 그대로 유지
+function ProtectedPage({ children }) {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<PageLoading />}>
+        <Layout>
+          <Suspense fallback={<PageLoading />}>{children}</Suspense>
+        </Layout>
+      </Suspense>
+    </ProtectedRoute>
+  );
 }
 
 function RootRedirect() {
@@ -77,61 +94,49 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <Dashboard />
+              </ProtectedPage>
             }
           />
           <Route
             path="/workspace/:workspaceId"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <WorkspaceDetail />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <WorkspaceDetail />
+              </ProtectedPage>
             }
           />
           <Route
             path="/task/:taskId"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <TaskDetail />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <TaskDetail />
+              </ProtectedPage>
             }
           />
           <Route
             path="/todo/:todoId"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <TodoDetail />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <TodoDetail />
+              </ProtectedPage>
             }
           />
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <ProfilePage />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <ProfilePage />
+              </ProtectedPage>
             }
           />
           <Route
             path="/invitations"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <Invitations />
-                </Layout>
-              </ProtectedRoute>
+              <ProtectedPage>
+                <Invitations />
+              </ProtectedPage>
             }
           />
 

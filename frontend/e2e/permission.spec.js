@@ -36,7 +36,11 @@ test.describe('초대', () => {
     await page.goto('/invitations');
     await expect(page.getByRole('heading', { name })).toBeVisible();
 
-    await page.getByRole('button', { name: '수락' }).click();
+    // 수락 응답을 받은 뒤 이동
+    await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/accept') && res.ok()),
+      page.getByRole('button', { name: '수락' }).click(),
+    ]);
 
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name })).toBeVisible();
