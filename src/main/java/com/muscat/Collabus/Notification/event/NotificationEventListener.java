@@ -14,15 +14,13 @@ public class NotificationEventListener {
 
   private final WebSocketService webSocketService;
 
-  /**
-   * 커밋 이후에만 전송한다. 커밋 전에 보내면 뒤이어 롤백됐을 때 조회되지 않는 유령 알림이 남는다.
-   */
+  // 커밋 이후에만 사용자에게 전송
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onNotificationCreated(NotificationCreatedEvent event) {
     try {
       webSocketService.sendNotificationToUser(event.userId(), event.notification());
     } catch (Exception e) {
-      // 실시간 전송 실패가 이미 커밋된 비즈니스 트랜잭션에 영향을 주면 안 된다
+      // 전송 실패는 기록만 하고 흡수
       log.warn("실시간 알림 전송 실패 - userId={}", event.userId(), e);
     }
   }
