@@ -8,3 +8,12 @@ export function EmptyState({ icon: Icon, title, description, action }) {
     </div>
   );
 }
+
+// 화면 코드를 받는 동안의 자리 표시
+export function PageLoading() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="text-xl text-gray-600">로딩 중...</div>
+    </div>
+  );
+}
