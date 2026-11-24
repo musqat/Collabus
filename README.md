@@ -3,12 +3,6 @@
 > 팀 협업 작업 관리 플랫폼. Workspace · Task · Todo 계층 구조 기반
 
 [![CI](https://github.com/musqat/Collabus/actions/workflows/ci.yml/badge.svg)](https://github.com/musqat/Collabus/actions/workflows/ci.yml)
-![Java](https://img.shields.io/badge/Java-21-007396)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.5-6DB33F)
-![React](https://img.shields.io/badge/React-18-61DAFB)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1)
-![Redis](https://img.shields.io/badge/Redis-7-DC382D)
-![tests](https://img.shields.io/badge/tests-backend_301_%C2%B7_frontend_88_%C2%B7_e2e_18-success)
 
 워크스페이스에서 Task 를 나누고, Task 안의 Todo 를 담당자에게 맡겨
 `IN_PROGRESS → WAITING_REVIEW → CONFIRMED` 로 검수까지 끌고 갑니다.
@@ -115,7 +109,7 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
-# 백엔드 — 단위 + 통합 301개, 라인 커버리지 72.6%
+# 백엔드 — 단위 + 통합 317개, 라인 커버리지 74.1%
 ./gradlew build
 
 # 커버리지 리포트: build/reports/jacoco/test/html/index.html
@@ -192,8 +186,8 @@ FILE_UPLOAD_DIR=/data/uploads
 **권한 검사**
 - 값만 비교하면 되는 본인 확인은 `@PreAuthorize` 로 처리. 도메인 권한은 DB 조회가 필요해
   SpEL 로 안 되므로 `TaskAuthorityUtil` 에 모으고 서비스가 직접 호출.
-- 대가는 호출을 빠뜨리면 뚫린다는 것. 서비스 7개에서 30곳을 부르는데 컴파일이 안 잡아준다.
-- 그래서 `TaskPermissionIntegrationTest` 29개가 역할 × 동작 조합을 표로 돌린다.
+- 대가는 호출을 빠뜨리면 뚫린다는 것. 서비스 8개에서 31곳을 부르는데 컴파일이 안 잡아준다.
+- 그래서 `TaskPermissionIntegrationTest` 45개가 역할 × 동작 조합을 표로 돌린다.
 
 **WebSocket 인증** — 알림 푸시 전용 단방향 채널. 동시 편집은 다루지 않는다.
 - SockJS 핸드셰이크가 `Authorization` 헤더를 못 실어서, STOMP CONNECT 프레임에서
@@ -226,14 +220,14 @@ FILE_UPLOAD_DIR=/data/uploads
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
 | 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
 | WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 + 로그아웃 블랙리스트 대조 |
-| 파일 접근 제어 | 업로드 · 목록 · 다운로드 모두 해당 Task 참여자만 허용 |
+| 파일 접근 제어 | 업로드 · 목록 · 다운로드 모두 Task 를 볼 수 있는 사람만 허용, 수정 · 삭제는 업로더 본인만 |
 | 업로드 제한 | 확장자 허용 목록 + 파일당 10MB, 경로 탈출 차단 |
 
 ---
 
 ## 만들며 겪은 것
 
-동작하는 데까지 만들어놓고, 테스트를 71개에서 301개로 늘리며 코드를 처음부터 다시 읽었다.
+동작하는 데까지 만들어놓고, 테스트를 71개에서 317개로 늘리며 코드를 처음부터 다시 읽었다.
 그 과정에서 Todo 수정이 아예 안 되고 있었다는 것, 로그인이 실패 사유를 전부 "없는 이메일"
 로 뭉개고 있었다는 것, 계정 잠금이 남의 계정을 잠그는 데 쓰일 수 있다는 것을 찾았다.
 통과하고 있던 E2E 하나는 사실 조용히 건너뛰는 중이었다.
