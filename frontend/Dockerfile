@@ -21,8 +21,8 @@ ENV VITE_WS_BASE_URL=$VITE_WS_BASE_URL
 # Build the application
 RUN npm run build
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
+# Stage 2: Serve with Nginx (root 가 아닌 nginx 사용자로 실행)
+FROM nginxinc/nginx-unprivileged:alpine
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -30,7 +30,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
-EXPOSE 80
+# 비root 프로세스라 8080
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

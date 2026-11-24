@@ -72,3 +72,24 @@ tasks.named('jacocoTestReport') {
 		html.required = true
 	}
 }
+
+// 커버리지가 바닥 아래로 내려가면 빌드 실패
+tasks.named('jacocoTestCoverageVerification') {
+	dependsOn test
+	violationRules {
+		rule {
+			limit {
+				counter = 'LINE'
+				minimum = 0.70
+			}
+			limit {
+				counter = 'BRANCH'
+				minimum = 0.30
+			}
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn jacocoTestCoverageVerification
+}

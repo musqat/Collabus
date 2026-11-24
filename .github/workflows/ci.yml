@@ -21,7 +21,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 테스트는 인메모리 H2 를 쓰므로 MySQL/Redis 컨테이너가 필요 없다
+      # 테스트는 H2 로 돌고 마이그레이션 · Redis 테스트만 Testcontainers 로 컨테이너를 띄움
       - name: Build
         run: ./gradlew build --no-daemon
 
@@ -96,7 +96,7 @@ jobs:
 
       - name: Wait for app
         run: |
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             [ "$(docker inspect --format='{{.State.Health.Status}}' collabus-app)" = "healthy" ] && exit 0
             sleep 5
           done

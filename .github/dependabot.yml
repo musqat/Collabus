@@ -1,0 +1,30 @@
+# 의존성 업데이트 PR 을 주마다 연다. 마이너 · 패치는 생태계별로 하나로 묶음
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      gradle-minor-patch:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: docker
+    directories: [ /, /frontend ]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

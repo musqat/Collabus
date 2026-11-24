@@ -126,9 +126,11 @@ cd frontend && npm run test:e2e
 > 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증과
 > Redis 카운터 · IP 제한 테스트만 Testcontainers 로 실제 MySQL · Redis 를 띄우며, Docker 가 없으면 건너뜁니다.
 >
-> `./gradlew build` 가 JaCoCo 리포트를 함께 만듭니다. CI 도 같은 리포트를 아티팩트로 올립니다.
+> `./gradlew build` 가 JaCoCo 리포트를 함께 만들고, 라인 70% · 분기 30% 아래로 내려가면 빌드가 실패합니다.
+> CI 도 같은 리포트를 아티팩트로 올립니다.
 
-> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다.
+> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다. 이미지 취약점 스캔은 별도 워크플로로 돌고,
+> 의존성 업데이트는 Dependabot 이 주마다 PR 로 엽니다.
 
 </details>
 
@@ -227,6 +229,7 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 | 로그아웃 | Access Token 블랙리스트 등록 (Redis) |
 | Brute Force 방어 | 10분 안에 5회 실패 시 5번째 실패부터 10분 잠금 (Redis) |
 | IP 단위 제한 | 로그인 1분 20회 · 회원가입 1시간 5회, 넘으면 429 + `Retry-After` (Redis) |
+| 컨테이너 | 백엔드 · 프런트 모두 root 가 아닌 사용자로 실행 |
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
 | 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
 | WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 + 로그아웃 블랙리스트 대조 |
