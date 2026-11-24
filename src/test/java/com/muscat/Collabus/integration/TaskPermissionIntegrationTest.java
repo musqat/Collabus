@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,8 +18,10 @@ import com.muscat.Collabus.Task.repository.TaskRepository;
 import com.muscat.Collabus.Task.repository.TaskUserRepository;
 import com.muscat.Collabus.Todo.entity.Todo;
 import com.muscat.Collabus.Todo.entity.TodoComment;
+import com.muscat.Collabus.Todo.entity.TodoFile;
 import com.muscat.Collabus.Todo.entity.TodoWork;
 import com.muscat.Collabus.Todo.repository.TodoCommentRepository;
+import com.muscat.Collabus.Todo.repository.TodoFileRepository;
 import com.muscat.Collabus.Todo.repository.TodoRepository;
 import com.muscat.Collabus.Todo.repository.TodoWorkRepository;
 import com.muscat.Collabus.User.entity.User;
@@ -35,6 +38,11 @@ import com.muscat.Collabus.enums.role.TaskRole;
 import com.muscat.Collabus.enums.role.WorkspaceRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.List;
@@ -46,16 +54,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Task 조회·댓글·작업 내용의 권한 규칙을 시큐리티 필터부터 JPA 까지 통과시켜 확인한다.
+ * Task 조회·댓글·작업 내용·첨부파일의 권한 규칙을 시큐리티 필터부터 JPA 까지 통과시켜 확인한다.
  * 서비스 단위 테스트는 권한 유틸을 대역으로 바꾸므로 실제 역할 조회까지는 확인하지 못한다.
  * 로그인 자체는 AuthenticationFlowIntegrationTest 가 덮으므로 여기서는 토큰을 바로 발급한다.
  * 트랜잭션을 롤백하므로 AFTER_COMMIT 리스너는 돌지 않는다. 알림 전송은 여기서 확인하지 못한다.
@@ -100,6 +111,12 @@ class TaskPermissionIntegrationTest {
 
   @Autowired
   private TodoWorkRepository todoWorkRepository;
+
+  @Autowired
+  private TodoFileRepository todoFileRepository;
+
+  @Value("${file.upload-dir}")
+  private String uploadDir;
 
   @MockBean
   private RefreshTokenService refreshTokenService;
@@ -196,6 +213,21 @@ class TaskPermissionIntegrationTest {
         .title("원래 작업")
         .content("원래 내용")
         .build()).getId();
+  }
+
+  // 참여자가 올린 첨부파일 한 건. 업로드 루트에 실제 파일을 두고 행을 넣는다
+  private TodoFile fileByParticipant() throws IOException {
+    Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+    Files.createDirectories(uploadRoot);
+    Path stored = Files.write(uploadRoot.resolve("permission-test.txt"),
+        "원래 내용".getBytes(StandardCharsets.UTF_8));
+
+    return todoFileRepository.save(TodoFile.builder()
+        .work(todoWorkRepository.findById(workByParticipant()).orElseThrow())
+        .uploader(users.get(Actor.PARTICIPANT))
+        .fileUrl(stored.toString().replace('\\', '/'))
+        .originalName("note.txt")
+        .build());
   }
 
   @ParameterizedTest(name = "{0} 가 Task 를 조회하면 {1}")
@@ -349,5 +381,89 @@ class TaskPermissionIntegrationTest {
         .andExpect(status().is(expectedStatus));
 
     assertThat(todoWorkRepository.findById(workId).isPresent()).isEqualTo(expectedStatus != 200);
+  }
+
+  @ParameterizedTest(name = "{0} 가 첨부파일을 올리면 {1}")
+  @CsvSource({
+      "MASTER, 200",
+      "MANAGER, 200",
+      "PARTICIPANT, 200",
+      "MEMBER, 403",
+      "OUTSIDER, 403",
+  })
+  @DisplayName("첨부파일 업로드도 Task 를 볼 수 있는 사람이면 할 수 있다")
+  void uploadFile(Actor actor, int expectedStatus) throws Exception {
+    Long workId = workByParticipant();
+    MockMultipartFile file = new MockMultipartFile("file", "note.txt",
+        MediaType.TEXT_PLAIN_VALUE, "본문".getBytes(StandardCharsets.UTF_8));
+
+    mockMvc.perform(multipart("/api/todo/files")
+            .file(file)
+            .param("workId", String.valueOf(workId))
+            .header("Authorization", bearer(actor)))
+        .andExpect(status().is(expectedStatus));
+
+    List<TodoFile> saved =
+        todoFileRepository.findAllByWorkId(workId, Pageable.unpaged()).getContent();
+    if (expectedStatus == 200) {
+      assertThat(saved).hasSize(1);
+      assertThat(saved.get(0).getUploader().getId()).isEqualTo(users.get(actor).getId());
+    } else {
+      assertThat(saved).isEmpty();
+    }
+  }
+
+  @ParameterizedTest(name = "{0} 가 첨부파일 목록을 보면 {1}")
+  @CsvSource({
+      "MASTER, 200",
+      "MANAGER, 200",
+      "PARTICIPANT, 200",
+      "MEMBER, 403",
+      "OUTSIDER, 403",
+  })
+  @DisplayName("첨부파일 목록도 Task 를 볼 수 있는 사람에게만 열린다")
+  void getFiles(Actor actor, int expectedStatus) throws Exception {
+    TodoFile file = fileByParticipant();
+
+    mockMvc.perform(get("/api/todo/files/work/" + file.getWork().getId())
+            .header("Authorization", bearer(actor)))
+        .andExpect(status().is(expectedStatus));
+  }
+
+  @ParameterizedTest(name = "{0} 가 첨부파일을 내려받으면 {1}")
+  @CsvSource({
+      "MASTER, 200",
+      "MANAGER, 200",
+      "PARTICIPANT, 200",
+      "MEMBER, 403",
+      "OUTSIDER, 403",
+  })
+  @DisplayName("첨부파일 다운로드도 Task 를 볼 수 있는 사람에게만 열린다")
+  void downloadFile(Actor actor, int expectedStatus) throws Exception {
+    TodoFile file = fileByParticipant();
+
+    mockMvc.perform(get("/api/todo/files/" + file.getId() + "/download")
+            .header("Authorization", bearer(actor)))
+        .andExpect(status().is(expectedStatus));
+  }
+
+  @Test
+  @DisplayName("첨부파일 수정·삭제는 넓히지 않았다. 업로더 본인만 할 수 있다")
+  void updateAndDeleteFile_OnlyUploader() throws Exception {
+    TodoFile file = fileByParticipant();
+    MockMultipartFile newFile = new MockMultipartFile("file", "new.txt",
+        MediaType.TEXT_PLAIN_VALUE, "고친 내용".getBytes(StandardCharsets.UTF_8));
+
+    mockMvc.perform(multipart(HttpMethod.PATCH, "/api/todo/files/" + file.getId())
+            .file(newFile)
+            .header("Authorization", bearer(Actor.MASTER)))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(delete("/api/todo/files/" + file.getId())
+            .header("Authorization", bearer(Actor.MASTER)))
+        .andExpect(status().isForbidden());
+
+    assertThat(todoFileRepository.findById(file.getId()).orElseThrow().getOriginalName())
+        .isEqualTo("note.txt");
   }
 }

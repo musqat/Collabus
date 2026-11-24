@@ -14,7 +14,7 @@ import com.muscat.Collabus.Todo.service.TodoFileService;
 import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.common.util.FileUtil;
-import com.muscat.Collabus.common.util.ParticipantUtil;
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.response.TodoResponse;
 
@@ -35,13 +35,13 @@ public class TodoFileServiceImpl implements TodoFileService {
     private final UserRepository userRepository;
     private final TodoFileMapper todoFileMapper;
     private final FileUtil fileUtil;
-    private final ParticipantUtil participantUtil;
+    private final TaskAuthorityUtil taskAuthorityUtil;
 
     @Override
     @Transactional
     public TodoFileDto createFile(Long workId, Long userId, MultipartFile file) {
         TodoWork work = findWork(workId);
-        validateParticipant(work, userId);
+        validateCanView(work, userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(CommonResponse.USER_NOT_FOUND));
@@ -62,7 +62,7 @@ public class TodoFileServiceImpl implements TodoFileService {
     @Transactional(readOnly = true)
     public PageResponseDto<TodoFileDto> getFilesByWorkId(Long workId, Long userId,
                                                          Pageable pageable) {
-        validateParticipant(findWork(workId), userId);
+        validateCanView(findWork(workId), userId);
 
         return PageResponseDto.of(
                 todoFileRepository.findAllByWorkId(workId,
@@ -100,7 +100,7 @@ public class TodoFileServiceImpl implements TodoFileService {
     @Transactional(readOnly = true)
     public DownloadedFile downloadFile(Long fileId, Long userId) {
         TodoFile file = findFile(fileId);
-        validateParticipant(file.getWork(), userId);
+        validateCanView(file.getWork(), userId);
 
         return new DownloadedFile(fileUtil.loadFile(file.getFileUrl()), file.getOriginalName());
     }
@@ -115,9 +115,9 @@ public class TodoFileServiceImpl implements TodoFileService {
                 .orElseThrow(() -> new BusinessException(TodoResponse.FILE_NOT_FOUND));
     }
 
-    // 파일은 Todo → Task 에 속하므로 해당 Task 참여자만 접근할 수 있다
-    private void validateParticipant(TodoWork work, Long userId) {
-        participantUtil.validateTaskParticipant(work.getTodo().getTask().getId(), userId);
+    // 파일 접근은 Task 를 볼 수 있는 사람까지 열려 있다
+    private void validateCanView(TodoWork work, Long userId) {
+        taskAuthorityUtil.validateCanViewTask(work.getTodo().getTask(), userId);
     }
 
     // 파일 수정·삭제는 업로더 본인만 가능하다

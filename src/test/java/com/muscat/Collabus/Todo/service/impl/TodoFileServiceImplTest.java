@@ -28,7 +28,8 @@ import com.muscat.Collabus.User.entity.User;
 import com.muscat.Collabus.User.repository.UserRepository;
 import com.muscat.Collabus.Workspace.entity.Workspace;
 import com.muscat.Collabus.common.util.FileUtil;
-import com.muscat.Collabus.common.util.ParticipantUtil;
+import com.muscat.Collabus.common.util.TaskAuthorityUtil;
+import com.muscat.Collabus.enums.response.CommonResponse;
 import com.muscat.Collabus.enums.role.SystemRole;
 import com.muscat.Collabus.enums.status.TodoStatus;
 import java.time.LocalDate;
@@ -42,7 +43,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -79,7 +79,7 @@ class TodoFileServiceImplTest {
   private FileUtil fileUtil;
 
   @Mock
-  private ParticipantUtil participantUtil;
+  private TaskAuthorityUtil taskAuthorityUtil;
 
   @Mock
   private MultipartFile multipartFile;
@@ -88,6 +88,7 @@ class TodoFileServiceImplTest {
   private TodoFileServiceImpl todoFileService;
 
   private User owner;
+  private Task task;
   private TodoWork work;
   private TodoFile file;
 
@@ -110,7 +111,7 @@ class TodoFileServiceImplTest {
         .founder(owner)
         .build();
 
-    Task task = Task.builder()
+    task = Task.builder()
         .id(TASK_ID)
         .workspace(workspace)
         .taskManager(owner)
@@ -144,19 +145,19 @@ class TodoFileServiceImplTest {
         .build();
   }
 
-  private void denyParticipation(Long userId) {
-    doThrow(new AccessDeniedException("사용자가 태스크 참여자가 아닙니다."))
-        .when(participantUtil).validateTaskParticipant(TASK_ID, userId);
+  private void denyView(Long userId) {
+    doThrow(new BusinessException(CommonResponse.TASK_VIEW_DENIED))
+        .when(taskAuthorityUtil).validateCanViewTask(task, userId);
   }
 
   @Test
-  @DisplayName("업로드 실패 - Task 참여자가 아니면 접근 불가")
+  @DisplayName("업로드 실패 - Task 를 볼 수 없으면 접근 불가")
   void createFile_Fail_NotParticipant() {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
-    denyParticipation(OUTSIDER_ID);
+    denyView(OUTSIDER_ID);
 
     assertThatThrownBy(() -> todoFileService.createFile(WORK_ID, OUTSIDER_ID, multipartFile))
-        .isInstanceOf(AccessDeniedException.class);
+        .isInstanceOf(BusinessException.class);
 
     // 권한 검증이 파일 저장보다 먼저 일어나야 한다
     verify(fileUtil, never()).saveFile(any());
@@ -164,7 +165,7 @@ class TodoFileServiceImplTest {
   }
 
   @Test
-  @DisplayName("업로드 성공 - Task 참여자")
+  @DisplayName("업로드 성공 - Task 를 볼 수 있는 사용자")
   void createFile_Success() {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
     when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
@@ -182,30 +183,30 @@ class TodoFileServiceImplTest {
     assertThat(result.getOriginalFileName()).isEqualTo("report.pdf");
     // 서버 저장 경로가 아니라 다운로드 API 경로만 노출해야 한다
     assertThat(result.getDownloadUrl()).isEqualTo("/api/todo/files/100/download");
-    verify(participantUtil, times(1)).validateTaskParticipant(TASK_ID, OWNER_ID);
+    verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, OWNER_ID);
   }
 
   @Test
-  @DisplayName("목록 조회 실패 - Task 참여자가 아니면 접근 불가")
+  @DisplayName("목록 조회 실패 - Task 를 볼 수 없으면 접근 불가")
   void getFilesByWorkId_Fail_NotParticipant() {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
-    denyParticipation(OUTSIDER_ID);
+    denyView(OUTSIDER_ID);
 
     assertThatThrownBy(() ->
         todoFileService.getFilesByWorkId(WORK_ID, OUTSIDER_ID, PageRequest.of(0, 20)))
-        .isInstanceOf(AccessDeniedException.class);
+        .isInstanceOf(BusinessException.class);
 
     verify(todoFileRepository, never()).findAllByWorkId(any(), any());
   }
 
   @Test
-  @DisplayName("다운로드 실패 - Task 참여자가 아니면 접근 불가")
+  @DisplayName("다운로드 실패 - Task 를 볼 수 없으면 접근 불가")
   void downloadFile_Fail_NotParticipant() {
     when(todoFileRepository.findById(FILE_ID)).thenReturn(Optional.of(file));
-    denyParticipation(OUTSIDER_ID);
+    denyView(OUTSIDER_ID);
 
     assertThatThrownBy(() -> todoFileService.downloadFile(FILE_ID, OUTSIDER_ID))
-        .isInstanceOf(AccessDeniedException.class);
+        .isInstanceOf(BusinessException.class);
 
     verify(fileUtil, never()).loadFile(any());
   }
@@ -219,7 +220,7 @@ class TodoFileServiceImplTest {
     TodoFileService.DownloadedFile downloaded = todoFileService.downloadFile(FILE_ID, OWNER_ID);
 
     assertThat(downloaded.originalName()).isEqualTo("report.pdf");
-    verify(participantUtil, times(1)).validateTaskParticipant(TASK_ID, OWNER_ID);
+    verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, OWNER_ID);
   }
 
   @Test
@@ -261,7 +262,7 @@ class TodoFileServiceImplTest {
   }
 
   @Test
-  @DisplayName("목록 조회 성공 - 참여자")
+  @DisplayName("목록 조회 성공 - Task 를 볼 수 있는 사용자")
   void getFilesByWorkId_Success() {
     when(todoWorkRepository.findById(WORK_ID)).thenReturn(Optional.of(work));
     Pageable pageable = PageRequest.of(0, 20);
@@ -274,6 +275,6 @@ class TodoFileServiceImplTest {
         todoFileService.getFilesByWorkId(WORK_ID, OWNER_ID, pageable);
 
     assertThat(result.getContent()).hasSize(1);
-    verify(participantUtil, times(1)).validateTaskParticipant(TASK_ID, OWNER_ID);
+    verify(taskAuthorityUtil, times(1)).validateCanViewTask(task, OWNER_ID);
   }
 }

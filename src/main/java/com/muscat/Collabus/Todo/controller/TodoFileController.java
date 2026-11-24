@@ -38,7 +38,7 @@ public class TodoFileController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "파일 업로드",
-            description = "특정 TodoWork에 파일을 첨부합니다. 해당 Task 참여자만 업로드할 수 있습니다."
+            description = "특정 TodoWork에 파일을 첨부합니다. Task 를 볼 수 있는 사람만 업로드할 수 있습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "업로드 성공",
@@ -58,12 +58,12 @@ public class TodoFileController {
     @GetMapping("/work/{workId}")
     @Operation(
             summary = "TodoWork의 파일 목록 조회",
-            description = "특정 작업에 첨부된 모든 파일을 조회합니다. 해당 Task 참여자만 조회할 수 있습니다."
+            description = "특정 작업에 첨부된 모든 파일을 조회합니다. Task 를 볼 수 있는 사람만 조회할 수 있습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = TodoFileDto.class))),
-            @ApiResponse(responseCode = "403", description = "Task 참여자 아님"),
+            @ApiResponse(responseCode = "403", description = "Task 조회 권한 없음"),
             @ApiResponse(responseCode = "404", description = "Work 없음")
     })
     public ResponseEntity<ResponseDto> getFilesByWork(
@@ -78,11 +78,11 @@ public class TodoFileController {
     @GetMapping("/{fileId}/download")
     @Operation(
             summary = "파일 다운로드",
-            description = "첨부 파일을 내려받습니다. 해당 Task 참여자만 다운로드할 수 있습니다."
+            description = "첨부 파일을 내려받습니다. Task 를 볼 수 있는 사람만 다운로드할 수 있습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "다운로드 성공"),
-            @ApiResponse(responseCode = "403", description = "Task 참여자 아님"),
+            @ApiResponse(responseCode = "403", description = "Task 조회 권한 없음"),
             @ApiResponse(responseCode = "404", description = "파일 없음")
     })
     public ResponseEntity<Resource> downloadFile(
