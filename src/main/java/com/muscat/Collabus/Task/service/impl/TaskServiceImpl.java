@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Task.service.impl;
 
+import com.muscat.Collabus.common.util.VersionGuard;
 import java.util.Set;
 import com.muscat.Collabus.common.dto.PageResponseDto;
 import org.springframework.data.domain.Pageable;
@@ -154,8 +155,11 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponseDto updateTask(Long taskId, TaskUpdateRequestDto dto, Long userId) {
         Task task = finder.findTaskById(taskId);
         taskAuthorityUtil.validateCanManageTask(task, userId);
+        VersionGuard.requireSame(task.getVersion(), dto.getVersion());
 
         task.update(dto.getTitle(), dto.getDescription(), dto.getDueDate());
+        // 올라간 버전을 응답에 담기 위한 반영
+        taskRepository.flush();
         return taskMapper.mapToDto(task);
     }
 

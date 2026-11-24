@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../store/toastStore';
-import { errorMessage } from '../api/errorMessage';
+import { errorMessage, isEditConflict } from '../api/errorMessage';
 import { todoAPI } from '../api/todo';
 
 export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
@@ -31,14 +31,18 @@ export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ todoId, title, description, dueDate }) =>
-      todoAPI.update(todoId, title, description, dueDate),
+    mutationFn: ({ todoId, title, description, dueDate, version }) =>
+      todoAPI.update(todoId, title, description, dueDate, version),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
       queryClient.invalidateQueries({ queryKey: ['task-progress', taskId] });
       showToast.success('Todo가 수정되었습니다.');
     },
     onError: (error) => {
+      // 충돌이면 먼저 저장된 내용을 다시 불러옴
+      if (isEditConflict(error)) {
+        queryClient.invalidateQueries({ queryKey: ['todos', taskId] });
+      }
       showToast.error(errorMessage(error, 'Todo 수정 실패'));
     }
   });

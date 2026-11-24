@@ -39,3 +39,26 @@ test.describe('생성과 상태 전이', () => {
     await expect(page.locator('td').filter({ hasText: '완료' }).first()).toBeVisible();
   });
 });
+
+test.describe('수정 충돌', () => {
+  test('같은 Todo 를 두 화면에서 고치면 늦게 저장한 쪽은 충돌 안내를 받고 먼저 저장한 내용을 본다', async ({ loggedIn: first }) => {
+    const { taskId } = await seedWorkspace();
+    const second = await first.context().newPage();
+
+    for (const page of [first, second]) {
+      await page.goto(`/task/${taskId}`);
+      await page.getByRole('button', { name: '수정', exact: true }).click();
+    }
+
+    await first.getByPlaceholder('제목을 입력하세요').fill('먼저 저장한 제목');
+    await first.locator('form').getByRole('button', { name: '수정', exact: true }).click();
+    await expect(first.getByRole('heading', { name: 'Todo 수정' })).toBeHidden();
+
+    await second.getByPlaceholder('제목을 입력하세요').fill('늦게 저장한 제목');
+    await second.locator('form').getByRole('button', { name: '수정', exact: true }).click();
+
+    await expect(second.getByText('다른 사람이 먼저 수정했습니다')).toBeVisible();
+    await expect(second.getByRole('heading', { name: 'Todo 수정' })).toBeHidden();
+    await expect(second.getByText('먼저 저장한 제목')).toBeVisible();
+  });
+});

@@ -17,6 +17,7 @@ public enum CommonResponse implements BaseResponseEnum {
   UNAUTHORIZED("401", "인증이 필요합니다."),
   FORBIDDEN("403", "권한이 없습니다."),
   RESOURCE_NOT_FOUND("404", "요청한 리소스를 찾을 수 없습니다."),
+  EDIT_CONFLICT("409", "다른 사람이 먼저 수정했습니다. 새로 불러온 내용을 확인한 뒤 다시 수정해주세요."),
   TOO_MANY_REQUESTS("429", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
   INTERNAL_SERVER_ERROR("500", "서버 내부 오류가 발생했습니다."),
 

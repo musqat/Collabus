@@ -30,4 +30,7 @@ public class TaskResponseDto {
 
   @Schema(description = "워크스페이스 ID", example = "1")
   private Long workspaceId;
+
+  @Schema(description = "수정할 때 함께 보내는 버전", example = "0")
+  private Long version;
 }

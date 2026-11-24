@@ -1,5 +1,7 @@
 package com.muscat.Collabus.common.exception;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import com.muscat.Collabus.enums.response.CommonResponse;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import com.muscat.Collabus.common.dto.ErrorResponseDto;
@@ -93,6 +95,14 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponseDto> handleBusiness(BusinessException ex,
       HttpServletRequest request) {
     return buildErrorResponse(resolveStatus(ex), ex.getMessage(), ErrorType.BUSINESS, request);
+  }
+
+  // 같은 순간에 겹친 저장
+  @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+  public ResponseEntity<ErrorResponseDto> handleOptimisticLock(
+      ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+    return buildErrorResponse(HttpStatus.CONFLICT, CommonResponse.EDIT_CONFLICT.getMessage(),
+        ErrorType.BUSINESS, request);
   }
 
   @ExceptionHandler(Exception.class)

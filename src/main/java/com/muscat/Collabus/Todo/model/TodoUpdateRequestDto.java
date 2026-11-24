@@ -37,4 +37,8 @@ public class TodoUpdateRequestDto {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   @NotNull(message = "마감일은 필수입니다.")
   private LocalDate dueDate;
+
+  @Schema(description = "수정 화면을 열 때 받은 버전", example = "0", requiredMode = Schema.RequiredMode.REQUIRED)
+  @NotNull(message = "버전은 필수입니다.")
+  private Long version;
 }

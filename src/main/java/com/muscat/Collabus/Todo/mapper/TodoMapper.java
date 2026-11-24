@@ -40,6 +40,7 @@ public class TodoMapper {
                 .assigneeId(assignee != null ? assignee.getId() : null)
                 .assigneeNickname(assignee != null ? assignee.getNickname() : null)
                 .assigneeDisplayName(assignee != null ? assignee.getDisplayName() : null)
+                .version(todo.getVersion())
                 .build();
     }
 

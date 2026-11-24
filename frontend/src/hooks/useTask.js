@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../store/toastStore';
-import { errorMessage } from '../api/errorMessage';
+import { errorMessage, isEditConflict } from '../api/errorMessage';
 import { taskAPI } from '../api/task';
 
 export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => {
@@ -28,8 +28,8 @@ export const useTasks = (workspaceId, { page = 0, keyword = '', sort } = {}) => 
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ taskId, title, description, dueDate }) =>
-      taskAPI.update(taskId, title, description, dueDate),
+    mutationFn: ({ taskId, title, description, dueDate, version }) =>
+      taskAPI.update(taskId, title, description, dueDate, version),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
       showToast.success('Task가 수정되었습니다.');
@@ -118,14 +118,20 @@ export const useTask = (taskId) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ title, description, dueDate }) =>
-      taskAPI.update(taskId, title, description, dueDate),
+    mutationFn: ({ title, description, dueDate, version }) =>
+      taskAPI.update(taskId, title, description, dueDate, version),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showToast.success('Task가 수정되었습니다.');
     },
-    onError: (error) => showToast.error(errorMessage(error, 'Task 수정 실패')),
+    onError: (error) => {
+      // 충돌이면 먼저 저장된 내용을 다시 불러옴
+      if (isEditConflict(error)) {
+        queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      }
+      showToast.error(errorMessage(error, 'Task 수정 실패'));
+    },
   });
 
   const addMemberMutation = useMutation({

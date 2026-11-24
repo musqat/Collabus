@@ -109,15 +109,15 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
-# 백엔드 — 단위 + 통합 341개, 라인 커버리지 75.7%
+# 백엔드 — 단위 + 통합 348개, 라인 커버리지 78.2%
 ./gradlew build
 
 # 커버리지 리포트: build/reports/jacoco/test/html/index.html
 
-# 프론트엔드 — 단위 88개
+# 프론트엔드 — 단위 89개
 cd frontend && npm test
 
-# E2E — Playwright 18개 (스택이 떠 있어야 함)
+# E2E — Playwright 19개 (스택이 떠 있어야 함)
 docker compose up -d --build
 cd frontend && npm run test:e2e
 ```
@@ -200,6 +200,11 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 **알림 발행은 커밋 이후**
 - `@TransactionalEventListener(AFTER_COMMIT)` 으로 발행. 롤백된 작업의 알림은 안 나간다.
 
+**수정 충돌** — Todo · Task
+- 수정 창을 연 시점의 버전을 요청에 싣고, 지금 버전과 다르면 409. 나중에 저장한 사람이 앞선 수정을 모르고 덮어쓰지 못한다.
+- 같은 순간에 겹친 저장은 `@Version` 이 잡아 같은 409 로 내려간다.
+- 화면은 409 를 받으면 최신 내용을 다시 불러오고 수정 창을 닫는다.
+
 **Refresh Token Rotation**
 - 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
 
@@ -232,7 +237,7 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 
 ## 만들며 겪은 것
 
-동작하는 데까지 만들어놓고, 테스트를 71개에서 341개로 늘리며 코드를 처음부터 다시 읽었다.
+동작하는 데까지 만들어놓고, 테스트를 71개에서 348개로 늘리며 코드를 처음부터 다시 읽었다.
 그 과정에서 Todo 수정이 아예 안 되고 있었다는 것, 로그인이 실패 사유를 전부 "없는 이메일"
 로 뭉개고 있었다는 것, 계정 잠금이 남의 계정을 잠그는 데 쓰일 수 있다는 것을 찾았다.
 통과하고 있던 E2E 하나는 사실 조용히 건너뛰는 중이었다.

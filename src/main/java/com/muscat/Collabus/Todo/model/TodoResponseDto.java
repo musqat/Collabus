@@ -47,4 +47,7 @@ public class TodoResponseDto {
 
   @Schema(description = "담당자 디스플레이 이름", example = "john_doe#1234", nullable = true)
   private String assigneeDisplayName;
+
+  @Schema(description = "수정할 때 함께 보내는 버전", example = "0")
+  private Long version;
 }

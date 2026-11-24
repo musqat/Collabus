@@ -28,11 +28,12 @@ export const todoAPI = {
   },
 
   // Todo 수정
-  update: async (todoId, title, description, dueDate) => {
+  update: async (todoId, title, description, dueDate, version) => {
     const { data } = await apiClient.patch(`/todo/${todoId}`, {
       title,
       description,
-      dueDate
+      dueDate,
+      version
     });
     return data;
   },

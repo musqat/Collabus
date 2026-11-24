@@ -141,6 +141,7 @@ class TaskServiceImplTest {
                 .build();
 
         task = Task.builder()
+                .version(3L)
                 .id(1L)
                 .workspace(workspace)
                 .taskManager(user)
@@ -167,6 +168,7 @@ class TaskServiceImplTest {
                 .title("Updated Task")
                 .description("Updated Description")
                 .dueDate(LocalDate.now().plusDays(14))
+                .version(3L)
                 .build();
     }
 
@@ -257,6 +259,24 @@ class TaskServiceImplTest {
         assertThat(result).isNotNull();
         verify(finder, times(1)).findTaskById(taskId);
         verify(taskAuthorityUtil, times(1)).validateCanManageTask(task, userId);
+        verify(taskRepository, times(1)).flush();
+    }
+
+    @Test
+    @DisplayName("Task 수정 실패 - 화면이 본 버전이 지금과 다르면 409")
+    void updateTask_Fail_StaleVersion() {
+        when(finder.findTaskById(1L)).thenReturn(task);
+        TaskUpdateRequestDto stale = TaskUpdateRequestDto.builder()
+                .title("늦게 고친 제목")
+                .dueDate(LocalDate.now().plusDays(14))
+                .version(2L)
+                .build();
+
+        assertThatThrownBy(() -> taskService.updateTask(1L, stale, 1L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("response").isEqualTo(CommonResponse.EDIT_CONFLICT);
+
+        assertThat(task.getTitle()).isNotEqualTo("늦게 고친 제목");
     }
 
     @Test

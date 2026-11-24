@@ -28,6 +28,7 @@ public class TaskMapper {
         .dueDate(task.getDueDate())
         .managerDisplayName(task.getTaskManager() != null ? task.getTaskManager().getDisplayName() : "미정")
         .workspaceId(task.getWorkspace().getId())
+        .version(task.getVersion())
         .build();
   }
 }
