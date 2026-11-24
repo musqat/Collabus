@@ -80,7 +80,7 @@ services:
         max-size: "10m"
         max-file: "3"
     ports:
-      - "80:80"
+      - "80:8080"
     depends_on:
       app:
         condition: service_healthy
