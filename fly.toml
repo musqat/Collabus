@@ -10,6 +10,8 @@ primary_region = "sin"
   DB_SSL_MODE = "REQUIRED"
   REDIS_SSL = "true"
   FILE_UPLOAD_DIR = "/data/uploads"
+  # Fly 엣지가 붙이는 접속 IP 헤더
+  CLIENT_IP_HEADER = "Fly-Client-IP"
   SWAGGER_ENABLED = "true"
   # 컨테이너 메모리를 기준으로 힙 상한을 잡는다
   JAVA_TOOL_OPTIONS = "-XX:MaxRAMPercentage=70"

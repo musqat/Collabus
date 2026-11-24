@@ -109,7 +109,7 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
-# 백엔드 — 단위 + 통합 324개, 라인 커버리지 74.3%
+# 백엔드 — 단위 + 통합 341개, 라인 커버리지 75.7%
 ./gradlew build
 
 # 커버리지 리포트: build/reports/jacoco/test/html/index.html
@@ -123,8 +123,8 @@ cd frontend && npm run test:e2e
 ```
 
 > 백엔드 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를
-> 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증만
-> Testcontainers 로 실제 MySQL 을 띄우며, Docker 가 없으면 건너뜁니다.
+> 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증과
+> Redis 카운터 · IP 제한 테스트만 Testcontainers 로 실제 MySQL · Redis 를 띄우며, Docker 가 없으면 건너뜁니다.
 >
 > `./gradlew build` 가 JaCoCo 리포트를 함께 만듭니다. CI 도 같은 리포트를 아티팩트로 올립니다.
 
@@ -175,6 +175,8 @@ REDIS_SSL=true                 # 로컬 기본값 false
 CORS_ALLOWED_ORIGINS=https://example.vercel.app
 SWAGGER_ENABLED=true
 FILE_UPLOAD_DIR=/data/uploads
+CLIENT_IP_HEADER=Fly-Client-IP  # 앞단 프록시가 덮어쓰는 접속 IP 헤더, 비우면 접속 주소
+RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 ```
 
 </details>
@@ -203,6 +205,8 @@ FILE_UPLOAD_DIR=/data/uploads
 
 **Brute Force 방어**
 - 첫 실패부터 10분 동안 실패 횟수를 Redis 카운터로 센다. 5회가 되면 그때부터 10분 동안 로그인 차단. DB 조회 없이 처리.
+- 이메일을 바꿔 가며 시도하는 경우는 IP 단위 제한이 막는다. 로그인 1분 20회, 회원가입 1시간 5회.
+- IP 는 앞단 프록시가 덮어쓰는 헤더 하나만 읽는다. 클라이언트가 써 보낸 `X-Forwarded-For` 로는 우회하지 못한다.
 
 **비밀번호 변경 시 세션 강제 종료**
 - 변경 즉시 해당 유저의 모든 RT Redis에서 삭제 → 타 기기 자동 로그아웃.
@@ -217,6 +221,7 @@ FILE_UPLOAD_DIR=/data/uploads
 | Refresh Token Rotation | 재발급 시마다 새 RT 발급, 기존 RT 무효화 |
 | 로그아웃 | Access Token 블랙리스트 등록 (Redis) |
 | Brute Force 방어 | 10분 안에 5회 실패 시 5번째 실패부터 10분 잠금 (Redis) |
+| IP 단위 제한 | 로그인 1분 20회 · 회원가입 1시간 5회, 넘으면 429 + `Retry-After` (Redis) |
 | 비밀번호 정책 | 8자 이상, 영문 + 숫자 필수 |
 | 비밀번호 변경 | 현재 비밀번호 확인 후 변경, 기존 RT 무효화 → 타 기기 세션 강제 종료 |
 | WebSocket 인증 | STOMP CONNECT 프레임에서 JWT 검증 + 로그아웃 블랙리스트 대조 |
@@ -227,7 +232,7 @@ FILE_UPLOAD_DIR=/data/uploads
 
 ## 만들며 겪은 것
 
-동작하는 데까지 만들어놓고, 테스트를 71개에서 324개로 늘리며 코드를 처음부터 다시 읽었다.
+동작하는 데까지 만들어놓고, 테스트를 71개에서 341개로 늘리며 코드를 처음부터 다시 읽었다.
 그 과정에서 Todo 수정이 아예 안 되고 있었다는 것, 로그인이 실패 사유를 전부 "없는 이메일"
 로 뭉개고 있었다는 것, 계정 잠금이 남의 계정을 잠그는 데 쓰일 수 있다는 것을 찾았다.
 통과하고 있던 E2E 하나는 사실 조용히 건너뛰는 중이었다.
