@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src src
 RUN chmod +x gradlew
 RUN ./gradlew bootJar --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 # 앱은 root 가 아닌 app 사용자로 실행. su-exec 는 시작 스크립트가 권한을 낮출 때 사용
 RUN apk add --no-cache su-exec     && addgroup -S app     && adduser -S -G app app
