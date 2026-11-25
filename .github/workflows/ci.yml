@@ -19,7 +19,7 @@ jobs:
           distribution: temurin
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v6
 
       # 테스트는 H2 로 돌고 마이그레이션 · Redis 테스트만 Testcontainers 로 컨테이너를 띄움
       - name: Build
