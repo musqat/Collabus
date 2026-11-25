@@ -24,6 +24,11 @@ RUN npm run build
 # Stage 2: Serve with Nginx (root 가 아닌 nginx 사용자로 실행)
 FROM nginxinc/nginx-unprivileged:alpine
 
+# 베이스 이미지 이후에 나온 OS 보안 패치 반영. 설치에만 root 를 쓰고 nginx 사용자로 되돌림
+USER root
+RUN apk upgrade --no-cache
+USER nginx
+
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
