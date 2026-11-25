@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "할 일 생성/수정 요청 DTO")
 public class TodoRequestDto {
 
-  @Schema(description = "할 일이 속한 태스크 ID", example = "3", required = true)
+  @Schema(description = "할 일이 속한 태스크 ID", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
   @NotNull(message = "태스크 ID는 필수입니다.")
   private Long taskId;
 
@@ -31,7 +31,7 @@ public class TodoRequestDto {
   @Size(max = 2000, message = "설명은 2000자 이하여야 합니다.")
   private String description;
 
-  @Schema(description = "마감일", example = "2025-08-10", required = true)
+  @Schema(description = "마감일", example = "2025-08-10", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   @NotNull(message = "마감일은 필수입니다.")
   private LocalDate dueDate;
