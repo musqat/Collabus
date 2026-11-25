@@ -13,20 +13,31 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 public final class LoginUser {
 
   public static final Long ID = 7L;
+  public static final String EMAIL = "login@test.com";
+  public static final Long ADMIN_ID = 1L;
 
   private LoginUser() {
   }
 
-  // 요청에 로그인 사용자를 실음
+  // 일반 사용자로 로그인한 요청
   public static RequestPostProcessor login() {
+    return as(ID, EMAIL, SystemRole.USER);
+  }
+
+  // 관리자로 로그인한 요청
+  public static RequestPostProcessor admin() {
+    return as(ADMIN_ID, "admin@test.com", SystemRole.ADMIN);
+  }
+
+  private static RequestPostProcessor as(Long id, String email, SystemRole role) {
     return user(new CustomUserDetails(User.builder()
-        .id(ID)
-        .email("login@test.com")
+        .id(id)
+        .email(email)
         .password("unused")
         .nickname("login")
         .tag("0007")
         .displayName("login#0007")
-        .role(SystemRole.USER)
+        .role(role)
         .build()));
   }
 }

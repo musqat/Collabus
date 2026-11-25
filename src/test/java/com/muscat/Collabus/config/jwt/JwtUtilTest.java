@@ -66,7 +66,7 @@ class JwtUtilTest {
     assertThat(principal.getUserId()).isEqualTo(7L);
     assertThat(principal.getUsername()).isEqualTo("user@example.com");
     assertThat(principal.getDisplayName()).isEqualTo("admin#0000");
-    assertThat(principal.getAuthorities()).extracting("authority").containsExactly("ADMIN");
+    assertThat(principal.getAuthorities()).extracting("authority").containsExactly("ROLE_ADMIN");
     // 인증 이후 단계에서 쓰이지 않으므로 비밀번호는 담지 않는다
     assertThat(principal.getPassword()).isNull();
   }
