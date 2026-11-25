@@ -66,6 +66,7 @@ Swagger 에서 `Pageable` 을 펼치려고 `springdoc.default-flat-param-object:
 (`LoginResponseDto` 62개, `InviteResponseDto` 53개)였다.
 
 → 채워도 검증되는 게 없어 덮지 않았다. 대신 코드를 일부러 깨뜨려 테스트가 잡아내는지로 확인했다.
+Spring Boot 3.5 로 올리며 Lombok 이 생성 코드에 `@Generated` 를 붙이자 JaCoCo 가 그 분기를 빼고 세어 82.4% 가 됐다.
 
 ## 로컬에서 통과하니 CI 도 통과할 줄 알았다
 

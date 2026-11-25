@@ -26,7 +26,7 @@
 
 | Layer | Stack |
 |-------|-------|
-| Backend | Java 21 · Spring Boot 3 · Spring Security · JWT · WebSocket (STOMP, 알림 푸시) |
+| Backend | Java 21 · Spring Boot 3.5 · Spring Security · JWT · WebSocket (STOMP, 알림 푸시) |
 | Frontend | React 18 · Vite · React Router v6 · TanStack Query · Zustand · Tailwind CSS |
 | Database | MySQL 8.0 |
 | Cache | Redis 7 — Refresh Token · 로그인 실패 횟수 · 블랙리스트 |
@@ -109,7 +109,7 @@ npm install && npm run dev
 ### 테스트
 
 ```bash
-# 백엔드 — 단위 + 통합 348개, 라인 커버리지 78.2%
+# 백엔드 — 단위 + 통합 348개, 라인 커버리지 78.4%
 ./gradlew build
 
 # 커버리지 리포트: build/reports/jacoco/test/html/index.html
@@ -129,8 +129,8 @@ cd frontend && npm run test:e2e
 > `./gradlew build` 가 JaCoCo 리포트를 함께 만들고, 라인 70% · 분기 30% 아래로 내려가면 빌드가 실패합니다.
 > CI 도 같은 리포트를 아티팩트로 올립니다.
 
-> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다. 이미지 취약점 스캔은 별도 워크플로로 돌고,
-> 의존성 업데이트는 Dependabot 이 주마다 PR 로 엽니다.
+> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다. 이미지 취약점 스캔은 별도 워크플로로 돌며 고칠 수 있는
+> HIGH · CRITICAL 이 있으면 실패하고, 의존성 업데이트는 Dependabot 이 주마다 PR 로 엽니다.
 
 </details>
 
