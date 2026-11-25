@@ -51,9 +51,10 @@ public class CustomUserDetails implements UserDetails {
         claims.get(CLAIM_DISPLAY_NAME, String.class));
   }
 
+  // hasRole('ADMIN') 이 찾는 ROLE_ 접두사를 붙인 권한
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority(role));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + role));
   }
 
   @Override

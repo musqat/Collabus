@@ -1,5 +1,6 @@
 package com.muscat.Collabus.common.exception;
 
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import com.muscat.Collabus.enums.response.CommonResponse;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
       MissingServletRequestParameterException ex, HttpServletRequest request) {
     return buildErrorResponse(HttpStatus.BAD_REQUEST,
         "필수 요청 파라미터가 없습니다: " + ex.getParameterName(),
+        ErrorType.VALIDATION, request);
+  }
+
+  // 멀티파트 요청에 필수 파트가 빠져도 클라이언트 오류
+  @ExceptionHandler(MissingServletRequestPartException.class)
+  public ResponseEntity<ErrorResponseDto> handleMissingPart(
+      MissingServletRequestPartException ex, HttpServletRequest request) {
+    return buildErrorResponse(HttpStatus.BAD_REQUEST,
+        "필수 요청 파트가 없습니다: " + ex.getRequestPartName(),
         ErrorType.VALIDATION, request);
   }
 
