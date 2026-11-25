@@ -22,13 +22,13 @@ jobs:
           docker build -t collabus-app:scan .
           docker build -t collabus-frontend:scan frontend
 
-      # 고칠 버전이 나온 HIGH · CRITICAL 만 표시. 지금은 결과만 남기고 빌드를 막지 않음
+      # 고칠 버전이 나온 HIGH · CRITICAL 이 있으면 실패. 예외는 .trivyignore 에 이유와 함께
       - name: Scan backend image
         run: >
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE"
-          image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 collabus-app:scan
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE"
+          image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 collabus-app:scan
 
       - name: Scan frontend image
         run: >
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE"
-          image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 collabus-frontend:scan
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE"
+          image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 collabus-frontend:scan

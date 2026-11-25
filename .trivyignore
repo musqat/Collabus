@@ -1,0 +1,5 @@
+# Spring Framework 6.2 줄에는 무료 패치가 없고 7.0.9 에서만 고쳐짐. Boot 4 로 갈 때 지움
+# XsltView 로 화면을 그릴 때만 해당. REST · STOMP 만 쓰고 XsltView 를 쓰지 않음
+CVE-2026-47884
+# SSE 로 화면 조각을 보낼 때만 해당. SSE 를 쓰지 않음
+CVE-2026-47890

@@ -36,8 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @EnabledIf(value = "dockerAvailable", disabledReason = "Docker 를 사용할 수 없는 환경에서는 건너뛴다")
 @TestPropertySource(properties = {
     "spring.flyway.enabled=true",
-    "spring.jpa.hibernate.ddl-auto=validate",
-    "spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect"
+    "spring.jpa.hibernate.ddl-auto=validate"
 })
 @DisplayName("Flyway 마이그레이션 통합 테스트")
 class FlywayMigrationIntegrationTest {

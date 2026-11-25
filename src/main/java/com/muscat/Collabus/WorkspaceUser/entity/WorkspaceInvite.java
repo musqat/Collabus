@@ -42,6 +42,7 @@ public class WorkspaceInvite extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private InviteStatus status = InviteStatus.PENDING;
 
     public void accept() {
