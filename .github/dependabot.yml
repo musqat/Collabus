@@ -1,4 +1,4 @@
-# 의존성 업데이트 PR 을 주마다 연다. 마이너 · 패치는 생태계별로 하나로 묶음
+# 주간 의존성 업데이트 PR. 마이너 · 패치는 생태계별로 묶음
 version: 2
 updates:
   - package-ecosystem: gradle

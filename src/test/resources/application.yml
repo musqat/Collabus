@@ -1,6 +1,4 @@
-# 테스트 전용 설정
-# 마이그레이션(V1, V2)은 MySQL 전용 DDL/DML 이라 H2 에서 실행되지 않는다.
-# 테스트는 Flyway 를 끄고 Hibernate 가 엔티티에서 직접 스키마를 만들게 한다.
+# 테스트 전용 설정. Flyway 없이 엔티티로 H2 스키마 생성
 spring:
   datasource:
     url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
@@ -26,6 +24,6 @@ jwt:
   expiration: 900000
   refresh-expiration: 604800000
 
-# Redis 가 없는 테스트 환경에서는 끔
+# 테스트 환경의 IP 단위 제한 해제
 rate-limit:
   enabled: false
