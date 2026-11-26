@@ -1,4 +1,4 @@
-# 주간 의존성 업데이트 PR. 마이너 · 패치는 생태계별로 묶음
+# 주간 의존성 업데이트 PR. 마이너 · 패치만 생태계별로 묶고 메이저는 직접 계획해서 올림
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -9,6 +9,9 @@ updates:
     groups:
       gradle-minor-patch:
         update-types: [ minor, patch ]
+    ignore:
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: npm
     directory: /frontend
@@ -18,13 +21,22 @@ updates:
     groups:
       npm-minor-patch:
         update-types: [ minor, patch ]
+    ignore:
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: docker
     directories: [ /, /frontend ]
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns: [ "*" ]
