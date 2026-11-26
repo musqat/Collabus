@@ -37,6 +37,7 @@ class TokenReissueServiceImplTest {
 
   private static final String EMAIL = "user@test.com";
   private static final String SAVED_TOKEN = "saved-refresh";
+  private static final String SESSION = "session-1";
 
   @Mock
   private JwtUtil jwtUtil;
@@ -54,12 +55,13 @@ class TokenReissueServiceImplTest {
   void setUp() {
     when(jwtUtil.validateToken(anyString())).thenReturn(true);
     when(jwtUtil.getEmailFromToken(anyString())).thenReturn(EMAIL);
-    when(refreshTokenService.getRefreshToken(EMAIL)).thenReturn(Optional.of(SAVED_TOKEN));
+    when(jwtUtil.getSessionId(anyString())).thenReturn(SESSION);
+    when(refreshTokenService.getRefreshToken(EMAIL, SESSION)).thenReturn(Optional.of(SAVED_TOKEN));
     when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(User.builder()
         .id(1L).email(EMAIL).displayName("user#1234").role(SystemRole.USER).build()));
-    when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyString()))
+    when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyString(), anyString()))
         .thenReturn("new-access");
-    when(jwtUtil.generateRefreshToken(EMAIL)).thenReturn("new-refresh");
+    when(jwtUtil.generateRefreshToken(EMAIL, SESSION)).thenReturn("new-refresh");
     when(jwtUtil.getRefreshExpiration()).thenReturn(1000L);
   }
 
@@ -71,13 +73,13 @@ class TokenReissueServiceImplTest {
     assertThatThrownBy(() -> tokenReissueService.reissue("bad"))
         .isInstanceOf(BusinessException.class);
 
-    verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyLong());
+    verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyString(), anyLong());
   }
 
   @Test
   @DisplayName("저장된 토큰이 없으면 401 이다")
   void noSavedToken() {
-    when(refreshTokenService.getRefreshToken(EMAIL)).thenReturn(Optional.empty());
+    when(refreshTokenService.getRefreshToken(EMAIL, SESSION)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> tokenReissueService.reissue(SAVED_TOKEN))
         .isInstanceOf(BusinessException.class);
@@ -89,7 +91,7 @@ class TokenReissueServiceImplTest {
     assertThatThrownBy(() -> tokenReissueService.reissue("older-refresh"))
         .isInstanceOf(BusinessException.class);
 
-    verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyLong());
+    verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyString(), anyLong());
   }
 
   @Test
@@ -108,6 +110,17 @@ class TokenReissueServiceImplTest {
 
     assertThat(result.getAccessToken()).isEqualTo("new-access");
     assertThat(result.getRefreshToken()).isEqualTo("new-refresh");
-    verify(refreshTokenService, times(1)).saveRefreshToken(EMAIL, "new-refresh", 1000L);
+    verify(refreshTokenService, times(1)).saveRefreshToken(EMAIL, SESSION, "new-refresh", 1000L);
+    verify(jwtUtil).generateToken(1L, EMAIL, "USER", "user#1234", SESSION);
+  }
+
+  @Test
+  @DisplayName("세션 ID 가 없는 옛 토큰은 401 이다")
+  void tokenWithoutSession() {
+    when(jwtUtil.getSessionId(anyString())).thenReturn(null);
+
+    assertThatThrownBy(() -> tokenReissueService.reissue(SAVED_TOKEN))
+        .isInstanceOf(BusinessException.class);
+    verify(refreshTokenService, never()).saveRefreshToken(anyString(), anyString(), anyString(), anyLong());
   }
 }

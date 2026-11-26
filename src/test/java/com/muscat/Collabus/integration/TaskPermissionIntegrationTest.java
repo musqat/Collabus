@@ -195,7 +195,7 @@ class TaskPermissionIntegrationTest {
   private String bearer(Actor actor) {
     User user = users.get(actor);
     return "Bearer " + jwtUtil.generateToken(
-        user.getId(), user.getEmail(), user.getRole().name(), user.getDisplayName());
+        user.getId(), user.getEmail(), user.getRole().name(), user.getDisplayName(), "test-session");
   }
 
   private Long commentByParticipant() {

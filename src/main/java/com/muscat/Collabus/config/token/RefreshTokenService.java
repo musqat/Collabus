@@ -4,11 +4,16 @@ import java.util.Optional;
 
 public interface RefreshTokenService {
 
-  void saveRefreshToken(String email, String token, long ttlMillis);
+  // 로그인 세션 하나의 현재 Refresh Token 저장
+  void saveRefreshToken(String email, String sessionId, String token, long ttlMillis);
 
-  Optional<String> getRefreshToken(String email);
+  Optional<String> getRefreshToken(String email, String sessionId);
 
-  void deleteRefreshToken(String email);
+  // 그 세션만 삭제
+  void deleteRefreshToken(String email, String sessionId);
+
+  // 사용자의 모든 세션 삭제
+  void deleteAllRefreshTokens(String email);
 
   void blacklistAccessToken(String token, long expirationMillis);
 

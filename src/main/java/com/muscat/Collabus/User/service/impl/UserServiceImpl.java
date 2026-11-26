@@ -125,8 +125,8 @@ public class UserServiceImpl implements UserService {
         user.changePassword(newPassword, passwordEncoder);
         userRepository.save(user);
 
-        // 비밀번호 변경 시 기존 Refresh Token 무효화 → 다른 기기 세션 강제 종료
-        refreshTokenService.deleteRefreshToken(user.getEmail());
+        // 비밀번호 변경 시 모든 기기의 세션 종료
+        refreshTokenService.deleteAllRefreshTokens(user.getEmail());
     }
 
     @Override
@@ -140,6 +140,8 @@ public class UserServiceImpl implements UserService {
         handOverManagedTasks(user.getId());
         notificationRepository.deleteByUser_Id(user.getId());
         inviteRepository.deleteByInviteeIdOrInviterId(user.getId(), user.getId());
+        // 이메일을 바꾸기 전에 모든 기기의 세션 종료
+        refreshTokenService.deleteAllRefreshTokens(user.getEmail());
 
         user.withdraw(
                 "withdrawn-" + user.getId() + "@removed.local",

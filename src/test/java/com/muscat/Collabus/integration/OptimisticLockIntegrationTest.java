@@ -96,7 +96,7 @@ class OptimisticLockIntegrationTest {
         .role(SystemRole.USER)
         .build());
     bearer = "Bearer " + jwtUtil.generateToken(
-        master.getId(), master.getEmail(), master.getRole().name(), master.getDisplayName());
+        master.getId(), master.getEmail(), master.getRole().name(), master.getDisplayName(), "test-session");
 
     Workspace workspace = workspaceRepository.save(Workspace.builder()
         .workspaceName("충돌 확인용")
