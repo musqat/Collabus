@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-  # 코드가 그대로여도 새로 공개된 취약점을 잡기 위한 주간 실행
+  # 새로 공개된 취약점 확인용 주간 실행
   schedule:
     - cron: '0 0 * * 1'
 
@@ -22,7 +22,7 @@ jobs:
           docker build -t collabus-app:scan .
           docker build -t collabus-frontend:scan frontend
 
-      # 고칠 버전이 나온 HIGH · CRITICAL 이 있으면 실패. 예외는 .trivyignore 에 이유와 함께
+      # 고칠 버전이 나온 HIGH · CRITICAL 이 있으면 실패, 예외 목록은 .trivyignore
       - name: Scan backend image
         run: >
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE"

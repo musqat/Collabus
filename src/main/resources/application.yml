@@ -1,10 +1,10 @@
 server:
-  # 종료 신호를 받으면 처리 중인 요청을 마칠 때까지 기다린다
+  # 종료 신호 뒤 처리 중인 요청까지 마무리
   shutdown: graceful
 
 spring:
   lifecycle:
-    # 대기 시간의 상한
+    # 종료 대기 상한
     timeout-per-shutdown-phase: 20s
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:collabus}?sslMode=${DB_SSL_MODE:DISABLED}&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
@@ -19,8 +19,10 @@ spring:
       validation-timeout: 1000
       idle-timeout: 120000
   jpa:
+    # 영속성 컨텍스트는 서비스 트랜잭션 안에서만 사용
+    open-in-view: false
     hibernate:
-      # 스키마는 Flyway 가 관리한다. Hibernate 는 엔티티와 스키마가 어긋나면 기동을 막는 역할만 한다.
+      # 엔티티와 스키마가 어긋나면 기동 중단. 스키마는 Flyway 담당
       ddl-auto: validate
     show-sql: false
     properties:
@@ -31,7 +33,7 @@ spring:
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
     locations: classpath:db/migration
-    # 이미 운영 중인 DB(기존 ddl-auto 로 만들어진 스키마)에 붙을 때를 대비한 설정
+    # 마이그레이션 이력이 없는 기존 DB 를 기준점으로 등록
     baseline-on-migrate: true
     baseline-version: 0
   data:
@@ -62,7 +64,7 @@ jwt:
 # 로그인 · 회원가입 IP 단위 제한
 rate-limit:
   enabled: ${RATE_LIMIT_ENABLED:true}
-  # 앞단 프록시가 덮어쓰는 헤더 이름, 비우면 접속 주소
+  # 접속 IP 를 읽을 헤더 이름
   client-ip-header: ${CLIENT_IP_HEADER:}
   login-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:20}
   register-per-hour: ${RATE_LIMIT_REGISTER_PER_HOUR:5}
@@ -72,7 +74,7 @@ logging:
     org.springframework.security: INFO
 
 springdoc:
-  # 끄려면 SWAGGER_ENABLED=false
+  # API 문서와 Swagger UI 노출
   api-docs:
     enabled: ${SWAGGER_ENABLED:true}
   swagger-ui:
