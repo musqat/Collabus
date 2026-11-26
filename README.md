@@ -32,6 +32,8 @@
 | Cache | Redis 7 — Refresh Token · 로그인 실패 횟수 · 블랙리스트 |
 | Infra | Docker · Docker Compose · Nginx |
 
+<img src="docs/images/deployment.svg" width="100%" alt="배포 구조: 브라우저가 Vercel 에서 화면을 받고 Fly.io 의 Spring Boot 에 요청한다. 앱은 Aiven MySQL 과 Upstash Redis, Fly 볼륨을 쓴다"/>
+
 ---
 
 <details>
@@ -106,6 +108,8 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 ---
 
 ## 핵심 구현
+
+<img src="docs/images/request-flow.svg" width="100%" alt="요청 흐름: CORS, IP 단위 제한, JWT 인증, 컨트롤러 검증, 서비스 권한 확인을 거쳐 MySQL 에 닿고, 커밋된 뒤에만 알림이 STOMP 로 간다"/>
 
 **권한 검사**
 - 값만 비교하면 되는 본인 확인은 `@PreAuthorize` 로 처리. 도메인 권한은 DB 조회가 필요해

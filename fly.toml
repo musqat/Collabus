@@ -1,5 +1,5 @@
 app = "collabus-api"
-# DB(Aiven)가 벵갈루루라 가장 가까운 곳에 둔다
+# DB 와 가장 가까운 리전
 primary_region = "sin"
 
 [build]
@@ -13,13 +13,13 @@ primary_region = "sin"
   # Fly 엣지가 붙이는 접속 IP 헤더
   CLIENT_IP_HEADER = "Fly-Client-IP"
   SWAGGER_ENABLED = "true"
-  # 컨테이너 메모리를 기준으로 힙 상한을 잡는다
+  # 컨테이너 메모리 기준 힙 상한
   JAVA_TOOL_OPTIONS = "-XX:MaxRAMPercentage=70"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # 요청이 없으면 메모리째 일시 정지하고 다음 요청에 재개
+  # 요청이 없으면 메모리째 일시 정지, 다음 요청에 재개
   auto_stop_machines = "suspend"
   auto_start_machines = true
   min_machines_running = 0

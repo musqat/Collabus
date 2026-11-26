@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="1000" height="360" font-family="-apple-system, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="360" rx="16" fill="#f8fafc"/>
+  <text x="28" y="38" font-size="17" font-weight="700" fill="#0f172a">요청 흐름</text>
+  <text x="28" y="60" font-size="12.5" fill="#64748b">단계별 거절 응답</text>
+
+  <!-- 단계 상자 -->
+  <g font-size="13.5" text-anchor="middle">
+    <rect x="28" y="92" width="104" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="80" y="126" fill="#0f172a" font-weight="600">요청</text>
+
+    <rect x="160" y="92" width="104" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="212" y="118" fill="#0f172a" font-weight="600">CORS</text>
+    <text x="212" y="136" fill="#64748b" font-size="11.5">허용 출처만</text>
+
+    <rect x="292" y="92" width="118" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="351" y="118" fill="#0f172a" font-weight="600">IP 단위 제한</text>
+    <text x="351" y="136" fill="#64748b" font-size="11.5">로그인 · 가입</text>
+
+    <rect x="438" y="92" width="118" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="497" y="118" fill="#0f172a" font-weight="600">JWT 인증</text>
+    <text x="497" y="136" fill="#64748b" font-size="11.5">서명 · 블랙리스트</text>
+
+    <rect x="584" y="92" width="104" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="636" y="118" fill="#0f172a" font-weight="600">컨트롤러</text>
+    <text x="636" y="136" fill="#64748b" font-size="11.5">입력 검증</text>
+
+    <rect x="716" y="92" width="128" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="780" y="118" fill="#0f172a" font-weight="600">서비스</text>
+    <text x="780" y="136" fill="#64748b" font-size="11.5">권한 · 버전 확인</text>
+
+    <rect x="872" y="92" width="100" height="58" rx="10" fill="#e0f2fe" stroke="#7dd3fc"/>
+    <text x="922" y="126" fill="#0c4a6e" font-weight="600">MySQL</text>
+  </g>
+
+  <!-- 단계 사이 화살표 -->
+  <g stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
+    <line x1="132" y1="121" x2="156" y2="121"/>
+    <line x1="264" y1="121" x2="288" y2="121"/>
+    <line x1="410" y1="121" x2="434" y2="121"/>
+    <line x1="556" y1="121" x2="580" y2="121"/>
+    <line x1="688" y1="121" x2="712" y2="121"/>
+    <line x1="844" y1="121" x2="868" y2="121"/>
+  </g>
+
+  <!-- 막히는 곳 -->
+  <g font-size="12" text-anchor="middle">
+    <line x1="351" y1="150" x2="351" y2="172" stroke="#fca5a5" stroke-width="1.4"/>
+    <rect x="291" y="172" width="120" height="26" rx="13" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="351" y="189" fill="#b91c1c" font-weight="600">429 · Retry-After</text>
+
+    <line x1="497" y1="150" x2="497" y2="172" stroke="#fca5a5" stroke-width="1.4"/>
+    <rect x="452" y="172" width="90" height="26" rx="13" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="497" y="189" fill="#b91c1c" font-weight="600">401</text>
+
+    <line x1="636" y1="150" x2="636" y2="172" stroke="#fca5a5" stroke-width="1.4"/>
+    <rect x="581" y="172" width="110" height="26" rx="13" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="636" y="189" fill="#b91c1c" font-weight="600">400 · 필드 메시지</text>
+
+    <line x1="780" y1="150" x2="780" y2="172" stroke="#fca5a5" stroke-width="1.4"/>
+    <rect x="720" y="172" width="120" height="26" rx="13" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="780" y="189" fill="#b91c1c" font-weight="600">403 권한 · 409 충돌</text>
+  </g>
+
+  <!-- Redis -->
+  <g>
+    <rect x="300" y="226" width="248" height="44" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="424" y="245" text-anchor="middle" font-size="13" font-weight="600" fill="#9a3412">Redis</text>
+    <text x="424" y="262" text-anchor="middle" font-size="11.5" fill="#9a3412">IP 카운터 · 로그아웃 블랙리스트</text>
+    <line x1="351" y1="198" x2="351" y2="222" stroke="#fdba74" stroke-width="1.4" stroke-dasharray="3 3"/>
+    <line x1="497" y1="198" x2="497" y2="222" stroke="#fdba74" stroke-width="1.4" stroke-dasharray="3 3"/>
+  </g>
+
+  <!-- 커밋 뒤 알림 -->
+  <g font-size="12.5" text-anchor="middle">
+    <path d="M780 198 L780 300 L700 300" stroke="#0d9488" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow-dash)"/>
+    <text x="842" y="252" fill="#0f766e" font-size="11.5">커밋된 뒤에만</text>
+    <rect x="566" y="282" width="130" height="38" rx="10" fill="#f0fdfa" stroke="#5eead4"/>
+    <text x="631" y="306" fill="#115e59" font-weight="600">알림 이벤트</text>
+    <line x1="566" y1="301" x2="490" y2="301" stroke="#0d9488" stroke-width="1.6" marker-end="url(#arrow-dash)"/>
+    <rect x="356" y="282" width="130" height="38" rx="10" fill="#f0fdfa" stroke="#5eead4"/>
+    <text x="421" y="306" fill="#115e59" font-weight="600">STOMP 푸시</text>
+    <line x1="356" y1="301" x2="280" y2="301" stroke="#0d9488" stroke-width="1.6" marker-end="url(#arrow-dash)"/>
+    <rect x="146" y="282" width="130" height="38" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="211" y="306" fill="#0f172a" font-weight="600">받는 사람 화면</text>
+  </g>
+</svg>
