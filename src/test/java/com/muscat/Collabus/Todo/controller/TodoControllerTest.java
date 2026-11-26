@@ -107,9 +107,21 @@ class TodoControllerTest {
         .andExpect(status().isOk());
 
     ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-    verify(todoService).getTodosByTask(eq(3L), eq(LoginUser.ID), isNull(), pageable.capture());
+    verify(todoService).getTodosByTask(eq(3L), eq(LoginUser.ID), isNull(), isNull(),
+        pageable.capture());
     assertThat(pageable.getValue().getPageSize()).isEqualTo(20);
     assertThat(pageable.getValue().getSort().getOrderFor("dueDate")).isNotNull();
+  }
+
+  @Test
+  @DisplayName("목록 검색어를 상태와 함께 서비스로 넘긴다")
+  void listWithKeyword() throws Exception {
+    mockMvc.perform(get("/api/todo").with(login())
+            .param("taskId", "3").param("status", "IN_PROGRESS").param("keyword", "시안"))
+        .andExpect(status().isOk());
+
+    verify(todoService).getTodosByTask(eq(3L), eq(LoginUser.ID), eq("IN_PROGRESS"), eq("시안"),
+        any());
   }
 
   @Test

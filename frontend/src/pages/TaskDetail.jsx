@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isEditConflict } from '../api/errorMessage';
 import { showToast } from '../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask, useTaskMembers, useTaskProgress } from '../hooks/useTask';
 import usePageParam from '../hooks/usePageParam';
 import useSortParam from '../hooks/useSortParam';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 import SortSelect from '../components/SortSelect';
 import Pagination from '../components/Pagination';
 import { useTodos } from '../hooks/useTodo';
@@ -26,9 +27,13 @@ export default function TaskDetail() {
   const { task, isLoading: taskLoading, updateTask, addMember, removeMember } = useTask(taskId);
   const [todoPage, setTodoPage] = usePageParam();
   const [todoSort, setTodoSort] = useSortParam(TODO_SORT_OPTIONS[0].value);
+  const [todoSearchText, setTodoSearchText] = useState('');
+  // 입력이 300ms 멈추면 그 값을 서버에 넘긴다
+  const todoKeyword = useDebouncedValue(todoSearchText, 300);
   const {
     todos,
     totalPages: todoTotalPages,
+    totalElements: todoTotalElements,
     isLoading: todosLoading,
     createTodo,
     updateTodo,
@@ -36,7 +41,16 @@ export default function TaskDetail() {
     completeTodo,
     confirmTodo,
     changeAssignee,
-  } = useTodos(taskId, { page: todoPage, sort: todoSort });
+  } = useTodos(taskId, { page: todoPage, sort: todoSort, keyword: todoKeyword });
+
+  // 검색어가 바뀌면 첫 페이지로 옮긴다. 첫 렌더는 건너뛰어 URL 의 page 를 살린다
+  const previousTodoKeyword = useRef(todoKeyword);
+  useEffect(() => {
+    if (previousTodoKeyword.current !== todoKeyword) {
+      previousTodoKeyword.current = todoKeyword;
+      setTodoPage(0);
+    }
+  }, [todoKeyword, setTodoPage]);
   const currentUser = useAuthStore((state) => state.user);
 
   const [memberPage, setMemberPage] = usePageParam('memberPage');
@@ -325,7 +339,7 @@ export default function TaskDetail() {
         {activeTab === 'todos' ? (
           <>
             {/* Progress Chart Section */}
-            {todos && todos.length > 0 && (
+            {progress.total > 0 && (
               <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Todo 진행률</h3>
                 <div className="flex items-center gap-8">
@@ -365,7 +379,7 @@ export default function TaskDetail() {
                       ))}
                     </div>
                     <div className="mt-4 text-sm text-gray-500">
-                      총 {todos.length}개의 Todo
+                      총 {progress.total}개의 Todo
                     </div>
                   </div>
                 </div>
@@ -387,6 +401,22 @@ export default function TaskDetail() {
                 </button>
               )}
               </div>
+            </div>
+
+            {/* 검색 */}
+            <div className="mb-4 flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Todo 검색..."
+                value={todoSearchText}
+                onChange={(e) => setTodoSearchText(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              {todoKeyword && (
+                <div className="flex items-center text-sm text-gray-600 px-2">
+                  {todoTotalElements}개 결과
+                </div>
+              )}
             </div>
 
             {/* Todo Table */}
@@ -494,8 +524,10 @@ export default function TaskDetail() {
               </div>
             ) : (
               <div className="text-center py-12 border border-gray-200 rounded-lg">
-                <p className="text-gray-400 mb-4">아직 Todo가 없습니다</p>
-                {(isTaskManager || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
+                <p className="text-gray-400 mb-4">
+                  {todoKeyword ? `'${todoKeyword}' 에 맞는 Todo가 없습니다` : '아직 Todo가 없습니다'}
+                </p>
+                {!todoKeyword && (isTaskManager || workspaceRole === 'MASTER' || workspaceRole === 'MANAGER') && (
                   <button
                     onClick={() => setShowModal(true)}
                     className="text-brand-600 hover:text-brand-700 text-sm"

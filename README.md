@@ -27,7 +27,7 @@
 | Layer | Stack |
 |-------|-------|
 | Backend | Java 21 · Spring Boot 3.5 · Spring Security · JWT · WebSocket (STOMP, 알림 푸시) |
-| Frontend | React 18 · Vite · React Router v6 · TanStack Query · Zustand · Tailwind CSS |
+| Frontend | React 18 · Vite · React Router v7 · TanStack Query · Zustand · Tailwind CSS |
 | Database | MySQL 8.0 |
 | Cache | Redis 7 — Refresh Token · 로그인 실패 횟수 · 블랙리스트 |
 | Infra | Docker · Docker Compose · Nginx |
@@ -38,8 +38,6 @@
 <summary><b>Test Accounts</b> — 데모 계정과 워크스페이스별 권한</summary>
 
 더미 데이터가 자동으로 삽입됩니다. 아래 계정으로 바로 로그인 가능합니다.
-
-로그인 화면의 **데모 계정으로 둘러보기** 를 누르면 `user1@test.com` 으로 바로 들어갑니다.
 
 | 이메일 | 비밀번호 | 소속 워크스페이스 |
 |--------|---------|-----------------|
@@ -60,9 +58,7 @@
 ---
 
 <details>
-<summary><b>Quick Start</b> — Docker 실행, 로컬 개발, 테스트</summary>
-
-### Docker (권장)
+<summary><b>Quick Start</b> — Docker 로 실행</summary>
 
 ```bash
 # 1. 환경변수 설정
@@ -81,58 +77,6 @@ docker compose down
 | API | http://localhost:8080 |
 | Swagger | http://localhost:8080/swagger-ui/index.html |
 
-### 로컬
-
-> Node 22.22.2 이상이 필요합니다. 낮은 버전에서는 `npm ci` 가 `EBADENGINE` 으로 막힙니다.
-
-```bash
-# 1. MySQL, Redis 컨테이너만 실행 (MySQL 은 호스트 3307 포트)
-docker compose up -d mysql redis
-
-# 2. 백엔드
-cp .env.example .env
-./gradlew bootRun
-
-# 3. 프론트엔드
-cd frontend
-cp .env.example .env
-npm install && npm run dev
-```
-
-| 서비스 | URL |
-|--------|-----|
-| 프론트엔드 (Vite dev) | http://localhost:3000 |
-| 백엔드 | http://localhost:8080 |
-
-> Vite dev 서버가 `/api` 와 `/ws` 를 `localhost:8080` 으로 프록시
-
-### 테스트
-
-```bash
-# 백엔드 — 단위 + 통합 386개, 라인 커버리지 81.0%
-./gradlew build
-
-# 커버리지 리포트: build/reports/jacoco/test/html/index.html
-
-# 프론트엔드 — 단위 89개
-cd frontend && npm test
-
-# E2E — Playwright 19개 (스택이 떠 있어야 함)
-docker compose up -d --build
-cd frontend && npm run test:e2e
-```
-
-> 백엔드 테스트는 외부 인프라 없이 실행됩니다. `src/test/resources/application.yml` 이 인메모리 H2 를
-> 사용하고 Flyway 를 꺼서 Hibernate 가 엔티티에서 스키마를 직접 만듭니다. 마이그레이션 검증과
-> Redis 카운터 · IP 제한 테스트만 Testcontainers 로 실제 MySQL · Redis 를 띄우며, Docker 가 없으면 건너뜁니다.
-> 컨트롤러는 `@WebMvcTest` 로 컨트롤러 하나와 보안 필터 · 예외 처리만 띄워 요청 매핑 · 검증 · 상태 코드를 봅니다.
->
-> `./gradlew build` 가 JaCoCo 리포트를 함께 만들고, 라인 70% · 분기 30% 아래로 내려가면 빌드가 실패합니다.
-> CI 도 같은 리포트를 아티팩트로 올립니다.
-
-> CI 는 백엔드 · 프론트엔드 · E2E 세 잡으로 나뉘어 있습니다. 이미지 취약점 스캔은 별도 워크플로로 돌며 고칠 수 있는
-> HIGH · CRITICAL 이 있으면 실패하고, 의존성 업데이트는 Dependabot 이 주마다 PR 로 엽니다.
-
 </details>
 
 ---
@@ -140,34 +84,9 @@ cd frontend && npm run test:e2e
 <details>
 <summary><b>Environment Variables</b> — .env 와 frontend/.env</summary>
 
-**`.env` (루트)**: `.env.example` 복사 후 바로 사용 가능
+`.env.example` 과 `frontend/.env.example` 을 `.env` 로 복사하면 로컬과 docker compose 에서 바로 돕니다.
 
-```env
-JWT_SECRET=collabus-dev-secret-key-for-local-testing-only-32chars
-JWT_EXPIRATION=900000          # Access Token TTL (ms) — 기본 15분
-JWT_REFRESH_EXPIRATION=604800000  # Refresh Token TTL (ms) — 기본 7일
-
-DB_NAME=collabus
-DB_USERNAME=collabus
-DB_PASSWORD=collabus1234
-DB_ROOT_PASSWORD=rootpassword1234
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# 로컬 실행 시 MySQL 접속 정보 (docker compose 는 mysql:3306 을 자동 주입)
-DB_HOST=localhost
-DB_PORT=3307
-```
-
-**`frontend/.env`**: `frontend/.env.example` 복사 후 바로 사용 가능
-
-```env
-VITE_API_BASE_URL=/api
-VITE_WS_BASE_URL=/ws
-```
-
-**배포 환경에서 더 넣는 값**: 관리형 DB·Redis 에 붙을 때만 필요하고, 로컬은 기본값으로 돕니다.
+**배포 환경에서 더 넣는 값**: 관리형 DB·Redis 에 붙을 때만 필요합니다.
 
 ```env
 DB_SSL_MODE=REQUIRED           # 로컬 기본값 DISABLED
@@ -208,16 +127,9 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 - 같은 순간에 겹친 저장은 `@Version` 이 잡아 같은 409 로 내려간다.
 - 화면은 409 를 받으면 최신 내용을 다시 불러오고 수정 창을 닫는다.
 
-**Refresh Token Rotation**
-- 재발급 시마다 새 RT 발급 + 기존 RT 즉시 무효화. Redis TTL 기반으로 만료 관리.
-
-**Brute Force 방어**
-- 첫 실패부터 10분 동안 실패 횟수를 Redis 카운터로 센다. 5회가 되면 그때부터 10분 동안 로그인 차단. DB 조회 없이 처리.
-- 이메일을 바꿔 가며 시도하는 경우는 IP 단위 제한이 막는다. 로그인 1분 20회, 회원가입 1시간 5회.
+**IP 단위 제한** — 이메일을 바꿔 가며 시도하는 경우를 막는다
 - IP 는 앞단 프록시가 덮어쓰는 헤더 하나만 읽는다. 클라이언트가 써 보낸 `X-Forwarded-For` 로는 우회하지 못한다.
-
-**비밀번호 변경 시 세션 강제 종료**
-- 변경 즉시 해당 유저의 모든 RT Redis에서 삭제 → 타 기기 자동 로그아웃.
+- 증가와 만료 설정을 Lua 스크립트 하나로 묶어, 중간에 끊겨도 만료 없는 키가 남지 않는다.
 
 ---
 
@@ -241,7 +153,7 @@ RATE_LIMIT_ENABLED=true        # 로그인 · 회원가입 IP 단위 제한
 
 ## 만들며 겪은 것
 
-동작하는 데까지 만들어놓고, 테스트를 71개에서 386개로 늘리며 코드를 처음부터 다시 읽었다.
+동작하는 데까지 만들어놓고, 테스트를 71개에서 392개로 늘리며 코드를 처음부터 다시 읽었다.
 그 과정에서 Todo 수정이 아예 안 되고 있었다는 것, 로그인이 실패 사유를 전부 "없는 이메일"
 로 뭉개고 있었다는 것, 계정 잠금이 남의 계정을 잠그는 데 쓰일 수 있다는 것을 찾았다.
 통과하고 있던 E2E 하나는 사실 조용히 건너뛰는 중이었다.

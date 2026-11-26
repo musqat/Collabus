@@ -62,7 +62,7 @@ public class TodoController {
   @GetMapping
   @Operation(
       summary = "특정 Task의 Todo 목록 조회",
-      description = "Task ID와 선택적 상태(status)로 Todo 목록을 조회합니다.",
+      description = "Task ID와 선택적 상태(status) · 검색어(keyword, 제목 · 설명 부분 일치)로 Todo 목록을 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "조회 성공",
               content = @Content(array = @ArraySchema(schema = @Schema(implementation = TodoResponseDto.class)))),
@@ -75,11 +75,12 @@ public class TodoController {
   public ResponseEntity<ResponseDto> getTodosByTask(
       @RequestParam Long taskId,
       @RequestParam(required = false) String status,
+      @RequestParam(required = false) String keyword,
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @ParameterObject @PageableDefault(size = 20, sort = "dueDate") Pageable pageable
   ) {
     return ResponseEntity.ok(new ResponseDto(CommonResponse.SUCCESS,
-        todoService.getTodosByTask(taskId, userDetails.getUserId(), status, pageable)));
+        todoService.getTodosByTask(taskId, userDetails.getUserId(), status, keyword, pageable)));
   }
 
   @GetMapping("/{todoId}")

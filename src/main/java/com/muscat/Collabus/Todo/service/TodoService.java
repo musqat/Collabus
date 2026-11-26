@@ -22,7 +22,7 @@ public interface TodoService {
 
   // Task 의 Todo 목록. status 를 주면 그 상태만 걸러낸다
   PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, Long requesterId, String status,
-      Pageable pageable);
+      String keyword, Pageable pageable);
 
   // 완료를 요청한다. 상태가 WAITING_REVIEW 로 바뀐다
   void completeOwnTodo(Long todoId, Long userId);

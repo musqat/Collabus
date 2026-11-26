@@ -3,12 +3,12 @@ import { showToast } from '../store/toastStore';
 import { errorMessage, isEditConflict } from '../api/errorMessage';
 import { todoAPI } from '../api/todo';
 
-export const useTodos = (taskId, { status = null, page = 0, sort } = {}) => {
+export const useTodos = (taskId, { status = null, page = 0, sort, keyword } = {}) => {
   const queryClient = useQueryClient();
 
   const { data: todoPage, isLoading } = useQuery({
-    queryKey: ['todos', taskId, status, page, sort],
-    queryFn: () => todoAPI.getByTask(taskId, status, page, 20, sort),
+    queryKey: ['todos', taskId, status, page, sort, keyword],
+    queryFn: () => todoAPI.getByTask(taskId, status, page, 20, sort, keyword),
     enabled: !!taskId,
     // 페이지를 넘기는 동안 이전 페이지를 그대로 보여준다
     placeholderData: keepPreviousData,

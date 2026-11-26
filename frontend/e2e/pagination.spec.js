@@ -39,4 +39,20 @@ test.describe('페이지네이션과 정렬', () => {
 
     await expect(page.getByText('0개 결과')).toBeVisible();
   });
+
+  test('Todo 검색이 서버로 나가고 진행률은 전체 기준을 유지한다', async ({ loggedIn: page }) => {
+    const { taskId } = await seedWorkspace();
+    await page.goto(`/task/${taskId}`);
+    await expect(page.getByText('총 1개의 Todo')).toBeVisible();
+
+    const search = page.getByPlaceholder('Todo 검색...');
+    await search.fill('e2e-todo');
+    await expect(page.getByText('1개 결과')).toBeVisible();
+
+    await search.fill('없을만한검색어zzz');
+    await expect(page.getByText('0개 결과')).toBeVisible();
+    await expect(page.getByText("'없을만한검색어zzz' 에 맞는 Todo가 없습니다")).toBeVisible();
+    // 검색과 별개로 진행률은 Task 전체를 센다
+    await expect(page.getByText('총 1개의 Todo')).toBeVisible();
+  });
 });

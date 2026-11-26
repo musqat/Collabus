@@ -8,7 +8,7 @@ import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * 진행률 집계 조건
+ * Todo 목록 조회와 진행률 집계 조건
  */
 public final class TodoSpecifications {
 
@@ -39,5 +39,16 @@ public final class TodoSpecifications {
 
   public static Specification<Todo> hasStatus(TodoStatus status) {
     return (root, query, cb) -> cb.equal(root.get("status"), status);
+  }
+
+  // 제목이나 설명에 부분 일치. 설명이 null 이면 빈 문자열로 본다
+  public static Specification<Todo> matches(String keyword) {
+    return (root, query, cb) -> {
+      String pattern = LikePatterns.contains(keyword);
+      return cb.or(
+          cb.like(cb.lower(root.get("title")), pattern, LikePatterns.ESCAPE),
+          cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern,
+              LikePatterns.ESCAPE));
+    };
   }
 }

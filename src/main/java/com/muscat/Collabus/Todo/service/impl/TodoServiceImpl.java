@@ -21,6 +21,8 @@ import com.muscat.Collabus.common.exception.BusinessException;
 import com.muscat.Collabus.common.util.EntityFinderUtil;
 import com.muscat.Collabus.common.util.ParticipantUtil;
 import com.muscat.Collabus.common.util.TaskAuthorityUtil;
+import com.muscat.Collabus.common.util.TodoSpecifications;
+import org.springframework.data.jpa.domain.Specification;
 import com.muscat.Collabus.enums.NotificationType;
 import com.muscat.Collabus.enums.response.TodoResponse;
 import com.muscat.Collabus.enums.role.TaskRole;
@@ -113,13 +115,19 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public PageResponseDto<TodoResponseDto> getTodosByTask(Long taskId, Long requesterId,
-            String status, Pageable pageable) {
+            String status, String keyword, Pageable pageable) {
         taskAuthorityUtil.requireViewableTask(taskId, requesterId);
 
+        Specification<Todo> spec = TodoSpecifications.inTask(taskId);
+        if (status != null) {
+            spec = spec.and(TodoSpecifications.hasStatus(parseStatus(status)));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(TodoSpecifications.matches(keyword.trim()));
+        }
+
         Pageable safePageable = sortGuard.apply(pageable, Todo.class, SORT_PATHS);
-        Page<Todo> todos = (status != null)
-                ? todoRepository.findAllByTaskIdAndStatus(taskId, parseStatus(status), safePageable)
-                : todoRepository.findAllByTaskId(taskId, safePageable);
+        Page<Todo> todos = todoRepository.findAll(spec, safePageable);
 
         return PageResponseDto.of(todos, todoMapper::mapToDto);
     }
