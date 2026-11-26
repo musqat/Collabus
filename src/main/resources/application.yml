@@ -46,6 +46,8 @@ spring:
       password: ${REDIS_PASSWORD:}
       ssl:
         enabled: ${REDIS_SSL:false}
+      # 명령 응답 대기 상한(ms)
+      timeout: ${REDIS_TIMEOUT:3000}
   jackson:
     time-zone: Asia/Seoul
   servlet:
