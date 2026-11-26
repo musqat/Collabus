@@ -132,6 +132,16 @@ describe('목록 파라미터', () => {
     });
   });
 
+  it('Todo 검색어는 있으면 보내고 비면 뺀다', async () => {
+    mock.onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
+
+    await todoAPI.getByTask(7, null, 0, 20, null, '시안');
+    await todoAPI.getByTask(7, null, 0, 20, null, '');
+
+    expect(mock.history.get[0].params.keyword).toBe('시안');
+    expect(mock.history.get[1].params.keyword).toBeUndefined();
+  });
+
   it('정렬을 주지 않으면 sort 를 빼고 보낸다', async () => {
     mock.onGet('/todo').reply(200, { statusCode: '200', statusMsg: 'ok', data: PAGE });
 

@@ -14,9 +14,9 @@ export const todoAPI = {
   },
 
   // Task의 Todo 목록 (페이지 응답)
-  getByTask: async (taskId, status = null, page = 0, size = 20, sort = null) => {
+  getByTask: async (taskId, status = null, page = 0, size = 20, sort = null, keyword = null) => {
     const { data } = await apiClient.get('/todo', {
-      params: { taskId, status, page, size, sort: sort || undefined }
+      params: { taskId, status, page, size, sort: sort || undefined, keyword: keyword || undefined }
     });
     return data;
   },
