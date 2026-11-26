@@ -1,5 +1,6 @@
 package com.muscat.Collabus.Todo.service.impl;
 
+import org.springframework.data.jpa.domain.Specification;
 import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -344,10 +345,10 @@ class TodoServiceImplTest {
                 .thenThrow(new AccessDeniedException("Task 를 볼 권한이 없습니다."));
 
         assertThatThrownBy(() ->
-                todoService.getTodosByTask(1L, 99L, null, PageRequest.of(0, 20)))
+                todoService.getTodosByTask(1L, 99L, null, null, PageRequest.of(0, 20)))
                 .isInstanceOf(AccessDeniedException.class);
 
-        verify(todoRepository, times(0)).findAllByTaskId(any(), any());
+        verify(todoRepository, times(0)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
@@ -385,18 +386,19 @@ class TodoServiceImplTest {
         // Given
         Long taskId = 1L;
         Pageable pageable = PageRequest.of(0, 20);
-        when(todoRepository.findAllByTaskId(taskId, pageable))
+        when(todoRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(todo), pageable, 1));
         when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
         // When
-        PageResponseDto<TodoResponseDto> result = todoService.getTodosByTask(taskId, 1L, null, pageable);
+        PageResponseDto<TodoResponseDto> result =
+                todoService.getTodosByTask(taskId, 1L, null, null, pageable);
 
         // Then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test Todo");
         assertThat(result.getTotalElements()).isEqualTo(1);
-        verify(todoRepository, times(1)).findAllByTaskId(taskId, pageable);
+        verify(todoRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
@@ -406,24 +408,24 @@ class TodoServiceImplTest {
         Long taskId = 1L;
         String status = "IN_PROGRESS";
         Pageable pageable = PageRequest.of(0, 20);
-        when(todoRepository.findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS, pageable))
+        when(todoRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(todo), pageable, 1));
         when(todoMapper.mapToDto(todo)).thenReturn(todoResponseDto);
 
         // When
-        PageResponseDto<TodoResponseDto> result = todoService.getTodosByTask(taskId, 1L, status, pageable);
+        PageResponseDto<TodoResponseDto> result =
+                todoService.getTodosByTask(taskId, 1L, status, "시안", pageable);
 
         // Then
         assertThat(result.getContent()).hasSize(1);
-        verify(todoRepository, times(1))
-                .findAllByTaskIdAndStatus(taskId, TodoStatus.IN_PROGRESS, pageable);
+        verify(todoRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     @DisplayName("Task별 Todo 목록 조회 실패 - 알 수 없는 상태값")
     void getTodosByTask_Fail_InvalidStatus() {
         // When & Then
-        assertThatThrownBy(() -> todoService.getTodosByTask(1L, 1L, "BOGUS", PageRequest.of(0, 20)))
+        assertThatThrownBy(() -> todoService.getTodosByTask(1L, 1L, "BOGUS", null, PageRequest.of(0, 20)))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -582,7 +584,7 @@ class TodoServiceImplTest {
     @DisplayName("잘못된 상태 문자열은 거부한다")
     void getTodosByTask_Fail_InvalidStatusValue() {
         assertThatThrownBy(() ->
-                todoService.getTodosByTask(1L, 1L, "NOT_A_STATUS", PageRequest.of(0, 20)))
+                todoService.getTodosByTask(1L, 1L, "NOT_A_STATUS", null, PageRequest.of(0, 20)))
                 .isInstanceOf(BusinessException.class);
     }
 

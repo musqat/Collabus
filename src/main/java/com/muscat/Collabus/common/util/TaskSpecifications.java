@@ -11,8 +11,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public final class TaskSpecifications {
 
-  private static final char ESCAPE = '\\';
-
   private TaskSpecifications() {
   }
 
@@ -38,20 +36,11 @@ public final class TaskSpecifications {
   // 제목이나 설명에 부분 일치. 설명이 null 이면 빈 문자열로 본다
   public static Specification<Task> matches(String keyword) {
     return (root, query, cb) -> {
-      String pattern = "%" + escape(keyword.toLowerCase()) + "%";
+      String pattern = LikePatterns.contains(keyword);
       return cb.or(
-          cb.like(cb.lower(root.get("title")), pattern, ESCAPE),
-          cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern, ESCAPE));
+          cb.like(cb.lower(root.get("title")), pattern, LikePatterns.ESCAPE),
+          cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern,
+              LikePatterns.ESCAPE));
     };
-  }
-
-  /**
-   * LIKE 메타문자 %, _, 역슬래시 앞에 이스케이프 문자를 붙인다.
-   */
-  private static String escape(String keyword) {
-    return keyword
-        .replace(String.valueOf(ESCAPE), String.valueOf(ESCAPE) + ESCAPE)
-        .replace("%", ESCAPE + "%")
-        .replace("_", ESCAPE + "_");
   }
 }
