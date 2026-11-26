@@ -169,9 +169,12 @@ public class UserController {
             // 로그인 성공 — 실패 횟수 초기화
             refreshTokenService.resetLoginFailure(email);
 
-            String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name(), user.getDisplayName());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-            refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken,
+            // 기기마다 따로 유지되는 로그인 세션
+            String sessionId = jwtUtil.newSessionId();
+            String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail(),
+                    user.getRole().name(), user.getDisplayName(), sessionId);
+            String refreshToken = jwtUtil.generateRefreshToken(user.getEmail(), sessionId);
+            refreshTokenService.saveRefreshToken(user.getEmail(), sessionId, refreshToken,
                     jwtUtil.getRefreshExpiration());
 
             LoginResponseDto loginResponse = LoginResponseDto.builder()
@@ -223,7 +226,13 @@ public class UserController {
         String token = authHeader.substring(7);
         String email = jwtUtil.getEmailFromToken(token);
 
-        refreshTokenService.deleteRefreshToken(email);
+        // 이 기기의 세션만 종료. 세션 ID 가 없는 옛 토큰이면 전체 종료
+        String sessionId = jwtUtil.getSessionId(token);
+        if (sessionId != null) {
+            refreshTokenService.deleteRefreshToken(email, sessionId);
+        } else {
+            refreshTokenService.deleteAllRefreshTokens(email);
+        }
         long remaining = jwtUtil.getRemainingMillis(token);
         refreshTokenService.blacklistAccessToken(token, remaining);
 

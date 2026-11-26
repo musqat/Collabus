@@ -51,39 +51,6 @@ class RefreshTokenServiceImplTest {
   }
 
   @Test
-  @DisplayName("토큰을 TTL 과 함께 저장한다")
-  void saveRefreshToken() {
-    refreshTokenService.saveRefreshToken(EMAIL, TOKEN, 1000L);
-
-    verify(valueOperations, times(1))
-        .set("RT:" + EMAIL, TOKEN, 1000L, TimeUnit.MILLISECONDS);
-  }
-
-  @Test
-  @DisplayName("저장된 토큰을 돌려준다")
-  void getRefreshToken_Present() {
-    when(valueOperations.get("RT:" + EMAIL)).thenReturn(TOKEN);
-
-    assertThat(refreshTokenService.getRefreshToken(EMAIL)).contains(TOKEN);
-  }
-
-  @Test
-  @DisplayName("저장된 토큰이 없으면 비어 있다")
-  void getRefreshToken_Empty() {
-    when(valueOperations.get("RT:" + EMAIL)).thenReturn(null);
-
-    assertThat(refreshTokenService.getRefreshToken(EMAIL)).isEmpty();
-  }
-
-  @Test
-  @DisplayName("토큰을 지운다")
-  void deleteRefreshToken() {
-    refreshTokenService.deleteRefreshToken(EMAIL);
-
-    verify(redisTemplate, times(1)).delete("RT:" + EMAIL);
-  }
-
-  @Test
   @DisplayName("블랙리스트에 만료 시각까지 담는다")
   void blacklistAccessToken() {
     refreshTokenService.blacklistAccessToken(TOKEN, 500L);

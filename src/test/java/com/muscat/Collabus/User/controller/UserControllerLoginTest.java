@@ -64,9 +64,10 @@ class UserControllerLoginTest {
     ReflectionTestUtils.setField(request, "password", PASSWORD);
 
     when(refreshTokenService.isAccountLocked(anyString())).thenReturn(false);
-    when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyString()))
+    when(jwtUtil.newSessionId()).thenReturn("session-1");
+    when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyString(), anyString()))
         .thenReturn("access");
-    when(jwtUtil.generateRefreshToken(anyString())).thenReturn("refresh");
+    when(jwtUtil.generateRefreshToken(anyString(), anyString())).thenReturn("refresh");
     when(jwtUtil.getRefreshExpiration()).thenReturn(1000L);
   }
 
@@ -100,7 +101,7 @@ class UserControllerLoginTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     verify(refreshTokenService, times(1)).resetLoginFailure(EMAIL);
-    verify(refreshTokenService, times(1)).saveRefreshToken(EMAIL, "refresh", 1000L);
+    verify(refreshTokenService, times(1)).saveRefreshToken(EMAIL, "session-1", "refresh", 1000L);
     verify(refreshTokenService, never()).incrementLoginFailure(anyString());
   }
 
@@ -156,5 +157,28 @@ class UserControllerLoginTest {
 
     assertThat(userController.login(request).getStatusCode())
         .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+  }
+
+  @Test
+  @DisplayName("로그아웃은 토큰의 세션만 지운다")
+  void logoutDeletesOnlyThisSession() {
+    when(jwtUtil.getEmailFromToken("access")).thenReturn(EMAIL);
+    when(jwtUtil.getSessionId("access")).thenReturn("session-1");
+
+    userController.logout("Bearer access");
+
+    verify(refreshTokenService, times(1)).deleteRefreshToken(EMAIL, "session-1");
+    verify(refreshTokenService, never()).deleteAllRefreshTokens(anyString());
+  }
+
+  @Test
+  @DisplayName("세션 ID 가 없는 옛 토큰으로 로그아웃하면 모든 세션을 지운다")
+  void logoutWithoutSessionDeletesAll() {
+    when(jwtUtil.getEmailFromToken("access")).thenReturn(EMAIL);
+    when(jwtUtil.getSessionId("access")).thenReturn(null);
+
+    userController.logout("Bearer access");
+
+    verify(refreshTokenService, times(1)).deleteAllRefreshTokens(EMAIL);
   }
 }

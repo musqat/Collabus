@@ -25,9 +25,14 @@ public class TokenReissueServiceImpl implements TokenReissueService {
     }
 
     String email = jwtUtil.getEmailFromToken(refreshToken);
+    String sessionId = jwtUtil.getSessionId(refreshToken);
+    // 세션 ID 도입 전에 발급된 토큰은 다시 로그인
+    if (sessionId == null) {
+      throw new BusinessException(CommonResponse.UNAUTHORIZED);
+    }
 
-    // 저장된 것과 다르면 이미 로테이션으로 밀려난 토큰이다
-    String saved = refreshTokenService.getRefreshToken(email).orElse(null);
+    // 그 세션에 저장된 것과 다르면 이미 로테이션으로 밀려난 토큰
+    String saved = refreshTokenService.getRefreshToken(email, sessionId).orElse(null);
     if (saved == null || !saved.equals(refreshToken)) {
       throw new BusinessException(CommonResponse.UNAUTHORIZED);
     }
@@ -36,11 +41,12 @@ public class TokenReissueServiceImpl implements TokenReissueService {
         .orElseThrow(() -> new BusinessException(CommonResponse.UNAUTHORIZED));
 
     String newAccessToken = jwtUtil.generateToken(
-        user.getId(), email, user.getRole().name(), user.getDisplayName());
+        user.getId(), email, user.getRole().name(), user.getDisplayName(), sessionId);
 
-    // Refresh Token Rotation — 새 RT 를 저장해 기존 것을 무효화한다
-    String newRefreshToken = jwtUtil.generateRefreshToken(email);
-    refreshTokenService.saveRefreshToken(email, newRefreshToken, jwtUtil.getRefreshExpiration());
+    // Refresh Token Rotation — 같은 세션의 RT 를 새것으로 바꿔 기존 것을 무효화
+    String newRefreshToken = jwtUtil.generateRefreshToken(email, sessionId);
+    refreshTokenService.saveRefreshToken(email, sessionId, newRefreshToken,
+        jwtUtil.getRefreshExpiration());
 
     return new TokenResponseDto(newAccessToken, newRefreshToken);
   }

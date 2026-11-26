@@ -17,6 +17,7 @@ public class JwtUtil {
   public static final String CLAIM_USER_ID = "userId";
   public static final String CLAIM_ROLE = "role";
   public static final String CLAIM_DISPLAY_NAME = "displayName";
+  public static final String CLAIM_SESSION_ID = "sid";
 
   private final SecretKey key;
   private final long expiration;
@@ -31,7 +32,8 @@ public class JwtUtil {
   /**
    * 인증에 필요한 정보를 모두 담는다. 요청마다 사용자를 다시 조회하지 않기 위함
    */
-  public String generateToken(Long userId, String email, String role, String displayName) {
+  public String generateToken(Long userId, String email, String role, String displayName,
+      String sessionId) {
     Date now = new Date();
     Date expiry = new Date(now.getTime() + expiration);
 
@@ -41,13 +43,24 @@ public class JwtUtil {
         .claim(CLAIM_USER_ID, userId)
         .claim(CLAIM_ROLE, role)
         .claim(CLAIM_DISPLAY_NAME, displayName)
+        .claim(CLAIM_SESSION_ID, sessionId)
         .issuedAt(now)
         .expiration(expiry)
         .signWith(key)
         .compact();
   }
 
-  public String generateRefreshToken(String email) {
+  // 로그인 한 번마다 새로 만드는 세션 ID. 재발급해도 같은 세션이면 유지
+  public String newSessionId() {
+    return UUID.randomUUID().toString();
+  }
+
+  // 토큰의 세션 ID. 세션 ID 도입 전에 발급된 토큰이면 null
+  public String getSessionId(String token) {
+    return parseClaims(token).get(CLAIM_SESSION_ID, String.class);
+  }
+
+  public String generateRefreshToken(String email, String sessionId) {
     Date now = new Date();
     Date expiry = new Date(now.getTime() + refreshExpiration);
 
@@ -56,6 +69,7 @@ public class JwtUtil {
     return Jwts.builder()
         .id(UUID.randomUUID().toString())
         .subject(email)
+        .claim(CLAIM_SESSION_ID, sessionId)
         .issuedAt(now)
         .expiration(expiry)
         .signWith(key)

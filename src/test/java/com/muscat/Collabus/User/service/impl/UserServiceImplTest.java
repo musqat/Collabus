@@ -311,7 +311,7 @@ class UserServiceImplTest {
         // Then
         verify(userRepository, times(1)).findById(userId);
         verify(userRepository, times(1)).save(any(User.class));
-        verify(refreshTokenService, times(1)).deleteRefreshToken(user.getEmail());
+        verify(refreshTokenService, times(1)).deleteAllRefreshTokens(user.getEmail());
     }
 
     @Test
@@ -327,7 +327,7 @@ class UserServiceImplTest {
                 .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).save(any(User.class));
-        verify(refreshTokenService, never()).deleteRefreshToken(any());
+        verify(refreshTokenService, never()).deleteAllRefreshTokens(any());
     }
 
     @Test
