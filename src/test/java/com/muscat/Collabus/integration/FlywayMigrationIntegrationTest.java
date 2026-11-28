@@ -130,6 +130,32 @@ class FlywayMigrationIntegrationTest {
   }
 
   @Test
+  @DisplayName("V7 이후 Todo 목록용 복합 인덱스가 있고 task_id 단일 인덱스는 없다")
+  void todoCompositeIndexes() throws Exception {
+    List<String> columns = query("""
+        SELECT CONCAT(INDEX_NAME, ':', GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX)) AS idx
+        FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND INDEX_NAME LIKE 'idx_todos_task%'
+        GROUP BY INDEX_NAME
+        """, "idx");
+
+    assertThat(columns).containsExactlyInAnyOrder(
+        "idx_todos_task_due:task_id,due_date",
+        "idx_todos_task_status_due:task_id,status,due_date");
+  }
+
+  @Test
+  @DisplayName("Todo 목록은 복합 인덱스 순서대로 읽어 정렬 단계가 없다")
+  void todoListUsesIndexOrder() throws Exception {
+    List<String> plan = query("""
+        EXPLAIN FORMAT=TREE
+        SELECT * FROM todos WHERE task_id = 1 ORDER BY due_date LIMIT 20
+        """, "EXPLAIN");
+
+    assertThat(plan.get(0)).contains("idx_todos_task_due").doesNotContain("Sort");
+  }
+
+  @Test
   @DisplayName("시드 데이터가 들어간다")
   void seedDataApplied() throws Exception {
     List<String> counts = query("SELECT COUNT(*) AS c FROM users", "c");
