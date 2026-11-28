@@ -28,7 +28,7 @@
 |-------|-------|
 | Backend | Java 21 · Spring Boot 3.5 · Spring Security · JWT · WebSocket (STOMP, 알림 푸시) |
 | Frontend | React 18 · Vite · React Router v7 · TanStack Query · Zustand · Tailwind CSS |
-| Database | MySQL 8.0 |
+| Database | MySQL 8.4 |
 | Cache | Redis 7 — Refresh Token · 로그인 실패 횟수 · 블랙리스트 |
 | Infra | Docker · Docker Compose · Nginx |
 

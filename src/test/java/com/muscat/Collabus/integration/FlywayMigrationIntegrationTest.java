@@ -54,7 +54,7 @@ class FlywayMigrationIntegrationTest {
 
   @Container
   @ServiceConnection
-  static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
+  static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.4");
 
   @Autowired
   private DataSource dataSource;
