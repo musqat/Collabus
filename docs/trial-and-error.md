@@ -59,6 +59,16 @@ Swagger 에서 `Pageable` 을 펼치려고 `springdoc.default-flat-param-object:
 
 → 되돌리고 `@ParameterObject` 를 12곳에 직접 붙였다.
 
+## 복합 인덱스는 어느 목록에나 효과가 있을 줄 알았다
+
+FK 단일 인덱스만 있어서 Todo 와 알림 목록에 복합 인덱스를 넣으려 했다. 시드가 Todo 90개라 차이가 보이지 않아
+Todo 39,900개(한 Task 에 2만 개)와 알림 10만 개를 만들어 `EXPLAIN ANALYZE` 로 전후를 쟀다.
+Todo 목록은 15ms 에서 0.08ms, 진행률 집계는 15ms 에서 5ms 로 줄었다. 알림 목록은 0.5ms 에서 0.07ms 였는데,
+사용자당 500개로 정리돼 원래도 1ms 가 안 됐다.
+
+→ Todo 에만 `(task_id, due_date)` · `(task_id, status, due_date)` 를 두고 대신 `task_id` 단일 인덱스를 지웠다.
+알림에는 넣지 않았다.
+
 ## 테스트를 늘리면 분기 커버리지도 따라 오를 줄 알았다
 
 테스트 141개 시점에 분기 14.8%, 라인 50.1% 였다. 301개로 늘리자 라인은 72.6% 까지 올랐는데
