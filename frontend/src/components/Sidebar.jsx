@@ -100,6 +100,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       <div className="w-16 border-r border-gray-200 bg-gray-50 flex flex-col items-center py-4">
         <button
           onClick={onToggle}
+          aria-label="사이드바 펼치기"
           className="p-2 hover:bg-gray-200 rounded"
         >
           →
@@ -115,6 +116,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         <h2 className="font-semibold text-sm text-gray-700">워크스페이스</h2>
         <button
           onClick={onToggle}
+          aria-label="사이드바 접기"
           className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
