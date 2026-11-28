@@ -29,6 +29,9 @@ ext['tomcat.version'] = '10.1.59'
 ext['netty.version'] = '4.1.137.Final'
 ext['jackson-bom.version'] = '2.21.7'
 
+// MySQL 8.4 를 지원하는 Flyway
+ext['flyway.version'] = '11.20.3'
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
