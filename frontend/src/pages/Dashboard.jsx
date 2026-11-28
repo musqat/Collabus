@@ -38,8 +38,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
           <h2 className="text-3xl font-bold text-gray-800">대시보드</h2>
           <button
             onClick={() => setShowModal(true)}

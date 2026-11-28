@@ -154,6 +154,8 @@ export default function NotificationBell() {
       {/* 알림 벨 버튼 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="알림"
+        aria-expanded={isOpen}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +170,7 @@ export default function NotificationBell() {
 
       {/* 알림 드롭다운 */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 className="font-semibold text-gray-900">알림</h3>

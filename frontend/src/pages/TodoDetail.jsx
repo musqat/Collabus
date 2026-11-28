@@ -154,7 +154,7 @@ export default function TodoDetail() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
           <button
             onClick={() => navigate(-1)}
             className="text-gray-400 hover:text-gray-600 mb-4 text-sm flex items-center gap-1"
@@ -173,17 +173,17 @@ export default function TodoDetail() {
                 <p className="text-gray-600 text-lg mb-4">{todo.description}</p>
               )}
 
-              <div className="flex gap-6 text-sm text-gray-600">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">담당자</span>
+                  <span className="text-gray-400 whitespace-nowrap">담당자</span>
                   <span className="text-gray-700">{todo?.assigneeDisplayName}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">마감일</span>
+                  <span className="text-gray-400 whitespace-nowrap">마감일</span>
                   <span className="text-gray-700">{todo?.dueDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">상태</span>
+                  <span className="text-gray-400 whitespace-nowrap">상태</span>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
                     {statusConfig.label}
                   </span>
@@ -196,7 +196,7 @@ export default function TodoDetail() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
           <nav className="flex gap-8">
             <button
               onClick={() => setActiveTab('work')}
@@ -223,7 +223,7 @@ export default function TodoDetail() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
         {/* Work Tab */}
         {activeTab === 'work' && (
           <div className="space-y-6">

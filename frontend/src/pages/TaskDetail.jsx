@@ -265,7 +265,7 @@ export default function TaskDetail() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
           <div className="flex justify-between items-start mb-4">
             <button
               onClick={() => navigate(-1)}
@@ -308,7 +308,7 @@ export default function TaskDetail() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
           <nav className="flex gap-8">
             <button
               onClick={() => setActiveTab('todos')}
@@ -335,14 +335,14 @@ export default function TaskDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
         {activeTab === 'todos' ? (
           <>
             {/* Progress Chart Section */}
             {progress.total > 0 && (
               <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Todo 진행률</h3>
-                <div className="flex items-center gap-8">
+                <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
                   <div style={{ width: 200, height: 200 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -371,8 +371,8 @@ export default function TaskDetail() {
                             className="w-4 h-4 rounded"
                             style={{ backgroundColor: item.color }}
                           />
-                          <span className="text-sm text-gray-700">{item.name}</span>
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm text-gray-700 whitespace-nowrap">{item.name}</span>
+                          <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
                             {item.value}개
                           </span>
                         </div>
@@ -422,7 +422,8 @@ export default function TaskDetail() {
             {/* Todo Table */}
             {todos && todos.length > 0 ? (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr className="text-left text-sm text-gray-600">
                       <th className="px-4 py-3 font-medium w-1/4">제목</th>
@@ -468,7 +469,7 @@ export default function TaskDetail() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
+                            <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-md text-xs font-medium border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
                               {statusConfig.label}
                             </span>
                           </td>
@@ -518,6 +519,7 @@ export default function TaskDetail() {
                     })}
                   </tbody>
                 </table>
+                </div>
 
                 <Pagination page={todoPage} totalPages={todoTotalPages} onChange={setTodoPage} />
 
@@ -558,7 +560,8 @@ export default function TaskDetail() {
             </div>
 
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <table className="w-full">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr className="text-left text-sm text-gray-600">
                     <th className="px-4 py-3 font-medium">이름</th>
@@ -607,6 +610,7 @@ export default function TaskDetail() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               <Pagination page={memberPage} totalPages={memberTotalPages} onChange={setMemberPage} />
             </div>

@@ -177,7 +177,7 @@ export default function WorkspaceDetail() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
           <div className="flex justify-between items-start mb-4">
             <button
               onClick={() => navigate('/')}
@@ -212,7 +212,7 @@ export default function WorkspaceDetail() {
 
       {/* 통계 카드 */}
       <div className="border-b border-gray-200 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-8 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-brand-50 border border-brand-200 rounded-lg p-6">
               <div className="text-sm text-brand-600 font-medium mb-1">총 Task</div>
@@ -237,7 +237,7 @@ export default function WorkspaceDetail() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
           <nav className="flex gap-8">
             <button
               onClick={() => setActiveTab('tasks')}
@@ -264,7 +264,7 @@ export default function WorkspaceDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
         {activeTab === 'tasks' ? (
           <>
             {/* Progress Chart */}
