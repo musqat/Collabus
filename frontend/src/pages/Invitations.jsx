@@ -67,7 +67,7 @@ export default function Invitations() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800">초대 관리</h2>
           <p className="text-gray-600 mt-2">워크스페이스 초대를 확인하고 관리하세요</p>
